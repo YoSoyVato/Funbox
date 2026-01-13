@@ -14,7 +14,7 @@ header {
   position: fixed;
   top: 10px;
   left: 10px;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.75);
   padding: 10px 15px;
   border-radius: 10px;
   z-index: 10;
@@ -22,7 +22,7 @@ header {
 
 nav button {
   margin: 5px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   background: #222;
   color: white;
   border: none;
@@ -35,8 +35,8 @@ nav button:hover {
 }
 
 #content {
-  margin-top: 100px;
-  padding: 20px;
+  margin-top: 90px;
+  padding: 15px;
 }
 
 canvas {
