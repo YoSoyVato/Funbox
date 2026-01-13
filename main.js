@@ -32,37 +32,7 @@ document.getElementById("loginBtn").onclick = function () {
     }
 
     localStorage.setItem("funbox_user", user);
-    alert("Bienvenido " + user);
-  };
-};
-
-// ======================
-// CREAR
-// ======================
-document.getElementById("createBtn").onclick = function () {
-  const user = getUser();
-  if (!user) {
-    alert("Inicia sesión primero");
-    return;
-  }
-
-  content.innerHTML = `
-    <h2>🛠 Crear Juego</h2>
-    <input id="gameName" placeholder="Nombre del juego"><br><br>
-    <textarea id="gameDesc" placeholder="Descripción"></textarea><br><br>
-    <button id="saveGame">Guardar</button>
-  `;
-
-  document.getElementById("saveGame").onclick = function () {
-    const games = getGames();
-    games.push({
-      name: document.getElementById("gameName").value,
-      desc: document.getElementById("gameDesc").value,
-      author: user
-    });
-
-    localStorage.setItem("funbox_games", JSON.stringify(games));
-    alert("Juego creado 🚀");
+    alert("Bienvenido " + user + " 🎉");
   };
 };
 
@@ -92,3 +62,131 @@ document.getElementById("playBtn").onclick = function () {
   content.innerHTML = html;
 };
 
+// ======================
+// CREAR → MOTOR 3D
+// ======================
+let scene, camera, renderer;
+let blocks = [];
+let running = false;
+
+document.getElementById("createBtn").onclick = function () {
+  const user = getUser();
+  if (!user) {
+    alert("Inicia sesión primero");
+    return;
+  }
+
+  content.innerHTML = `
+    <h2>🧱 Funbox Engine</h2>
+    <p>Click para colocar bloques</p>
+    <button id="saveMap">Guardar Mapa</button>
+    <button id="exitEditor">Salir</button>
+  `;
+
+  startEditor();
+};
+
+function startEditor() {
+  const container = document.getElementById("editor3d");
+  container.style.display = "block";
+  container.innerHTML = "";
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x202020);
+
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+  camera.position.set(6, 6, 10);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(5, 10, 5);
+  scene.add(light);
+
+  // SUELO
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(50, 50),
+    new THREE.MeshStandardMaterial({ color: 0x444444 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.name = "ground";
+  scene.add(ground);
+
+  window.addEventListener("mousedown", placeBlock);
+  running = true;
+  animate();
+}
+
+function placeBlock(e) {
+  if (!running) return;
+
+  const mouse = new THREE.Vector2(
+    (e.clientX / window.innerWidth) * 2 - 1,
+    -(e.clientY / window.innerHeight) * 2 + 1
+  );
+
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(mouse, camera);
+
+  const hits = raycaster.intersectObjects(scene.children);
+  if (hits.length === 0) return;
+
+  const p = hits[0].point;
+
+  const cube = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshStandardMaterial({ color: 0x00ffcc })
+  );
+
+  cube.position.set(
+    Math.round(p.x),
+    0.5,
+    Math.round(p.z)
+  );
+
+  scene.add(cube);
+  blocks.push(cube);
+}
+
+function animate() {
+  if (!running) return;
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+// ======================
+// GUARDAR / SALIR
+// ======================
+document.addEventListener("click", (e) => {
+  if (e.target.id === "saveMap") {
+    const maps = JSON.parse(localStorage.getItem("funbox_maps")) || [];
+
+    maps.push({
+      author: getUser(),
+      blocks: blocks.map(b => ({
+        x: b.position.x,
+        y: b.position.y,
+        z: b.position.z
+      }))
+    });
+
+    localStorage.setItem("funbox_maps", JSON.stringify(maps));
+    alert("Mapa guardado 💾");
+  }
+
+  if (e.target.id === "exitEditor") {
+    running = false;
+    blocks = [];
+    document.getElementById("editor3d").style.display = "none";
+    content.innerHTML = "<h2>Editor cerrado</h2>";
+  }
+});
