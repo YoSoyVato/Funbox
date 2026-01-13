@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Funbox</title>
+
+  <!-- ESTILOS -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+  <!-- HEADER -->
   <header>
     <h1>🎮 Funbox</h1>
     <nav>
@@ -16,12 +19,20 @@
     </nav>
   </header>
 
+  <!-- CONTENIDO UI -->
   <main id="content">
     <h2>Bienvenido a Funbox</h2>
     <p>Esperando acción...</p>
   </main>
 
-  <!-- JS NORMAL, SIN MODULE -->
+  <!-- CONTENEDOR DEL MOTOR / EDITOR 3D -->
+  <div id="editor3d"></div>
+
+  <!-- THREE.JS (OBLIGATORIO, NO SE CREA) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+
+  <!-- TU CÓDIGO PRINCIPAL -->
   <script src="main.js"></script>
+
 </body>
 </html>
