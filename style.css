@@ -1,50 +1,146 @@
-* {
-  box-sizing: border-box;
-  font-family: Arial, sans-serif;
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#0066ff;
+  --muted:#94a3b8;
+  --glass: rgba(255,255,255,0.03);
+  --radius:12px;
+  --max-width:1200px;
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-body {
-  margin: 0;
-  overflow: hidden;
-  background: #0e0e0e;
-  color: white;
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background: linear-gradient(180deg,#071021 0%, #071423 100%);
+  color:#e6eef8;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  padding-bottom:40px;
 }
 
-/* HEADER */
-header {
-  position: fixed;
-  top: 15px;
-  left: 15px;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.65);
-  padding: 12px 16px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
+/* NAV */
+.nav{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 24px;
+  max-width:var(--max-width);
+  margin:16px auto;
+  gap:16px;
+}
+.logo{
+  font-weight:800;
+  font-size:20px;
+  color:white;
+}
+.logo .dot{font-weight:600; color:var(--muted); margin-left:6px}
+
+/* Search */
+.search input{
+  margin-left:16px;
+  background:var(--glass);
+  border:1px solid rgba(255,255,255,0.04);
+  color:var(--muted);
+  padding:10px 12px;
+  border-radius:10px;
+  width:280px;
+  outline:none;
+}
+.search input:focus{box-shadow:0 4px 20px rgba(0,102,255,0.12); color:#e6eef8}
+
+/* Buttons */
+.btn{
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.06);
+  color:#e6eef8;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.btn.primary{
+  background:linear-gradient(90deg,var(--accent),#00a3ff);
+  border:0;
+  box-shadow:0 6px 18px rgba(0,102,255,0.18);
+}
+.btn.ghost{
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.06);
 }
 
-header h1 {
-  margin: 0;
-  font-size: 20px;
+/* HERO */
+.hero{
+  max-width:var(--max-width);
+  margin:6px auto 24px;
+  display:flex;
+  gap:24px;
+  padding:28px;
+  align-items:center;
+}
+.hero-left{flex:1}
+.hero-right{width:460px}
+.hero h1{font-size:32px; margin:0 0 8px}
+.hero p{color:var(--muted); margin:0 0 16px}
+
+/* Featured card */
+.featured-card{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(2,6,23,0.6);
+}
+.featured-card img{width:100%; height:220px; object-fit:cover}
+.featured-info{padding:12px}
+.featured-info h3{margin:0 0 6px}
+.featured-info span{color:var(--muted); font-size:13px}
+
+/* Games grid */
+.games-section{
+  max-width:var(--max-width);
+  margin:8px auto;
+  padding:0 24px;
+}
+.games-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+  gap:16px;
+  margin-top:12px;
+}
+.game-card{
+  background:var(--card);
+  border-radius:12px;
+  overflow:hidden;
+  transition:transform .18s ease, box-shadow .18s ease;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(2,6,23,0.5);
+}
+.game-card:hover{transform:translateY(-6px); box-shadow:0 18px 50px rgba(2,6,23,0.6)}
+.game-thumb{width:100%; height:120px; object-fit:cover; display:block}
+.game-body{padding:10px}
+.game-title{font-weight:600; margin:0 0 6px}
+.game-meta{display:flex; justify-content:space-between; color:var(--muted); font-size:13px; align-items:center}
+.play-small{
+  background:var(--accent);
+  padding:6px 8px;
+  border-radius:8px;
+  color:white;
+  font-size:13px;
+  border:0;
 }
 
-nav button {
-  margin-left: 6px;
-  padding: 6px 12px;
-  background: #1f1f1f;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 6px;
-}
+/* Modal */
+.modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,0.6); z-index:60}
+.modal.hidden{display:none}
+.modal-content{background:#071827; border-radius:12px; padding:18px; width:min(820px,94%); box-shadow:0 30px 80px rgba(2,6,23,0.6)}
+.modal-close{position:absolute; right:18px; top:18px; background:transparent; border:0; color:#cbd5e1; font-size:22px; cursor:pointer}
 
-nav button:hover {
-  background: #3a3a3a;
-}
+/* Footer */
+.footer{max-width:var(--max-width); margin:28px auto; padding:0 24px; color:var(--muted); text-align:center}
 
-/* GAME */
-#game {
-  width: 100vw;
-  height: 100vh;
+/* Responsive */
+@media (max-width:880px){
+  .hero{flex-direction:column}
+  .hero-right{width:100%}
+  .search input{width:160px}
 }
