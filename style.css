@@ -1,0 +1,36 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0e0e0e;
+  color: white;
+}
+
+header {
+  background: #151515;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav button {
+  margin-left: 10px;
+  padding: 8px 14px;
+  background: #1f1f1f;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+nav button:hover {
+  background: #3a3a3a;
+}
+
+main {
+  padding: 40px;
+}
