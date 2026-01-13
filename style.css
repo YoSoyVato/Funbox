@@ -10,7 +10,7 @@ body {
   color: white;
 }
 
-/* HEADER */
+/* HEADER (UI ADELANTE) */
 header {
   position: fixed;
   top: 15px;
@@ -22,6 +22,7 @@ header {
   display: flex;
   align-items: center;
   gap: 20px;
+  pointer-events: auto;
 }
 
 header h1 {
@@ -43,8 +44,22 @@ nav button:hover {
   background: #3a3a3a;
 }
 
-/* GAME */
+/* CONTENEDOR DEL JUEGO */
 #game {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
+  z-index: 0;
 }
+
+/* CANVAS THREE.JS (ATRÁS DE TODO) */
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
