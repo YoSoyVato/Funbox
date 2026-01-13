@@ -42,14 +42,16 @@ nav button:hover {
 canvas {
   background: #111;
   border: 1px solid #333;
+  display: block;
 }
 
 .editor-ui {
   position: fixed;
   top: 100px;
   left: 10px;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.85);
   padding: 10px;
   border-radius: 8px;
   z-index: 20;
 }
+
