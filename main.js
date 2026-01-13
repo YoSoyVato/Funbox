@@ -1,98 +1,44 @@
+// ======================
+// REFERENCIAS
+// ======================
 const content = document.getElementById("content");
+const editorDiv = document.getElementById("editor3d");
 
-// ======================
-// DATOS
-// ======================
-function getUser() {
-  return localStorage.getItem("funbox_user");
-}
-
-function getGames() {
-  return JSON.parse(localStorage.getItem("funbox_games")) || [];
-}
-
-// ======================
-// LOGIN
-// ======================
-document.getElementById("loginBtn").onclick = function () {
-  content.innerHTML = `
-    <h2>👤 Login</h2>
-    <input id="user" placeholder="Usuario"><br><br>
-    <input id="pass" type="password" placeholder="Contraseña"><br><br>
-    <button id="doLogin">Entrar</button>
-  `;
-
-  document.getElementById("doLogin").onclick = function () {
-    const user = document.getElementById("user").value;
-    const pass = document.getElementById("pass").value;
-
-    if (!user || !pass) {
-      alert("Completa todo");
-      return;
-    }
-
-    localStorage.setItem("funbox_user", user);
-    alert("Bienvenido " + user + " 🎉");
-  };
-};
-
-// ======================
-// JUGAR
-// ======================
-document.getElementById("playBtn").onclick = function () {
-  const games = getGames();
-
-  if (games.length === 0) {
-    content.innerHTML = "<h2>🎮 No hay juegos todavía</h2>";
-    return;
-  }
-
-  let html = "<h2>🎮 Juegos de la Comunidad</h2>";
-
-  games.forEach(game => {
-    html += `
-      <div style="border:1px solid #444;padding:10px;margin:10px 0">
-        <h3>${game.name}</h3>
-        <p>${game.desc}</p>
-        <small>Por ${game.author}</small>
-      </div>
-    `;
-  });
-
-  content.innerHTML = html;
-};
-
-// ======================
-// CREAR → MOTOR 3D
-// ======================
-let scene, camera, renderer;
+let scene, camera, renderer, raycaster, mouse;
+let ground;
 let blocks = [];
-let running = false;
+let editorActive = false;
 
-document.getElementById("createBtn").onclick = function () {
-  const user = getUser();
-  if (!user) {
-    alert("Inicia sesión primero");
-    return;
-  }
+// ======================
+// INICIAR EDITOR 3D
+// ======================
+function startEditor() {
+  editorActive = true;
 
   content.innerHTML = `
     <h2>🧱 Funbox Engine</h2>
-    <p>Click para colocar bloques</p>
+    <p>Click en el suelo para colocar bloques</p>
     <button id="saveMap">Guardar Mapa</button>
     <button id="exitEditor">Salir</button>
   `;
 
-  startEditor();
-};
+  editorDiv.style.display = "block";
 
-function startEditor() {
-  const container = document.getElementById("editor3d");
-  container.style.display = "block";
-  container.innerHTML = "";
+  initThree();
+  animate();
+
+  document.getElementById("exitEditor").onclick = stopEditor;
+  document.getElementById("saveMap").onclick = saveMap;
+}
+
+// ======================
+// THREE.JS SETUP
+// ======================
+function initThree() {
+  editorDiv.innerHTML = "";
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x202020);
+  scene.background = new THREE.Color(0x0e0e0e);
 
   camera = new THREE.PerspectiveCamera(
     75,
@@ -100,93 +46,109 @@ function startEditor() {
     0.1,
     1000
   );
-  camera.position.set(6, 6, 10);
+  camera.position.set(5, 6, 8);
   camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  container.appendChild(renderer.domElement);
+  editorDiv.appendChild(renderer.domElement);
 
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  // LUCES
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(5, 10, 5);
   scene.add(light);
 
   // SUELO
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(50, 50),
-    new THREE.MeshStandardMaterial({ color: 0x444444 })
-  );
+  const planeGeo = new THREE.PlaneGeometry(50, 50);
+  const planeMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  ground = new THREE.Mesh(planeGeo, planeMat);
   ground.rotation.x = -Math.PI / 2;
-  ground.name = "ground";
+  ground.receiveShadow = true;
   scene.add(ground);
 
-  window.addEventListener("mousedown", placeBlock);
-  running = true;
-  animate();
+  // GRID
+  scene.add(new THREE.GridHelper(50, 50));
+
+  // CLICK
+  window.addEventListener("click", onClickPlace);
 }
 
-function placeBlock(e) {
-  if (!running) return;
+// ======================
+// CLICK → COLOCAR BLOQUE
+// ======================
+function onClickPlace(event) {
+  if (!editorActive) return;
 
-  const mouse = new THREE.Vector2(
-    (e.clientX / window.innerWidth) * 2 - 1,
-    -(e.clientY / window.innerHeight) * 2 + 1
-  );
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-  const raycaster = new THREE.Raycaster();
   raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObject(ground);
 
-  const hits = raycaster.intersectObjects(scene.children);
-  if (hits.length === 0) return;
+  if (hits.length > 0) {
+    const pos = hits[0].point;
 
-  const p = hits[0].point;
+    const block = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({ color: 0x00ffcc })
+    );
 
-  const cube = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: 0x00ffcc })
-  );
+    block.position.set(
+      Math.round(pos.x),
+      0.5,
+      Math.round(pos.z)
+    );
 
-  cube.position.set(
-    Math.round(p.x),
-    0.5,
-    Math.round(p.z)
-  );
-
-  scene.add(cube);
-  blocks.push(cube);
+    scene.add(block);
+    blocks.push(block);
+  }
 }
 
+// ======================
+// GUARDAR MAPA
+// ======================
+function saveMap() {
+  const data = blocks.map(b => ({
+    x: b.position.x,
+    y: b.position.y,
+    z: b.position.z
+  }));
+
+  localStorage.setItem("funbox_map", JSON.stringify(data));
+  alert("Mapa guardado 💾");
+}
+
+// ======================
+// SALIR
+// ======================
+function stopEditor() {
+  editorActive = false;
+  editorDiv.style.display = "none";
+  content.innerHTML = "<h2>Editor cerrado</h2>";
+}
+
+// ======================
+// LOOP
+// ======================
 function animate() {
-  if (!running) return;
+  if (!editorActive) return;
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
 }
 
 // ======================
-// GUARDAR / SALIR
+// BOTONES PRINCIPALES
 // ======================
-document.addEventListener("click", (e) => {
-  if (e.target.id === "saveMap") {
-    const maps = JSON.parse(localStorage.getItem("funbox_maps")) || [];
+document.getElementById("createBtn").onclick = startEditor;
 
-    maps.push({
-      author: getUser(),
-      blocks: blocks.map(b => ({
-        x: b.position.x,
-        y: b.position.y,
-        z: b.position.z
-      }))
-    });
+document.getElementById("playBtn").onclick = () => {
+  content.innerHTML = "<h2>🎮 Modo Jugar (próximamente)</h2>";
+};
 
-    localStorage.setItem("funbox_maps", JSON.stringify(maps));
-    alert("Mapa guardado 💾");
-  }
-
-  if (e.target.id === "exitEditor") {
-    running = false;
-    blocks = [];
-    document.getElementById("editor3d").style.display = "none";
-    content.innerHTML = "<h2>Editor cerrado</h2>";
-  }
-});
+document.getElementById("loginBtn").onclick = () => {
+  content.innerHTML = "<h2>👤 Login (fake)</h2>";
+};
