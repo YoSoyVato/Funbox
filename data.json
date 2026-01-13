@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": 1001,
+      "username": "demo",
+      "password": "$2a$08$Qe1b8q6.1Z5OuQeV1x2zUeGDQG8nQ0u5c2D0c7eK9YzC1vMfF1q7G",
+      "avatar": "https://api.dicebear.com/6.x/identicon/svg?seed=demo"
+    }
+  ],
+  "games": [
+    {
+      "id": "1",
+      "title": "Isla Aventura",
+      "desc": "Explora islas, construye bases y vence desafíos con amigos.",
+      "thumb": "https://via.placeholder.com/420x220.png?text=Isla+Aventura",
+      "players": 1240,
+      "ownerId": 1001
+    },
+    {
+      "id": "2",
+      "title": "Carrera Extrema",
+      "desc": "Carreras a toda velocidad con pistas locas y power-ups.",
+      "thumb": "https://via.placeholder.com/420x220.png?text=Carrera+Extrema",
+      "players": 842,
+      "ownerId": 1001
+    }
+  ]
+}
