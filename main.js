@@ -118,3 +118,56 @@ function showLogin() {
     borderRadius: "10px",
     zIndex: 20,
   });
+
+  document.body.appendChild(loginBox);
+
+  document.getElementById("loginConfirm").onclick = () => {
+    alert("Login exitoso (fake 😎)");
+    loginBox.remove();
+    setMode("play");
+  };
+}
+
+// =====================
+// BOTONES
+// =====================
+document.getElementById("playBtn").onclick = () => {
+  setMode("play");
+};
+
+document.getElementById("createBtn").onclick = () => {
+  setMode("create");
+};
+
+document.getElementById("loginBtn").onclick = () => {
+  setMode("login");
+};
+
+// =====================
+// LOOP
+// =====================
+function animate() {
+  requestAnimationFrame(animate);
+
+  if (currentMode === "play" && cube) {
+    cube.rotation.y += 0.01;
+    cube.rotation.x += 0.005;
+  }
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// =====================
+// RESIZE
+// =====================
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// =====================
+// INICIO
+// =====================
+setMode("play");
