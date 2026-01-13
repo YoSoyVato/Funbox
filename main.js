@@ -1,154 +1,162 @@
-// ======================
-// REFERENCIAS
-// ======================
 const content = document.getElementById("content");
-const editorDiv = document.getElementById("editor3d");
 
-let scene, camera, renderer, raycaster, mouse;
-let ground;
-let blocks = [];
-let editorActive = false;
+// =====================
+// DATOS
+// =====================
+function getUser() {
+  return localStorage.getItem("funbox_user");
+}
 
-// ======================
-// INICIAR EDITOR 3D
-// ======================
-function startEditor() {
-  editorActive = true;
+function getGames() {
+  return JSON.parse(localStorage.getItem("funbox_games")) || [];
+}
 
+// =====================
+// LOGIN
+// =====================
+document.getElementById("loginBtn").onclick = () => {
   content.innerHTML = `
-    <h2>🧱 Funbox Engine</h2>
-    <p>Click en el suelo para colocar bloques</p>
-    <button id="saveMap">Guardar Mapa</button>
-    <button id="exitEditor">Salir</button>
+    <h2>👤 Login</h2>
+    <input id="user" placeholder="Usuario"><br><br>
+    <input id="pass" type="password" placeholder="Contraseña"><br><br>
+    <button id="doLogin">Entrar</button>
   `;
 
-  editorDiv.style.display = "block";
+  document.getElementById("doLogin").onclick = () => {
+    const user = user.value;
+    const pass = pass.value;
 
-  initThree();
-  animate();
+    if (!user || !pass) {
+      alert("Completa todo");
+      return;
+    }
 
-  document.getElementById("exitEditor").onclick = stopEditor;
-  document.getElementById("saveMap").onclick = saveMap;
-}
-
-// ======================
-// THREE.JS SETUP
-// ======================
-function initThree() {
-  editorDiv.innerHTML = "";
-
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0e0e0e);
-
-  camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
-  camera.position.set(5, 6, 8);
-  camera.lookAt(0, 0, 0);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  editorDiv.appendChild(renderer.domElement);
-
-  raycaster = new THREE.Raycaster();
-  mouse = new THREE.Vector2();
-
-  // LUCES
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(5, 10, 5);
-  scene.add(light);
-
-  // SUELO
-  const planeGeo = new THREE.PlaneGeometry(50, 50);
-  const planeMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-  ground = new THREE.Mesh(planeGeo, planeMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.receiveShadow = true;
-  scene.add(ground);
-
-  // GRID
-  scene.add(new THREE.GridHelper(50, 50));
-
-  // CLICK
-  window.addEventListener("click", onClickPlace);
-}
-
-// ======================
-// CLICK → COLOCAR BLOQUE
-// ======================
-function onClickPlace(event) {
-  if (!editorActive) return;
-
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObject(ground);
-
-  if (hits.length > 0) {
-    const pos = hits[0].point;
-
-    const block = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 0x00ffcc })
-    );
-
-    block.position.set(
-      Math.round(pos.x),
-      0.5,
-      Math.round(pos.z)
-    );
-
-    scene.add(block);
-    blocks.push(block);
-  }
-}
-
-// ======================
-// GUARDAR MAPA
-// ======================
-function saveMap() {
-  const data = blocks.map(b => ({
-    x: b.position.x,
-    y: b.position.y,
-    z: b.position.z
-  }));
-
-  localStorage.setItem("funbox_map", JSON.stringify(data));
-  alert("Mapa guardado 💾");
-}
-
-// ======================
-// SALIR
-// ======================
-function stopEditor() {
-  editorActive = false;
-  editorDiv.style.display = "none";
-  content.innerHTML = "<h2>Editor cerrado</h2>";
-}
-
-// ======================
-// LOOP
-// ======================
-function animate() {
-  if (!editorActive) return;
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-}
-
-// ======================
-// BOTONES PRINCIPALES
-// ======================
-document.getElementById("createBtn").onclick = startEditor;
-
-document.getElementById("playBtn").onclick = () => {
-  content.innerHTML = "<h2>🎮 Modo Jugar (próximamente)</h2>";
+    localStorage.setItem("funbox_user", user);
+    alert("Bienvenido " + user);
+  };
 };
 
-document.getElementById("loginBtn").onclick = () => {
-  content.innerHTML = "<h2>👤 Login (fake)</h2>";
+// =====================
+// MOTOR DE CREACIÓN
+// =====================
+let canvas, ctx;
+let blocks = [];
+let camX = 0, camY = 0;
+let editMode = "place";
+
+function startEditor() {
+  content.innerHTML = `
+    <div class="editor-ui">
+      <h3>🧱 Funbox Engine</h3>
+      <button id="modePlace">Colocar</button>
+      <button id="modeDelete">Borrar</button><br><br>
+      <button id="saveGame">Guardar Juego</button>
+      <button id="exitEditor">Salir</button>
+    </div>
+    <canvas id="gameCanvas" width="900" height="500"></canvas>
+  `;
+
+  canvas = document.getElementById("gameCanvas");
+  ctx = canvas.getContext("2d");
+
+  canvas.onclick = placeBlock;
+  window.onkeydown = moveCamera;
+
+  document.getElementById("modePlace").onclick = () => editMode = "place";
+  document.getElementById("modeDelete").onclick = () => editMode = "delete";
+
+  document.getElementById("saveGame").onclick = saveGame;
+  document.getElementById("exitEditor").onclick = () => location.reload();
+
+  render();
+}
+
+// =====================
+// BLOQUES
+// =====================
+function placeBlock(e) {
+  const x = Math.floor((e.offsetX + camX) / 40);
+  const y = Math.floor((e.offsetY + camY) / 40);
+
+  if (editMode === "delete") {
+    blocks = blocks.filter(b => !(b.x === x && b.y === y));
+    return;
+  }
+
+  blocks.push({ x, y });
+}
+
+function moveCamera(e) {
+  if (e.key === "w") camY -= 20;
+  if (e.key === "s") camY += 20;
+  if (e.key === "a") camX -= 20;
+  if (e.key === "d") camX += 20;
+}
+
+// =====================
+// RENDER
+// =====================
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  blocks.forEach(b => {
+    ctx.fillStyle = "#00ffcc";
+    ctx.fillRect(b.x * 40 - camX, b.y * 40 - camY, 38, 38);
+  });
+
+  requestAnimationFrame(render);
+}
+
+// =====================
+// GUARDAR JUEGO
+// =====================
+function saveGame() {
+  const name = prompt("Nombre del juego:");
+  if (!name) return;
+
+  const games = getGames();
+  games.push({
+    name,
+    author: getUser(),
+    map: blocks
+  });
+
+  localStorage.setItem("funbox_games", JSON.stringify(games));
+  alert("Juego publicado 🚀");
+}
+
+// =====================
+// CREAR
+// =====================
+document.getElementById("createBtn").onclick = () => {
+  if (!getUser()) {
+    alert("Inicia sesión primero");
+    return;
+  }
+  startEditor();
+};
+
+// =====================
+// JUGAR
+// =====================
+document.getElementById("playBtn").onclick = () => {
+  const games = getGames();
+
+  if (games.length === 0) {
+    content.innerHTML = "<h2>No hay juegos aún</h2>";
+    return;
+  }
+
+  let html = "<h2>🎮 Juegos de la Comunidad</h2>";
+  games.forEach((g, i) => {
+    html += `<button onclick="loadGame(${i})">${g.name} - ${g.author}</button><br><br>`;
+  });
+
+  content.innerHTML = html;
+};
+
+window.loadGame = function (i) {
+  const game = getGames()[i];
+  blocks = game.map;
+  startEditor();
 };
