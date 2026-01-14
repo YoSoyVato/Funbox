@@ -160,6 +160,44 @@ document.onmousemove=e=>{
 };
 
 // ======================
+// FUNCION COLISION + GRAVEDAD
+// ======================
+function updatePlayer() {
+  velY += gravity;
+  player.position.y += velY;
+
+  let onGround = false;
+  const playerBaseY = player.position.y - 0.6; // base del jugador
+
+  // Suelo
+  if(playerBaseY <= 0){
+    player.position.y = 0.6;
+    velY = 0;
+    onGround = true;
+  }
+
+  // Bloques
+  blockMeshes.forEach(b=>{
+    const top = b.position.y + 0.5;
+    if(Math.abs(player.position.x - b.position.x) < 0.75 &&
+       Math.abs(player.position.z - b.position.z) < 0.75 &&
+       playerBaseY <= top){
+         player.position.y = top + 0.6;
+         velY = 0;
+         onGround = true;
+    }
+  });
+
+  // Muerte por caída
+  if(playerBaseY < -5){
+    player.position.copy(spawn);
+    velY = 0;
+  }
+
+  return onGround;
+}
+
+// ======================
 // LOOP
 // ======================
 function animate(){
@@ -185,7 +223,7 @@ function animate(){
     player.position.addScaledVector(moveDir,speed);
   }
 
-  // ====================== ANIMACIONES
+  // ANIMACIONES
   if(moving){
     step += 0.15*(keys.shift?2:1);
     leftLeg.rotation.x=Math.sin(step)*(keys.shift?0.7:0.5);
@@ -214,34 +252,10 @@ function animate(){
     }
   }
 
-  // GRAVEDAD
-  velY += gravity;
-  player.position.y += velY;
+  // GRAVEDAD + COLISION
+  updatePlayer();
 
-  // ====================== COLISION CON BLOQUES Y SUELO
-  let onGround = false;
-
-  // Suelo base
-  if(player.position.y <= 0.6){player.position.y = 0.6; velY = 0; onGround = true;}
-
-  // Bloques
-  blockMeshes.forEach(b=>{
-    if(Math.abs(player.position.x - b.position.x) < 0.75 &&
-       Math.abs(player.position.z - b.position.z) < 0.75 &&
-       player.position.y <= b.position.y + 0.6){
-         player.position.y = b.position.y + 0.6;
-         velY = 0;
-         onGround = true;
-       }
-  });
-
-  // ====================== MUERTE POR CAIDA
-  if(player.position.y < -10){
-    player.position.copy(spawn);
-    velY = 0;
-  }
-
-  // ====================== CÁMARA
+  // CÁMARA
   let camOffset;
   if(f5View){
     camOffset = new THREE.Vector3(0,2,-3);
@@ -259,6 +273,9 @@ function animate(){
 }
 animate();
 
+// ======================
+// RESIZE
+// ======================
 window.onresize=()=>{
   camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
