@@ -61,7 +61,7 @@ const floor = new THREE.Mesh(
   new THREE.MeshStandardMaterial({color:0x555555})
 );
 floor.rotation.x=-Math.PI/2;
-floor.position.y = 0; // baseplate nivelado en y=0
+floor.position.y=0;
 scene.add(floor);
 
 // ======================
@@ -73,7 +73,8 @@ map.forEach(b=>{
     new THREE.BoxGeometry(1,1,1),
     new THREE.MeshStandardMaterial({color:0x777777})
   );
-  mesh.position.set(b.x,1 + (b.z||0),b.y); // base de bloques sobre y=1
+  // Base de bloque a y=0.5, así el jugador camina sobre ellos
+  mesh.position.set(b.x,0.5 + (b.z||0),b.y);
   scene.add(mesh);
   blockMeshes.push(mesh);
 });
@@ -81,7 +82,7 @@ map.forEach(b=>{
 // ======================
 // PERSONAJE CUTE
 // ======================
-const spawn = new THREE.Vector3(0,1.2,0); // nivel inicial del personaje sobre el suelo
+const spawn = new THREE.Vector3(0,1.2,0);
 const player = new THREE.Group();
 player.scale.set(0.5,0.5,0.5);
 
@@ -137,7 +138,7 @@ scene.add(player);
 // VARIABLES
 // ======================
 let velY=0;
-const gravity=-0.025;
+const gravity=-0.03;
 let yaw=0, pitch=0;
 let step=0;
 let blinkTimer=0;
@@ -167,7 +168,7 @@ document.onmousemove=e=>{
 function animate(){
   requestAnimationFrame(animate);
 
-  // MOVER
+  // MOVIMIENTO
   let dir = new THREE.Vector3();
   let moving = false;
   let speed = 0.08;
@@ -220,35 +221,38 @@ function animate(){
   velY+=gravity;
   player.position.y+=velY;
 
-  // COLISION SUELO
-  if(player.position.y<=0.6){player.position.y=0.6;velY=0;}
+  // COLISION CON BLOQUES Y SUELO
+  let onGround = false;
 
-  // COLISION BLOQUES
+  // Colisión con suelo base
+  if(player.position.y <= 0.6){player.position.y = 0.6; velY = 0; onGround = true;}
+
+  // Colisión con bloques
   blockMeshes.forEach(b=>{
-    if(Math.abs(player.position.x-b.position.x)<0.6 &&
-       Math.abs(player.position.z-b.position.z)<0.6 &&
-       player.position.y<=b.position.y+1){
-         player.position.y=b.position.y+1;
-         velY=0;
+    const halfSize = 0.5; // bloque 1x1
+    if(Math.abs(player.position.x - b.position.x) < 0.5 + 0.25 &&
+       Math.abs(player.position.z - b.position.z) < 0.5 + 0.25 &&
+       player.position.y <= b.position.y + 0.6){
+         player.position.y = b.position.y + 0.6;
+         velY = 0;
+         onGround = true;
        }
   });
 
   // ====================== MUERTE POR CAIDA
-  if(player.position.y<-10){
+  if(player.position.y < -10){
     player.position.copy(spawn);
-    velY=0;
+    velY = 0;
   }
 
   // ====================== CÁMARA
   let camOffset;
   if(f5View){
-    // cámara frontal
     camOffset = new THREE.Vector3(0,2,-3);
     camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.copy(player.position).add(camOffset);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
   } else {
-    // cámara atrás normal
     camOffset = new THREE.Vector3(0,2,5);
     camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.copy(player.position).add(camOffset);
@@ -259,7 +263,6 @@ function animate(){
 }
 animate();
 
-// ======================
 window.onresize=()=>{
   camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
@@ -268,5 +271,6 @@ window.onresize=()=>{
 </script>
 </body>
 </html>
+
 
 
