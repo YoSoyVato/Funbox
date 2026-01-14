@@ -73,16 +73,21 @@ map.forEach(b=>{
     new THREE.BoxGeometry(1,1,1),
     new THREE.MeshStandardMaterial({color:0x777777})
   );
-  // Base de bloque a y=0.5, así el jugador camina sobre ellos
+  // Bloques sobre suelo y alineados
   mesh.position.set(b.x,0.5 + (b.z||0),b.y);
   scene.add(mesh);
   blockMeshes.push(mesh);
 });
 
 // ======================
-// PERSONAJE CUTE
+// ZONA DE SPAWN
 // ======================
-const spawn = new THREE.Vector3(0,1.2,0);
+// Ajusta esta posición a donde quieras que reaparezca el jugador
+const spawnPoint = new THREE.Vector3(0,1.2,0);
+
+// ======================
+// PERSONAJE
+// ======================
 const player = new THREE.Group();
 player.scale.set(0.5,0.5,0.5);
 
@@ -131,7 +136,7 @@ rightEye.position.set(0.15,1.6,-0.25);
 player.add(leftEye);
 player.add(rightEye);
 
-player.position.copy(spawn);
+player.position.copy(spawnPoint);
 scene.add(player);
 
 // ======================
@@ -224,12 +229,10 @@ function animate(){
   // COLISION CON BLOQUES Y SUELO
   let onGround = false;
 
-  // Colisión con suelo base
   if(player.position.y <= 0.6){player.position.y = 0.6; velY = 0; onGround = true;}
 
-  // Colisión con bloques
   blockMeshes.forEach(b=>{
-    const halfSize = 0.5; // bloque 1x1
+    const halfSize = 0.5;
     if(Math.abs(player.position.x - b.position.x) < 0.5 + 0.25 &&
        Math.abs(player.position.z - b.position.z) < 0.5 + 0.25 &&
        player.position.y <= b.position.y + 0.6){
@@ -239,9 +242,9 @@ function animate(){
        }
   });
 
-  // ====================== MUERTE POR CAIDA
-  if(player.position.y < -10){
-    player.position.copy(spawn);
+  // ====================== MUERTE POR CAIDA / REAPARECER
+  if(player.position.y < -2){ // limite del mapa
+    player.position.copy(spawnPoint);
     velY = 0;
   }
 
@@ -271,6 +274,4 @@ window.onresize=()=>{
 </script>
 </body>
 </html>
-
-
 
