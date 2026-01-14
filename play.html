@@ -79,7 +79,7 @@ map.forEach(b=>{
 });
 
 // ======================
-// ZONA DE SPAWN
+// SPAWN
 // ======================
 const spawnPoint = new THREE.Vector3(0,1.2,0);
 
@@ -95,7 +95,7 @@ const body = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.4,bodyHeight),
   new THREE.MeshStandardMaterial({color:0x00ffcc})
 );
-body.position.y=bodyHeight/2; // base del capsule
+body.position.y=bodyHeight/2; 
 player.add(body);
 
 // PIERNAS
@@ -192,7 +192,7 @@ function animate(){
     player.position.addScaledVector(moveDir,speed);
   }
 
-  // ====================== ANIMACIONES
+  // ANIMACIONES
   if(moving){
     step += 0.15*(keys.shift?2:1);
     leftLeg.rotation.x=Math.sin(step)*(keys.shift?0.7:0.5);
@@ -236,7 +236,7 @@ function animate(){
 
   // Bloques
   blockMeshes.forEach(b=>{
-    const top = b.position.y + 0.5; // altura del bloque
+    const top = b.position.y + 0.5;
     if(player.position.x > b.position.x - 0.5 && player.position.x < b.position.x +0.5 &&
        player.position.z > b.position.z -0.5 && player.position.z < b.position.z +0.5 &&
        playerBaseY <= top){
@@ -245,10 +245,10 @@ function animate(){
     }
   });
 
-  // ====================== MUERTE POR CAIDA
-  if(playerBaseY < -1){
+  // ====================== MUERTE POR CAÍDA REAL
+  if(playerBaseY < -1){ // si la base está bajo -1
     player.position.copy(spawnPoint);
-    velY =0;
+    velY=0;
   }
 
   // ====================== CÁMARA
