@@ -58,7 +58,7 @@ content.innerHTML = `
         </div>
         <canvas id="canvas" style="cursor: crosshair; background: #111; flex: 1;"></canvas>
         
-        <div id="editor-console" style="background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; font-size: 12px; padding: 12px; border-top: 2px solid #333; height: 130px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4;">
+        <div id="editor-console" style="background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; font-size: 13px; padding: 20px; border-top: 3px solid #444; height: 180px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5;">
             <div style="color: #666;">> Funbox Studio Console v1.0 - Lista para scripts.</div>
         </div>
     </div>
