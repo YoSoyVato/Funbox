@@ -76,25 +76,22 @@ scene.add(floor);
 // ======================
 const blockMeshes = [];
 const blockSize = 1;
-
-function createBlock(x, y, z = 0, color = 0x777777) {
-  const m = new THREE.Mesh(
+map.forEach(b => {
+  const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(blockSize, blockSize, blockSize),
-    new THREE.MeshStandardMaterial({ color })
+    new THREE.MeshStandardMaterial({ color: 0x777777 })
   );
-  m.position.set(x, z + blockSize / 2, y);
-  scene.add(m);
-  blockMeshes.push(m);
-  return m;
-}
-map.forEach(b => createBlock(b.x, b.y, b.z || 0));
+  mesh.position.set(b.x, (b.z || 0) + 0.5, b.y);
+  scene.add(mesh);
+  blockMeshes.push(mesh);
+});
 
 // ======================
-// JUGADOR CUTE CON ANIMACIONES
+// PERSONAJE CUTE
 // ======================
-const spawn = new THREE.Vector3(0, 1, 0);
+const spawn = new THREE.Vector3(0,1,0);
 const player = new THREE.Group();
-player.scale.set(0.5, 0.5, 0.5);
+player.scale.set(0.5,0.5,0.5);
 
 // --- CUERPO ---
 const body = new THREE.Mesh(
@@ -105,39 +102,40 @@ body.position.y = 1.2;
 player.add(body);
 
 // --- PIERNAS ---
-const legGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.5);
-const legMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
-
-const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
-leftLeg.position.set(-0.15, 0.25, 0);
+const legGeo = new THREE.CylinderGeometry(0.15,0.15,0.5);
+const legMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
+const leftLeg = new THREE.Mesh(legGeo, legMat);
+leftLeg.position.set(-0.15,0.25,0);
 player.add(leftLeg);
-
-const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
-rightLeg.position.set(0.15, 0.25, 0);
+const rightLeg = new THREE.Mesh(legGeo, legMat);
+rightLeg.position.set(0.15,0.25,0);
 player.add(rightLeg);
 
-// --- BRAZOS ---
-const handGeometry = new THREE.SphereGeometry(0.15, 16, 16);
-const handMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
-
-const leftHand = new THREE.Mesh(handGeometry, handMaterial);
-leftHand.position.set(-0.6, 1.5, 0);
-player.add(leftHand);
-
-const rightHand = new THREE.Mesh(handGeometry, handMaterial);
-rightHand.position.set(0.6, 1.5, 0);
-player.add(rightHand);
+// --- BRAZOS (grupos para pivote natural) ---
+function createArm(x) {
+  const group = new THREE.Group();
+  group.position.set(x,1.4,0); // posición hombro
+  const arm = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12,0.12,0.5),
+    new THREE.MeshStandardMaterial({color:0x00ffcc})
+  );
+  arm.position.y = -0.25; // pivot en hombro
+  group.add(arm);
+  return group;
+}
+const leftArm = createArm(-0.55);
+const rightArm = createArm(0.55);
+player.add(leftArm);
+player.add(rightArm);
 
 // --- OJITOS ---
-const eyeGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
-
-const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-leftEye.position.set(-0.15, 1.6, 0.25);
+const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
+const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
+const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+leftEye.position.set(-0.15,1.6,0.25);
 player.add(leftEye);
-
-const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-rightEye.position.set(0.15, 1.6, 0.25);
+const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+rightEye.position.set(0.15,1.6,0.25);
 player.add(rightEye);
 
 player.position.copy(spawn);
@@ -146,126 +144,112 @@ scene.add(player);
 // ======================
 // VARIABLES
 // ======================
-let velY = 0;
-const gravity = -0.025;
-let yaw = 0;
-let pitch = 0;
-let step = 0; // contador para animaciones
-let blinkTimer = 0; // para parpadeo
+let velY=0;
+const gravity=-0.025;
+let yaw=0, pitch=0;
+let step=0;
+let blinkTimer=0;
 
 // ======================
 // INPUT
 // ======================
 const keys = {};
-window.onkeydown = e => keys[e.key.toLowerCase()] = true;
-window.onkeyup = e => keys[e.key.toLowerCase()] = false;
-
-document.body.onclick = () => document.body.requestPointerLock();
-
-document.onmousemove = e => {
-  if (document.pointerLockElement !== document.body) return;
-  yaw -= e.movementX * 0.002;
-  pitch -= e.movementY * 0.002;
+window.onkeydown = e=>keys[e.key.toLowerCase()]=true;
+window.onkeyup = e=>keys[e.key.toLowerCase()]=false;
+document.body.onclick=()=>document.body.requestPointerLock();
+document.onmousemove=e=>{
+  if(document.pointerLockElement!==document.body) return;
+  yaw -= e.movementX*0.002;
+  pitch -= e.movementY*0.002;
   pitch = Math.max(-1.2, Math.min(0.8, pitch));
 };
 
 // ======================
-// LOOP PRINCIPAL
+// LOOP
 // ======================
-function animate() {
+function animate(){
   requestAnimationFrame(animate);
 
   // MOVIMIENTO
-  let dir = new THREE.Vector3();
-  let moving = false;
-  let speed = 0.08;
+  let dir=new THREE.Vector3();
+  let moving=false;
+  let speed=0.08;
+  if(keys.w){dir.z-=1;moving=true;}
+  if(keys.s){dir.z+=1;moving=true;}
+  if(keys.a){dir.x-=1;moving=true;}
+  if(keys.d){dir.x+=1;moving=true;}
+  if(keys.shift)speed*=2;
 
-  if (keys.w) { dir.z -= 1; moving = true; }
-  if (keys.s) { dir.z += 1; moving = true; }
-  if (keys.a) { dir.x -= 1; moving = true; }
-  if (keys.d) { dir.x += 1; moving = true; }
-
-  if (keys.shift) speed *= 2; // correr
-
-  if (dir.length()) {
-    dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    player.position.addScaledVector(dir, speed);
+  if(dir.length()){
+    dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+    player.position.addScaledVector(dir,speed);
   }
 
   // ====================== ANIMACIONES
-  if (moving) {
-    step += 0.15 * (keys.shift ? 2 : 1); // más rápido al correr
-    leftLeg.rotation.x = Math.sin(step) * (keys.shift ? 0.7 : 0.5);
-    rightLeg.rotation.x = Math.sin(step + Math.PI) * (keys.shift ? 0.7 : 0.5);
-    leftHand.rotation.x = Math.sin(step + Math.PI) * (keys.shift ? 0.5 : 0.3);
-    rightHand.rotation.x = Math.sin(step) * (keys.shift ? 0.5 : 0.3);
-  } else {
-    // Idle: piernas y manos relajadas
-    step += 0.02;
-    leftLeg.rotation.x = Math.sin(step * 0.2) * 0.05;
-    rightLeg.rotation.x = Math.sin(step * 0.2 + Math.PI) * 0.05;
-    leftHand.rotation.x = Math.sin(step * 0.2 + Math.PI) * 0.02;
-    rightHand.rotation.x = Math.sin(step * 0.2) * 0.02;
+  if(moving){
+    step += 0.15*(keys.shift?2:1);
+    leftLeg.rotation.x=Math.sin(step)*(keys.shift?0.7:0.5);
+    rightLeg.rotation.x=Math.sin(step+Math.PI)*(keys.shift?0.7:0.5);
+    // Brazos se mueven alternados y ligeramente hacia adelante/atras
+    leftArm.rotation.x=Math.sin(step+Math.PI)*(keys.shift?0.5:0.3);
+    leftArm.rotation.z=Math.sin(step+Math.PI)*0.1;
+    rightArm.rotation.x=Math.sin(step)*(keys.shift?0.5:0.3);
+    rightArm.rotation.z=Math.sin(step)*0.1;
+  }else{
+    step+=0.02;
+    leftLeg.rotation.x=Math.sin(step*0.2)*0.05;
+    rightLeg.rotation.x=Math.sin(step*0.2+Math.PI)*0.05;
+    leftArm.rotation.x=Math.sin(step*0.2+Math.PI)*0.02;
+    leftArm.rotation.z=Math.sin(step*0.2+Math.PI)*0.02;
+    rightArm.rotation.x=Math.sin(step*0.2)*0.02;
+    rightArm.rotation.z=Math.sin(step*0.2)*0.02;
 
-    // Parpadeo de ojos
-    blinkTimer += 1;
-    const blinkSpeed = 100; // frames entre parpadeos
-    if (blinkTimer % blinkSpeed < 5) {
-      leftEye.scale.y = 0.1;
-      rightEye.scale.y = 0.1;
-    } else {
-      leftEye.scale.y = 1;
-      rightEye.scale.y = 1;
+    // Parpadeo ojos
+    blinkTimer++;
+    const blinkSpeed=100;
+    if(blinkTimer%blinkSpeed<5){
+      leftEye.scale.y=0.1;
+      rightEye.scale.y=0.1;
+    }else{
+      leftEye.scale.y=1;
+      rightEye.scale.y=1;
     }
   }
 
   // GRAVEDAD
-  velY += gravity;
-  player.position.y += velY;
+  velY+=gravity;
+  player.position.y+=velY;
 
-  // COLISIÓN CON SUELO
-  if (player.position.y <= 0.6) {
-    player.position.y = 0.6;
-    velY = 0;
-  }
+  // COLISION SUELO
+  if(player.position.y<=0.6){player.position.y=0.6;velY=0;}
 
-  // COLISIÓN CON BLOQUES
-  blockMeshes.forEach(b => {
-    if (
-      Math.abs(player.position.x - b.position.x) < 0.6 &&
-      Math.abs(player.position.z - b.position.z) < 0.6 &&
-      player.position.y <= b.position.y + 1
-    ) {
-      player.position.y = b.position.y + 1;
-      velY = 0;
-    }
+  // COLISION BLOQUES
+  blockMeshes.forEach(b=>{
+    if(Math.abs(player.position.x-b.position.x)<0.6 &&
+       Math.abs(player.position.z-b.position.z)<0.6 &&
+       player.position.y<=b.position.y+1){
+         player.position.y=b.position.y+1;
+         velY=0;
+       }
   });
 
   // MUERTE
-  if (player.position.y < -30) {
-    player.position.copy(spawn);
-    velY = 0;
-  }
+  if(player.position.y<-30){player.position.copy(spawn);velY=0;}
 
   // CÁMARA
-  const camOffset = new THREE.Vector3(
-    Math.sin(yaw) * 5,
-    2 + pitch * 2,
-    Math.cos(yaw) * 5
-  );
+  const camOffset=new THREE.Vector3(Math.sin(yaw)*5,2+pitch*2,Math.cos(yaw)*5);
   camera.position.copy(player.position).add(camOffset);
   camera.lookAt(player.position);
 
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 }
-
 animate();
 
 // ======================
-window.onresize = () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+window.onresize=()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth,window.innerHeight);
 };
 </script>
 
