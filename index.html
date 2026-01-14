@@ -51,11 +51,12 @@
         }
 
         .btn-main:hover { background: #4db8ff; color: #fff; transform: translateY(-3px); }
-        .btn-secondary { background: #1a1a1a; color: #888; border: 1px solid #333; }
+        .btn-secondary { background: #1a1a1a; color: #888; border: 1px solid #333; margin-top: 5px; }
         .hidden { display: none; }
-        .logout-link { font-size: 12px; color: #444; cursor: pointer; margin-top: 25px; text-decoration: underline; }
+        .logout-link { font-size: 12px; color: #444; cursor: pointer; margin-top: 25px; text-decoration: underline; display: block; }
+        .logout-link:hover { color: #f44336; }
 
-        /* --- AVATAR 3D --- */
+        /* --- CONTENEDOR AVATAR 3D --- */
         .profile-avatar-btn {
             cursor: pointer;
             margin-bottom: 20px;
@@ -65,39 +66,39 @@
         .profile-avatar-btn:hover { transform: scale(1.05); }
 
         #avatar-container {
-            width: 120px;
-            height: 120px;
-            background: radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%);
+            width: 130px;
+            height: 130px;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
             border: 2px solid #4db8ff;
             border-radius: 50%;
             margin: 0 auto;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(77, 184, 255, 0.3);
-            pointer-events: auto; /* Permite clics */
+            pointer-events: auto;
         }
     </style>
 </head>
 <body>
 
 <div class="launcher">
-    <h1>🎮 FUNBOX</h1>
+    <h1>🎮 Funbox</h1>
     <p id="launcher-status">SYSTEM READY</p>
 
     <div id="view-register" class="form-container">
         <input type="text" id="reg-user" placeholder="Nombre de usuario">
         <input type="password" id="reg-pass" placeholder="Contraseña">
-        <button class="btn-main" onclick="registrar()">Crear Cuenta</button>
+        <button class="btn-main" onclick="registrar()">REGISTRARSE</button>
     </div>
 
     <div id="view-menu" class="form-container hidden">
-        <div class="profile-avatar-btn" id="avatar-click-zone">
+        <div class="profile-avatar-btn" id="avatar-click-zone" title="Clic para ver perfil / Arrastrar para rotar">
             <div id="avatar-container"></div>
-            <p style="margin: 8px 0 0 0; font-size: 10px; color: #4db8ff; font-weight: bold; letter-spacing: 1px;">VER PERFIL</p>
+            <p style="margin: 8px 0 0 0; font-size: 10px; color: #4db8ff; font-weight: bold; letter-spacing: 1px;">👤 MI PERFIL</p>
         </div>
 
-        <button class="btn-main" onclick="location.href='editor.html'">🏗️ Entrar al Editor</button>
-        <button class="btn-main btn-secondary" onclick="alert('Próximamente...')">🌐 Explorar Mundos</button>
-        <span class="logout-link" onclick="cerrarSesion()">Cerrar sesión</span>
+        <button class="btn-main" onclick="location.href='editor.html'">🏗️ Crear Juego</button>
+        <button class="btn-main btn-secondary" onclick="alert('Cargando servidor...')">🎮 Jugar</button>
+        <span class="logout-link" onclick="cerrarSesion()">Cerrar sesión de la cuenta</span>
     </div>
 </div>
 
@@ -113,6 +114,8 @@
         if (u.length > 2) {
             sessionStorage.setItem("funbox_session", JSON.stringify({ user: u }));
             showMenu(u);
+        } else {
+            alert("Usuario demasiado corto");
         }
     }
 
@@ -120,6 +123,7 @@
         document.getElementById("view-register").classList.add("hidden");
         document.getElementById("view-menu").classList.remove("hidden");
         document.getElementById("launcher-status").innerText = `BIENVENIDO, ${name}`;
+        // Pequeño delay para asegurar que el div exista antes de iniciar Three.js
         setTimeout(initCharacterPreview, 100);
     }
 
@@ -128,17 +132,17 @@
         location.reload();
     }
 
-    // --- LÓGICA DEL PERSONAJE 3D ---
+    // --- RENDERIZADO DEL PERSONAJE ---
     function initCharacterPreview() {
         const container = document.getElementById("avatar-container");
         if (!container || container.children.length > 0) return;
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-        camera.position.set(0, 0.6, 1.8);
+        camera.position.set(0, 0.55, 1.8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(120, 120);
+        renderer.setSize(130, 130);
         container.appendChild(renderer.domElement);
 
         const light = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
@@ -147,33 +151,62 @@
         const group = new THREE.Group();
         scene.add(group);
 
-        // Personaje
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
+        // Cabeza Cuadrada (Color piel de la captura)
+        const head = new THREE.Mesh(
+            new THREE.BoxGeometry(0.55, 0.55, 0.55), 
+            new THREE.MeshStandardMaterial({ color: 0xc4a484 })
+        );
         head.position.y = 0.6;
-        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.55), new THREE.MeshStandardMaterial({ color: 0x4e342e }));
-        hair.position.y = 0.2; head.add(hair);
-        
-        // Auriculares (Como en tu captura)
-        const phoneGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 32);
-        const phoneMat = new THREE.MeshStandardMaterial({ color: 0x2196f3 });
-        const phoneL = new THREE.Mesh(phoneGeo, phoneMat);
-        phoneL.rotation.z = Math.PI/2; phoneL.position.x = -0.28;
-        const phoneR = phoneL.clone(); phoneR.position.x = 0.28;
-        head.add(phoneL, phoneR);
 
-        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.4, 4, 8), new THREE.MeshStandardMaterial({ color: 0x2196f3 }));
-        body.position.y = 0.1;
+        // Pelo Marrón
+        const hair = new THREE.Mesh(
+            new THREE.BoxGeometry(0.6, 0.25, 0.6), 
+            new THREE.MeshStandardMaterial({ color: 0x3d2b1f })
+        );
+        hair.position.y = 0.2; 
+        head.add(hair);
+
+        // Ojos Kawaii (Grandes y brillantes)
+        const eyeGeo = new THREE.CircleGeometry(0.09, 32);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const eL = new THREE.Mesh(eyeGeo, eyeMat);
+        eL.position.set(-0.16, -0.05, 0.28);
+        const eR = eL.clone(); eR.position.x = 0.16;
+        head.add(eL, eR);
+
+        // Brillo en los ojos
+        const shineGeo = new THREE.CircleGeometry(0.03, 16);
+        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const sL = new THREE.Mesh(shineGeo, shineMat);
+        sL.position.set(0.03, 0.03, 0.01);
+        eL.add(sL); eR.add(sL.clone());
+
+        // Auriculares Azules
+        const phoneGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.1, 32);
+        const phoneMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
+        const pL = new THREE.Mesh(phoneGeo, phoneMat);
+        pL.rotation.z = Math.PI/2; pL.position.x = -0.32;
+        const pR = pL.clone(); pR.position.x = 0.32;
+        head.add(pL, pR);
+
+        // Cuerpo Azul
+        const body = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.22, 0.45, 4, 12), 
+            new THREE.MeshStandardMaterial({ color: 0x007ceb })
+        );
+        body.position.y = 0.05;
+
         group.add(head, body);
 
-        // --- MANEJO DE CLIC VS ARRASTRE ---
+        // --- MANEJO DE INTERACCIÓN ---
         let isDragging = false;
         let startX = 0;
-        let moved = false;
+        let hasMoved = false;
 
         container.addEventListener('mousedown', (e) => {
             isDragging = true;
             startX = e.clientX;
-            moved = false;
+            hasMoved = false;
         });
 
         window.addEventListener('mousemove', (e) => {
@@ -181,13 +214,13 @@
                 const deltaX = e.clientX - startX;
                 group.rotation.y += deltaX * 0.01;
                 startX = e.clientX;
-                if (Math.abs(deltaX) > 2) moved = true;
+                if (Math.abs(deltaX) > 3) hasMoved = true;
             }
         });
 
         window.addEventListener('mouseup', () => {
-            if (isDragging && !moved) {
-                // Si no se movió casi nada, es un clic
+            if (isDragging && !hasMoved) {
+                // Si hizo clic sin arrastrar, va al perfil
                 location.href = 'perfil.html';
             }
             isDragging = false;
@@ -195,7 +228,7 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            if (!isDragging) group.rotation.y += 0.01;
+            if (!isDragging) group.rotation.y += 0.01; // Rotación automática
             renderer.render(scene, camera);
         }
         animate();
