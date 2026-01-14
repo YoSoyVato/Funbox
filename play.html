@@ -2,108 +2,105 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Cápsula Prototipo Detallada</title>
+<title>Funbox - Cápsula con Vida</title>
 <style>
-  body { margin:0; overflow:hidden; background: #1a1a1a; }
+  body { margin:0; overflow:hidden; background: #f0f0f0; }
   #ui {
-    position: fixed; top:20px; left:20px; color:white;
-    font-family: 'Segoe UI', sans-serif;
-    background: rgba(0, 0, 0, 0.7);
-    padding:15px; border-radius:10px; z-index:10;
-    border-left: 5px solid #00f2ff;
+    position: fixed; top:20px; left:20px; color:#333;
+    font-family: 'Arial Rounded MT Bold', sans-serif;
+    background: rgba(255, 255, 255, 0.8);
+    padding:15px; border-radius:15px; z-index:10;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   }
 </style>
 </head>
 <body>
 
 <div id="ui">
-  🤖 **Cápsula de Desarrollo: Funbox v2.0**<br>
-  WASD: Moverse | **MANTÉN R: Vista Frontal (F5)**<br>
-  <small>Diseño: Simple, Limpio, Detallado</small>
+  🎮 **Funbox v3.0: El Personaje Cápsula**<br>
+  WASD: Caminar | **Mantén R: Mirar de frente**<br>
+  <small>¡Ahora tiene brazos y piernas!</small>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-// 1. ESCENA TÉCNICA
+// 1. CONFIGURACIÓN INICIAL
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x222222);
+scene.background = new THREE.Color(0xddeeff);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// ILUMINACIÓN DE ESTUDIO
-const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambient);
-const light1 = new THREE.PointLight(0x00f2ff, 1, 50); // Luz tecnológica azul
-light1.position.set(5, 5, 5);
-scene.add(light1);
-const light2 = new THREE.DirectionalLight(0xffffff, 0.8);
-light2.position.set(-5, 10, 2);
-light2.castShadow = true;
-scene.add(light2);
+// ILUMINACIÓN
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const sun = new THREE.DirectionalLight(0xffffff, 0.7);
+sun.position.set(5, 10, 5);
+sun.castShadow = true;
+scene.add(sun);
 
-// SUELO DE REJILLA (GRID) - Estilo desarrollo
-const grid = new THREE.GridHelper(200, 50, 0x444444, 0x333333);
-scene.add(grid);
+// SUELO
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({color: 0x111111})
+  new THREE.MeshStandardMaterial({color: 0xeeeeee})
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// 2. EL PERSONAJE (CÁPSULA DETALLADA)
+// 2. EL PERSONAJE (LA CÁPSULA ANIMADA)
 const player = new THREE.Group();
-player.position.y = 1; 
+player.position.y = 0.5;
 
 // MATERIALES
-const matCapsula = new THREE.MeshStandardMaterial({
-  color: 0xeeeeee, 
-  roughness: 0.2, 
-  metalness: 0.5
-});
-const matVisor = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.1});
-const matLuz = new THREE.MeshBasicMaterial({color: 0x00f2ff});
+const cuerpoMat = new THREE.MeshStandardMaterial({color: 0xffcc33, roughness: 0.4}); // Amarillo Fun
+const pielMat = new THREE.MeshStandardMaterial({color: 0xffcc33});
+const ojoMat = new THREE.MeshStandardMaterial({color: 0x222222});
+const blancoMat = new THREE.MeshStandardMaterial({color: 0xffffff});
 
-// CUERPO (Cápsula de juego)
-const capsule = new THREE.Mesh(
-  new THREE.CapsuleGeometry(0.5, 1, 4, 16), 
-  matCapsula
-);
-capsule.castShadow = true;
-player.add(capsule);
+// CUERPO (Cápsula)
+const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.8, 4, 16), cuerpoMat);
+cuerpo.position.y = 0.6;
+cuerpo.castShadow = true;
+player.add(cuerpo);
 
-// VISOR (Para que se sepa hacia dónde mira)
-const visor = new THREE.Mesh(
-  new THREE.CapsuleGeometry(0.35, 0.1, 4, 16),
-  matVisor
-);
-visor.rotation.z = Math.PI/2;
-visor.position.set(0, 0.5, 0.3);
-player.add(visor);
+// OJITOS (Detallados)
+function crearOjo(x) {
+    const ojoGrupo = new THREE.Group();
+    const blanco = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), blancoMat);
+    const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), ojoMat);
+    const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), blancoMat);
+    
+    pupila.position.z = 0.08;
+    brillo.position.set(0.03, 0.03, 0.13);
+    ojoGrupo.add(blanco, pupila, brillo);
+    ojoGrupo.position.set(x, 0.9, 0.35);
+    return ojoGrupo;
+}
+const ojoIzq = crearOjo(-0.15);
+const ojoDer = crearOjo(0.15);
+player.add(ojoIzq, ojoDer);
 
-// OJOS LED (Detalle tecnológico)
-const eyeGeo = new THREE.SphereGeometry(0.05, 16, 16);
-const leftEye = new THREE.Mesh(eyeGeo, matLuz);
-leftEye.position.set(-0.15, 0.5, 0.45);
-const rightEye = new THREE.Mesh(eyeGeo, matLuz);
-rightEye.position.set(0.15, 0.5, 0.45);
-player.add(leftEye, rightEye);
+// BRAZITOS (Esferas alargadas)
+const brazoGeo = new THREE.CapsuleGeometry(0.08, 0.3, 4, 8);
+const brazoIzq = new THREE.Mesh(brazoGeo, pielMat);
+brazoIzq.position.set(-0.55, 0.6, 0);
+const brazoDer = new THREE.Mesh(brazoGeo, pielMat);
+brazoDer.position.set(0.55, 0.6, 0);
+player.add(brazoIzq, brazoDer);
 
-// BASE MECÁNICA (Para que no sea solo una cápsula flotante)
-const base = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.51, 0.51, 0.1, 16),
-  matVisor
-);
-base.position.y = -0.5;
-player.add(base);
+// PIERNITAS
+const piernaGeo = new THREE.CapsuleGeometry(0.12, 0.2, 4, 8);
+const piernaIzq = new THREE.Mesh(piernaGeo, pielMat);
+piernaIzq.position.set(-0.2, 0.1, 0);
+const piernaDer = new THREE.Mesh(piernaGeo, pielMat);
+piernaDer.position.set(0.2, 0.1, 0);
+player.add(piernaIzq, piernaDer);
 
 scene.add(player);
 
-// 3. LOGICA DE CONTROL
+// 3. CONTROLES
 const keys = {};
 let yaw = 0;
 let step = 0;
@@ -112,56 +109,57 @@ window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 document.body.onclick = () => document.body.requestPointerLock();
 document.addEventListener("mousemove", e => {
-  if(document.pointerLockElement) yaw -= e.movementX * 0.003;
+    if(document.pointerLockElement) yaw -= e.movementX * 0.003;
 });
 
-// 4. ANIMACIÓN
+// 4. LOOP DE ANIMACIÓN
 function animate() {
-  requestAnimationFrame(animate);
-  
-  let dir = new THREE.Vector3();
-  let moving = false;
-  if(keys.w) { dir.z -= 1; moving = true; }
-  if(keys.s) { dir.z += 1; moving = true; }
-  if(keys.a) { dir.x -= 1; moving = true; }
-  if(keys.d) { dir.x += 1; moving = true; }
+    requestAnimationFrame(animate);
 
-  if(moving) {
-    const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    player.position.addScaledVector(moveDir, 0.12);
-    player.rotation.y = yaw + Math.PI;
-    
-    // Inclinación aerodinámica al correr
-    step += 0.2;
-    capsule.rotation.x = Math.sin(step) * 0.05 + 0.1; 
-  } else {
-    // Respiración Idle
-    step += 0.05;
-    player.position.y = 1 + Math.sin(step) * 0.02;
-    capsule.rotation.x = 0;
-  }
+    let dir = new THREE.Vector3();
+    let moving = false;
+    if(keys.w){ dir.z -= 1; moving = true; }
+    if(keys.s){ dir.z += 1; moving = true; }
+    if(keys.a){ dir.x -= 1; moving = true; }
+    if(keys.d){ dir.x += 1; moving = true; }
 
-  // CÁMARA TIPO F5 (Minecraft)
-  let camTarget;
-  if (keys.r) {
-    // Mirar de frente
-    camTarget = new THREE.Vector3(0, 1.5, 4).applyAxisAngle(new THREE.Vector3(0,1,0), yaw + Math.PI);
-  } else {
-    // Mirar desde atrás
-    camTarget = new THREE.Vector3(0, 2, 5).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-  }
+    if(moving) {
+        const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+        player.position.addScaledVector(moveDir, 0.1);
+        player.rotation.y = yaw + Math.PI;
 
-  camera.position.lerp(player.position.clone().add(camTarget), 0.1);
-  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.5, 0)));
+        // Animación de caminar
+        step += 0.2;
+        piernaIzq.rotation.x = Math.sin(step) * 0.8;
+        piernaDer.rotation.x = Math.sin(step + Math.PI) * 0.8;
+        brazoIzq.rotation.x = Math.sin(step + Math.PI) * 0.5;
+        brazoDer.rotation.x = Math.sin(step) * 0.5;
+        cuerpo.position.y = 0.6 + Math.abs(Math.sin(step)) * 0.05; // Rebote
+    } else {
+        // Idle
+        step += 0.05;
+        cuerpo.position.y = 0.6 + Math.sin(step) * 0.02;
+        piernaIzq.rotation.x = 0;
+        piernaDer.rotation.x = 0;
+        brazoIzq.rotation.z = Math.sin(step) * 0.1 - 0.1;
+        brazoDer.rotation.z = -Math.sin(step) * 0.1 + 0.1;
+    }
 
-  renderer.render(scene, camera);
+    // CÁMARA R (VISTA FRONTAL)
+    let dist = keys.r ? -3.5 : 4.5;
+    let height = keys.r ? 1.2 : 2.5;
+    const camOffset = new THREE.Vector3(0, height, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    camera.position.lerp(player.position.clone().add(camOffset), 0.1);
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.6, 0)));
+
+    renderer.render(scene, camera);
 }
 animate();
 
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>
