@@ -14,7 +14,6 @@ let gameConfig = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// MODIFICADO: Ahora cargamos el texto del script directamente
 let customScriptCode = localStorage.getItem("funbox_custom_script") || "// Escribe tu código PRO aquí\n// Ejemplo: game.setFloor('red');";
 
 let canvas, ctx;
@@ -55,6 +54,9 @@ content.innerHTML = `
             </div>
         </div>
         <canvas id="canvas" style="cursor: crosshair; background: #111; flex: 1;"></canvas>
+        
+        <div id="editor-console" style="background: #1a1a1a; color: #ff5555; font-family: monospace; font-size: 12px; padding: 10px; border-top: 2px solid #333; display: none; max-height: 80px; overflow-y: auto;">
+        </div>
     </div>
 
     <div style="width: 280px; background: #252525; border-left: 1px solid #444; display: flex; flex-direction: column;">
@@ -95,6 +97,7 @@ content.innerHTML = `
 
 canvas = document.getElementById("canvas");
 ctx = canvas.getContext("2d");
+const editorConsole = document.getElementById("editor-console");
 
 // LÓGICA DE INPUTS
 document.getElementById("floorColor").oninput = (e) => gameConfig.floorColor = e.target.value;
@@ -107,17 +110,18 @@ document.getElementById("skyPreset").onchange = (e) => {
     gameConfig.ambientIntensity = (e.target.value === "#1a1a2e") ? 0.3 : 0.9;
 };
 
-// MODIFICADO: Sistema de Scripting con SEGURIDAD
+// MODIFICADO: Sistema de Scripting con SEGURIDAD y CONSOLA
 document.getElementById("open-script").onclick = () => {
     const inputCode = prompt("📜 SCRIPT EDITOR (PRO):\nEscribe tu código JavaScript. Usa 'game' para interactuar.", customScriptCode);
     
     if (inputCode !== null) {
-        // --- NUEVO: SISTEMA DE SEGURIDAD (FILTRO ANTI-MALWARE) ---
+        editorConsole.style.display = "none"; // Limpiar consola al abrir
+
+        // 1. SEGURIDAD (ANTI-MALWARE)
         const forbiddenWords = ["while", "setInterval", "localStorage", "location", "document", "window", "fetch", "XMLHttpRequest"];
         let isMalicious = false;
         let detectedWord = "";
 
-        // 1. Buscamos palabras que puedan tumbar la página o robar datos
         for (let word of forbiddenWords) {
             if (inputCode.toLowerCase().includes(word.toLowerCase())) {
                 isMalicious = true;
@@ -126,14 +130,24 @@ document.getElementById("open-script").onclick = () => {
             }
         }
 
-        // 2. Bloqueamos bucles for sospechosos (muy largos o infinitos)
         if (inputCode.match(/for\s*\(\s*;\s*;\s*\)/)) isMalicious = true;
 
         if (isMalicious) {
-            alert("❌ SEGURIDAD: El Script que estas creando no esta permitido, podría tumbar la pagina (Uso prohibido de: " + detectedWord + ")");
+            editorConsole.style.display = "block";
+            editorConsole.innerHTML = "❌ SEGURIDAD: Uso prohibido de: " + detectedWord;
+            alert("Error de seguridad detectado. Revisa la consola del editor.");
         } else {
-            customScriptCode = inputCode;
-            alert("Script actualizado y verificado correctamente.");
+            // 2. VALIDACIÓN DE SINTAXIS (CONSOLA)
+            try {
+                new Function('game', inputCode); // Prueba de compilación
+                customScriptCode = inputCode;
+                editorConsole.style.display = "none";
+                alert("Script actualizado y verificado correctamente.");
+            } catch (e) {
+                editorConsole.style.display = "block";
+                editorConsole.innerHTML = "❌ ERROR DE SINTAXIS: " + e.message;
+                alert("Tu código tiene errores. Revisa la consola roja en el editor.");
+            }
         }
     }
 };
@@ -166,17 +180,16 @@ canvas.onmousedown = e => {
 document.getElementById("play").onclick = () => {
     localStorage.setItem("funbox_map", JSON.stringify(blocks));
     localStorage.setItem("funbox_config", JSON.stringify(gameConfig));
-    // GUARDAR EL CÓDIGO PERSONALIZADO
     localStorage.setItem("funbox_custom_script", customScriptCode); 
     location.href = "play.html";
 };
 
-// ARREGLADO: El botón de limpiar ahora también resetea el script
 document.getElementById("clear").onclick = () => { 
     if(confirm("¿Borrar todo? (Se limpiarán los bloques y el script)")) {
         blocks = [{ x: 0, y: 0, type: "spawn" }]; 
         customScriptCode = "// Escribe tu código PRO aquí\n// Ejemplo: game.setFloor('red');";
         localStorage.removeItem("funbox_custom_script");
+        editorConsole.style.display = "none";
         alert("Todo limpio.");
     }
 };
