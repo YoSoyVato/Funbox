@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Funko Platformer</title>
+<title>Funbox - Funko Pro Fixed</title>
 <style>
   body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
@@ -17,7 +17,7 @@
 <body>
 
 <div id="ui">
-  🏃 **Funbox Pro**<br>
+  🏃 **Funbox Pro: Animación Mejorada**<br>
   WASD: Caminar | **Espacio: SALTAR** | **C: Squish**
 </div>
 
@@ -38,7 +38,6 @@ light.position.set(5, 10, 5);
 light.castShadow = true;
 scene.add(light);
 
-// SUELO
 const floorSize = 15;
 const floor = new THREE.Mesh(
     new THREE.CircleGeometry(floorSize, 32), 
@@ -64,27 +63,28 @@ cabeza.position.y = 0.75;
 cabeza.castShadow = true;
 cuerpoVisual.add(cabeza);
 
-// PELO Y BARBA
 const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.22, 0.52), matPelo);
 pelo.position.y = 0.2; cabeza.add(pelo);
 const barba = new THREE.Mesh(new THREE.BoxGeometry(0.57, 0.15, 0.51), matPelo);
 barba.position.y = -0.18; cabeza.add(barba);
 
-// OJOS
+// OJOS (CUTE CON DOBLE BRILLO)
 const listaOjos = [];
 function crearOjo(x) {
     const ojoGroup = new THREE.Group();
     const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.07, 32), matOjoNegro);
     const b1 = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
     b1.position.set(0.025, 0.025, 0.001);
-    ojoGroup.add(pupila, b1);
+    const b2 = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    b2.position.set(-0.02, -0.02, 0.001);
+    ojoGroup.add(pupila, b1, b2);
     ojoGroup.position.set(x, -0.02, 0.251);
     listaOjos.push(ojoGroup);
     return ojoGroup;
 }
 cabeza.add(crearOjo(-0.18), crearOjo(0.18));
 
-// CUERPO Y EXTREMIDADES
+// CUERPO
 const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.2, 4, 12), matRopa);
 cuerpo.position.y = 0.35; cuerpoVisual.add(cuerpo);
 
@@ -100,15 +100,11 @@ piernaD.position.set(0.12, 0.1, 0); player.add(piernaD);
 
 scene.add(player);
 
-// --- LÓGICA DE FÍSICAS ---
-let vy = 0; 
-let onGround = true;
-const gravity = -0.012;
-const jumpForce = 0.25;
-let isDead = false;
-
+// --- LÓGICA ---
+let vy = 0, onGround = true, isDead = false;
+const gravity = -0.012, jumpForce = 0.25;
 const keys = {};
-let yaw = 0, step = 0;
+let yaw = 0, step = 0, panicStep = 0;
 let blinkTimer = 0;
 
 window.addEventListener("keydown", e => {
@@ -117,47 +113,40 @@ window.addEventListener("keydown", e => {
 });
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 document.body.onclick = () => document.body.requestPointerLock();
-document.addEventListener("mousemove", e => {
-    if(document.pointerLockElement) yaw -= e.movementX * 0.003;
-});
+document.addEventListener("mousemove", e => { if(document.pointerLockElement) yaw -= e.movementX * 0.003; });
 
 function animate() {
     requestAnimationFrame(animate);
-    
-    // --- FÍSICAS ---
     player.position.y += vy;
     
-    // Verificar si está en el mapa
     const distDesdeCentro = Math.sqrt(player.position.x**2 + player.position.z**2);
     const outOfBounds = distDesdeCentro > floorSize;
 
     if (player.position.y > 0 || outOfBounds) {
-        vy += gravity;
-        onGround = false;
-    } else {
-        if (!isDead) {
-            player.position.y = 0;
-            vy = 0;
-            onGround = true;
-        }
+        vy += gravity; onGround = false;
+    } else if (!isDead) {
+        player.position.y = 0; vy = 0; onGround = true;
     }
 
-    // Caída al vacío
-    if (player.position.y < -1) {
+    // ANIMACIÓN DE CAÍDA (PÁNICO)
+    if (player.position.y < -0.5) {
         isDead = true;
-        cuerpoVisual.rotation.x += 0.2; // Gira al caer
-        cuerpoVisual.rotation.z += 0.1;
+        panicStep += 0.5;
+        // Pataleo y agitación de brazos
+        brazoI.position.y = 0.4 + Math.sin(panicStep) * 0.2;
+        brazoD.position.y = 0.4 + Math.cos(panicStep) * 0.2;
+        piernaI.rotation.x = Math.sin(panicStep * 1.5) * 1;
+        piernaD.rotation.x = Math.cos(panicStep * 1.5) * 1;
+        cabeza.rotation.x = -0.4; // Cabeza hacia atrás por el susto
+        
         if (player.position.y < -20) { // Respawn
             player.position.set(0, 5, 0);
-            cuerpoVisual.rotation.set(0,0,0);
-            vy = 0;
-            isDead = false;
+            cabeza.rotation.set(0,0,0);
+            isDead = false; vy = 0; panicStep = 0;
         }
     }
 
-    // --- ANIMACIONES ---
-    let moving = false;
-    let dir = new THREE.Vector3();
+    let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
         if(keys.s){ dir.z += 1; moving = true; }
@@ -165,36 +154,19 @@ function animate() {
         if(keys.d){ dir.x += 1; moving = true; }
     }
 
-    const isCrouching = keys.c;
-    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, isCrouching ? 0.7 : (onGround ? 1.0 : 1.2), 0.2);
-
-    if(moving) {
+    if(moving && onGround) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.09);
+        player.position.addScaledVector(moveDir, keys.c ? 0.04 : 0.09);
         player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
         step += 0.25;
-        
-        if(onGround) {
-            piernaI.rotation.x = Math.sin(step) * 0.8;
-            piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-            brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
-            brazoD.position.z = Math.sin(step) * 0.15;
-        }
-    }
-
-    // Animación de Salto (Pies al aire)
-    if(!onGround && !isDead) {
-        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, -0.5, 0.1);
-        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, -0.5, 0.1);
-        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.6, 0.1);
-        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.6, 0.1);
-    } else if (onGround) {
-        if(!moving) {
-            piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.2);
-            piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.2);
-            brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
-            brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
-        }
+        piernaI.rotation.x = Math.sin(step) * 0.8;
+        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
+        brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
+        brazoD.position.z = Math.sin(step) * 0.15;
+    } else if (!isDead) {
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, onGround ? 0 : -0.5, 0.1);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, onGround ? 0 : -0.5, 0.1);
+        cabeza.rotation.x = THREE.MathUtils.lerp(cabeza.rotation.x, 0, 0.1);
     }
 
     // Pestañeo
@@ -208,14 +180,11 @@ function animate() {
     const camOffset = new THREE.Vector3(0, 1.8, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.8, 0)));
-
     renderer.render(scene, camera);
 }
 animate();
-
 window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
+    camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
