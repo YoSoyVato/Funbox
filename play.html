@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Estados Españoles - Prototipo RP (Diagnóstico)</title>
+<title>Estados Españoles - Prototipo RP (Pequeño)</title>
 <style>
   body { margin:0; overflow:hidden; background:black; }
   #ui {
@@ -15,8 +15,9 @@
 <body>
 
 <div id="ui">
-  🎮 **Modo Diagnóstico**<br>
-  Si te sales del mapa, el personaje se pondrá <b style="color:red">ROJO</b> y caerá rápido.
+  🎮 **Estados Españoles RP**<br>
+  Personaje más pequeño.<br>
+  WASD: Moverse | Shift: Correr
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -43,17 +44,19 @@ const floor = new THREE.Mesh(
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
-// 2. PERSONAJE
-const playerHeight = 1.2;
+// 2. PERSONAJE (FUNBOX)
+// Usamos esta altura para la colisión.
+// Al escalar el objeto visualmente, quizás quieras ajustar esto ligeramente si sientes que flota mucho.
+const collisionHeight = 1.2; 
+
 const player = new THREE.Group();
 
-// MATERIAL DEL CUERPO (Lo guardamos en variable para cambiarle el color)
+// --- CONSTRUCCIÓN DEL CUERPO ---
 const bodyMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
-const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, playerHeight), bodyMat);
-body.position.y = playerHeight;
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.2), bodyMat);
+body.position.y = 1.2;
 player.add(body);
 
-// Piernas/Brazos/Ojos (Decoración)
 const legMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
 const legGeo = new THREE.CylinderGeometry(0.15,0.15,0.5);
 player.add(new THREE.Mesh(legGeo, legMat)).position.set(-0.15,0.25,0);
@@ -65,12 +68,16 @@ const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
 player.add(new THREE.Mesh(new THREE.SphereGeometry(0.1), eyeMat)).position.set(-0.15,1.6,0.25);
 player.add(new THREE.Mesh(new THREE.SphereGeometry(0.1), eyeMat)).position.set(0.15,1.6,0.25);
 
+// --- ¡AQUÍ LO HACEMOS MÁS PEQUEÑO! ---
+// Escala al 70% (0.7). Cambia estos números si lo quieres más grande o más chico.
+player.scale.set(0.7, 0.7, 0.7); 
+
 player.position.set(0,5,0);
 scene.add(player);
 
 // 3. VARIABLES
 let velY = 0;
-const gravity = -0.03; // <-- GRAVEDAD MÁS FUERTE PARA PROBAR
+const gravity = -0.015; // Gravedad normal
 let yaw=0, pitch=0;
 let speed = 0.15;
 const keys = {};
@@ -99,29 +106,26 @@ function animate(){
   velY += gravity;
   player.position.y += velY;
 
-  // --- ZONA DE PRUEBA ---
+  // --- LÓGICA DE CAÍDA ---
   const limite = floorSize / 2; // 100
   const estaDentro = Math.abs(player.position.x) <= limite && Math.abs(player.position.z) <= limite;
 
   if (estaDentro) {
-      // DENTRO DEL MAPA: Color normal, colisión activa
-      bodyMat.color.set(0x00ffcc); 
-      if (player.position.y <= playerHeight) {
-          player.position.y = playerHeight;
+      // DENTRO DEL MAPA: Colisión activa
+      if (player.position.y <= collisionHeight) {
+          player.position.y = collisionHeight;
           velY = 0;
       }
-  } else {
-      // FUERA DEL MAPA: ¡COLOR ROJO! y sin colisión (cae)
-      bodyMat.color.set(0xff0000); 
-  }
+  } 
+  // Si estaDentro es falso, la gravedad sigue actuando y cae.
 
   // Respawn
   if(player.position.y < -50){ player.position.set(0,10,0); velY = 0; }
 
-  // Cámara
-  const camOffset = new THREE.Vector3(0,2,6).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+  // Cámara (Ajustada un poco la altura para el personaje más pequeño)
+  const camOffset = new THREE.Vector3(0, 1.5, 5).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
   camera.position.copy(player.position).add(camOffset);
-  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, playerHeight, 0)));
+  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, collisionHeight*0.8, 0)));
 
   renderer.render(scene,camera);
 }
@@ -130,4 +134,3 @@ window.addEventListener("resize", ()=>{camera.aspect = window.innerWidth/window.
 </script>
 </body>
 </html>
-
