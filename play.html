@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Funbox Studio</title>
 <style>
-  body { margin:0; overflow:hidden; background: #fdfdfd; }
+  body { margin:0; overflow:hidden; background: #000; }
   #ui {
     position: fixed; top:20px; left:20px; color:#444;
     font-family: 'Arial Rounded MT Bold', sans-serif;
@@ -23,7 +23,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-// --- NUEVO: CARGAR CONFIGURACIÓN DEL EDITOR (Suelo + Cielo + Luz) ---
+// --- CARGAR CONFIGURACIÓN ---
 const config = JSON.parse(localStorage.getItem("funbox_config")) || { 
     floorColor: "#eeeeee", 
     floorSize: 500,
@@ -32,33 +32,55 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
 };
 
 const scene = new THREE.Scene();
-
-// Aplicar el color del cielo configurado
 scene.background = new THREE.Color(config.skyColor);
 
-// Si es de noche, añadimos niebla para que se vea mejor
-if(config.skyColor === "#1a1a2e") {
-    scene.fog = new THREE.Fog(config.skyColor, 1, 60);
-}
+// --- MEJORA 1: Niebla Realista (FogExp2) ---
+// La niebla exponencial se ve mucho más suave que la normal
+const fogDensity = config.skyColor === "#1a1a2e" ? 0.05 : 0.01;
+scene.fog = new THREE.FogExp2(config.skyColor, fogDensity);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+// Mejora de color del renderizado
+renderer.toneMapping = THREE.ReinhardToneMapping;
 document.body.appendChild(renderer.domElement);
 
-// Luz ambiente y direccional usando la intensidad de la configuración
-scene.add(new THREE.AmbientLight(0xffffff, config.ambientIntensity));
-const light = new THREE.DirectionalLight(0xffffff, config.ambientIntensity === 0.3 ? 0.3 : 0.6);
-light.position.set(5, 10, 5);
-light.castShadow = true;
-scene.add(light);
+// --- MEJORA 2: Iluminación Hemisférica ---
+// Esto hace que la luz venga del cielo (arriba) y del suelo (abajo), dando realismo
+const hemiLight = new THREE.HemisphereLight(config.skyColor, config.floorColor, 0.6);
+scene.add(hemiLight);
+
+const ambient = new THREE.AmbientLight(0xffffff, config.ambientIntensity * 0.5);
+scene.add(ambient);
+
+const sunLight = new THREE.DirectionalLight(0xffffff, config.ambientIntensity);
+sunLight.position.set(50, 100, 50);
+sunLight.castShadow = true;
+// Mejorar calidad de sombras
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+scene.add(sunLight);
+
+// --- MEJORA 3: Un Sol/Luna visual en el cielo ---
+const sunGeo = new THREE.SphereGeometry(10, 32, 32);
+const sunMat = new THREE.MeshBasicMaterial({
+    color: config.skyColor === "#1a1a2e" ? 0xffffcc : 0xffffee 
+});
+const sunVisual = new THREE.Mesh(sunGeo, sunMat);
+sunVisual.position.set(100, 150, -200);
+scene.add(sunVisual);
 
 // --- SUELO DINÁMICO (BASEPLATE) ---
 const floorSize = config.floorSize; 
 const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(floorSize, floorSize), 
-    new THREE.MeshStandardMaterial({color: config.floorColor}) // Aplica el color del editor
+    new THREE.MeshStandardMaterial({
+        color: config.floorColor,
+        roughness: 0.8,
+        metalness: 0.1
+    })
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
@@ -76,7 +98,7 @@ mapData.forEach(b => {
     scene.add(block);
 });
 
-// --- PERSONAJE ---
+// --- PERSONAJE (TU CÓDIGO ORIGINAL) ---
 const player = new THREE.Group();
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
@@ -129,7 +151,7 @@ piernaD.position.set(0.12, 0.1, 0); player.add(piernaD);
 
 scene.add(player);
 
-// --- LÓGICA ---
+// --- LÓGICA (TU CÓDIGO ORIGINAL) ---
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
 const gravity = -0.012, jumpForce = 0.25;
 const keys = {};
@@ -149,7 +171,6 @@ function animate() {
     requestAnimationFrame(animate);
     player.position.y += vy;
     
-    // --- LÓGICA DE CAÍDA ACTUALIZADA PARA TAMAÑO DINÁMICO ---
     const half = floorSize / 2;
     const outOfBounds = Math.abs(player.position.x) > half || Math.abs(player.position.z) > half;
 
@@ -159,7 +180,6 @@ function animate() {
         player.position.y = 0; vy = 0; onGround = true;
     }
 
-    // ANIMACIÓN DE MUERTE
     if (player.position.y < -0.5) {
         isDead = true;
         panicStep += 0.5;
@@ -177,7 +197,6 @@ function animate() {
         }
     }
 
-    // MOVIMIENTO Y CORRER
     let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
