@@ -2,94 +2,195 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Personaje Blandito</title>
+<title>Funbox - El Funbox-bot</title>
 <style>
-  body { margin:0; overflow:hidden; background: #a2d2ff; }
+  body { margin:0; overflow:hidden; background: #66ccff; } /* Fondo vibrante */
   #ui {
-    position: fixed; top:20px; left:20px; color:#555;
-    font-family: 'Comic Sans MS', cursive, sans-serif; 
-    background: rgba(255, 255, 255, 0.8);
-    padding:15px; border-radius:20px; z-index:10;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: fixed; top:20px; left:20px; color:#333;
+    font-family: 'Press Start 2P', cursive; /* Estilo pixel art para ambiente retro */
+    background: rgba(255, 255, 255, 0.9);
+    padding:18px; border-radius:15px; z-index:10;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    border: 3px solid #ffcc00; /* Borde amarillo brillante */
   }
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 </style>
 </head>
 <body>
 
 <div id="ui">
-  🌈 **¡Nuevo Amigo Blandito!**<br>
-  ¡Nada de miedo, solo ternura!<br>
-  <small>WASD para rebotar por ahí</small>
+  📦 **FUNBOX-BOT INICIADO!** ⚙️<br>
+  ¡La diversión está en marcha!<br>
+  <small>WASD para mover | Mouse para mirar</small>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/TextureLoader.js"></script>
 <script>
 // 1. ESCENA
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xa2d2ff); 
+scene.background = new THREE.Color(0x66ccff); 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// LUZ CÁLIDA
-const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+// LUCES PARA UN AMBIENTE LÚDICO
+const ambient = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambient);
-const light = new THREE.DirectionalLight(0xffffff, 0.6);
-light.position.set(5, 10, 5);
-light.castShadow = true;
-scene.add(light);
+const pointLight = new THREE.PointLight(0xffffff, 0.8, 100);
+pointLight.position.set(0, 10, 5);
+pointLight.castShadow = true;
+scene.add(pointLight);
 
-// SUELO DE PASTO CUTE
+// SUELO CUADRICULADO
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({color: 0x95d5b2})
+  new THREE.MeshStandardMaterial({color: 0x99ddff}) // Azul claro
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// 2. EL PERSONAJE (SLIME/BLOB)
+// 2. EL PERSONAJE: FUNBOX-BOT
 const player = new THREE.Group();
-player.position.y = 0.6;
+player.position.y = 1.0;
 
-// Cuerpo principal (Estilo Malvavisco)
-const bodyGeo = new THREE.SphereGeometry(0.7, 32, 32);
-const bodyMat = new THREE.MeshStandardMaterial({color: 0xffafcc, roughness: 0.3});
-const body = new THREE.Mesh(bodyGeo, bodyMat);
+// TEXTURA DE CARTÓN (simulada con color y rugosidad)
+const cardboardMat = new THREE.MeshStandardMaterial({
+  color: 0xc19a6b, // Tono de cartón
+  roughness: 0.8,
+  metalness: 0.1
+});
+const brightMat = new THREE.MeshStandardMaterial({ color: 0xffe066, roughness: 0.2 }); // Detalles brillantes
+const eyeMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+const gearColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff]; // Colores de engranajes
+
+// CUERPO (la caja)
+const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), cardboardMat);
 body.castShadow = true;
 player.add(body);
 
-// OJOS (Estilo dibujo animado, no esferas 3D profundas)
-const eyeGeo = new THREE.CircleGeometry(0.08, 32);
-const eyeMat = new THREE.MeshBasicMaterial({color: 0x222222});
-const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-leftEye.position.set(-0.25, 0.1, 0.66);
-const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-rightEye.position.set(0.25, 0.1, 0.66);
-body.add(leftEye, rightEye);
+// BOCA (recorte y engranajes brillantes)
+const mouthGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 32);
+const mouth = new THREE.Mesh(mouthGeo, new THREE.MeshBasicMaterial({ color: 0x333333 }));
+mouth.rotation.x = Math.PI / 2;
+mouth.position.z = 0.6;
+body.add(mouth);
 
-// MEJILLAS (Solo dos puntitos suaves)
-const blushGeo = new THREE.CircleGeometry(0.06, 16);
-const blushMat = new THREE.MeshBasicMaterial({color: 0xff8fab, transparent: true, opacity: 0.5});
-const lb = new THREE.Mesh(blushGeo, blushMat);
-lb.position.set(-0.4, -0.05, 0.64);
-const rb = new THREE.Mesh(blushGeo, blushMat);
-rb.position.set(0.4, -0.05, 0.64);
-body.add(lb, rb);
+// Engranajes brillantes dentro de la boca
+const gearCount = 5;
+const gearRadius = 0.15;
+for (let i = 0; i < gearCount; i++) {
+  const gearMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(gearColors[i % gearColors.length]) });
+  const gear = new THREE.Mesh(new THREE.CylinderGeometry(gearRadius, gearRadius, 0.05, 8), gearMat);
+  gear.position.set(
+    Math.cos(i * Math.PI * 2 / gearCount) * 0.25,
+    Math.sin(i * Math.PI * 2 / gearCount) * 0.25,
+    -0.05
+  );
+  gear.rotation.z = Math.random() * Math.PI * 2;
+  mouth.add(gear);
+}
 
-// MANOS (Esferas pequeñas que flotan a los lados)
-const handGeo = new THREE.SphereGeometry(0.15, 16, 16);
-const leftHand = new THREE.Mesh(handGeo, bodyMat);
-leftHand.position.set(-0.8, -0.2, 0);
-const rightHand = new THREE.Mesh(handGeo, bodyMat);
-rightHand.position.set(0.8, -0.2, 0);
-player.add(leftHand, rightHand);
+// OJOS GRANDES Y BLANCOS
+const eyeWhiteGeo = new THREE.SphereGeometry(0.3, 16, 16);
+const leftEyeWhite = new THREE.Mesh(eyeWhiteGeo, whiteMat);
+leftEyeWhite.position.set(-0.3, 0.2, 0.6);
+const rightEyeWhite = new THREE.Mesh(eyeWhiteGeo, whiteMat);
+rightEyeWhite.position.set(0.3, 0.2, 0.6);
+body.add(leftEyeWhite, rightEyeWhite);
+
+// PUPILAS NEGRAS
+const pupilGeo = new THREE.SphereGeometry(0.15, 16, 16);
+const leftPupil = new THREE.Mesh(pupilGeo, eyeMat);
+leftPupil.position.z = 0.2;
+leftEyeWhite.add(leftPupil);
+const rightPupil = new THREE.Mesh(pupilGeo, eyeMat);
+rightPupil.position.z = 0.2;
+rightEyeWhite.add(rightPupil);
+
+// CEJAS (simples, expresivas)
+const browGeo = new THREE.BoxGeometry(0.4, 0.08, 0.1);
+const browMat = new THREE.MeshStandardMaterial({ color: 0x553311 });
+const leftBrow = new THREE.Mesh(browGeo, browMat);
+leftBrow.position.set(-0.3, 0.45, 0.6);
+leftBrow.rotation.z = -0.2;
+const rightBrow = new THREE.Mesh(browGeo, browMat);
+rightBrow.position.set(0.3, 0.45, 0.6);
+rightBrow.rotation.z = 0.2;
+body.add(leftBrow, rightBrow);
+
+// LOGO "FUNBOX" (simulado con un Box)
+const logoGeo = new THREE.BoxGeometry(0.6, 0.2, 0.05);
+const logoMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 }); // Amarillo brillante
+const logo = new THREE.Mesh(logoGeo, logoMat);
+logo.position.set(0, 0.4, 0.61);
+body.add(logo);
+// Podrías añadir un TextGeometry para texto real, pero es más complejo.
+
+// SOMBRERO DE FIESTA
+const hatCone = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 16), brightMat);
+hatCone.position.set(0, 0.9, 0);
+hatCone.rotation.x = -0.1;
+body.add(hatCone);
+const pompom = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), new THREE.MeshStandardMaterial({color: 0xff69b4})); // Rosa
+pompom.position.set(0, 0.3, 0);
+hatCone.add(pompom);
+
+
+// EXTREMIDADES (estilo segmentos de resorte)
+const limbMat = new THREE.MeshStandardMaterial({ color: 0x8888ff }); // Azul vibrante
+const limbSegmentGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.2, 8);
+
+// PIERNAS
+const legCount = 3;
+const legOffsets = [-0.15, 0, 0.15];
+
+const createLeg = (xPos) => {
+  const legGroup = new THREE.Group();
+  for (let i = 0; i < legCount; i++) {
+    const segment = new THREE.Mesh(limbSegmentGeo, limbMat);
+    segment.position.y = -i * 0.2;
+    legGroup.add(segment);
+  }
+  const foot = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), cardboardMat);
+  foot.position.y = -legCount * 0.2;
+  legGroup.add(foot);
+  legGroup.position.set(xPos, -0.6, 0);
+  player.add(legGroup);
+  return legGroup;
+};
+
+const leftLeg = createLeg(-0.3);
+const rightLeg = createLeg(0.3);
+
+// BRAZOS
+const armCount = 2;
+const createArm = (xPos) => {
+  const armGroup = new THREE.Group();
+  for (let i = 0; i < armCount; i++) {
+    const segment = new THREE.Mesh(limbSegmentGeo, limbMat);
+    segment.position.y = -i * 0.2;
+    armGroup.add(segment);
+  }
+  const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), cardboardMat);
+  hand.position.y = -armCount * 0.2;
+  armGroup.add(hand);
+  armGroup.position.set(xPos, 0.4, 0);
+  player.add(armGroup);
+  return armGroup;
+};
+
+const leftArm = createArm(-0.8);
+const rightArm = createArm(0.8);
+
 
 scene.add(player);
 
-// 3. CONTROLES
+// 3. CONTROLES Y ANIMACIÓN
 const keys = {};
 let yaw = 0;
 let step = 0;
@@ -100,7 +201,21 @@ document.addEventListener("mousemove", e => {
   if(document.pointerLockElement) yaw -= e.movementX * 0.003;
 });
 
-// 4. ANIMACIÓN
+// 4. BUBBLE PARTICLES (Opcional, para un toque extra de diversión)
+const bubbles = [];
+const bubbleMat = new THREE.MeshLambertMaterial({color: 0xccedff, transparent: true, opacity: 0.7});
+const bubbleGeo = new THREE.SphereGeometry(0.05, 8, 8);
+
+function createBubble() {
+    const bubble = new THREE.Mesh(bubbleGeo, bubbleMat);
+    bubble.position.set(player.position.x + (Math.random() - 0.5) * 1.5, player.position.y + 0.5, player.position.z + (Math.random() - 0.5) * 1.5);
+    bubble.userData.velocity = Math.random() * 0.02 + 0.01;
+    scene.add(bubble);
+    bubbles.push(bubble);
+}
+
+setInterval(createBubble, 1000); // Crea una burbuja cada segundo
+
 function animate() {
   requestAnimationFrame(animate);
   
@@ -113,38 +228,63 @@ function animate() {
 
   if(moving) {
     const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    player.position.addScaledVector(moveDir, 0.12);
+    player.position.addScaledVector(moveDir, 0.08);
     player.rotation.y = yaw + Math.PI;
     
-    // Animación de rebote (Squash and Stretch)
-    step += 0.2;
-    body.scale.y = 1 + Math.sin(step) * 0.1;
-    body.scale.x = body.scale.z = 1 - Math.sin(step) * 0.05;
-    player.position.y = 0.6 + Math.abs(Math.sin(step)) * 0.3;
-    
-    // Movimiento de manos
-    leftHand.position.y = -0.2 + Math.cos(step) * 0.2;
-    rightHand.position.y = -0.2 + Math.sin(step) * 0.2;
+    // Animación de "caminar" de la caja
+    step += 0.3;
+    leftLeg.rotation.x = Math.sin(step) * 0.5;
+    rightLeg.rotation.x = Math.sin(step + Math.PI) * 0.5;
+    leftArm.rotation.x = Math.sin(step + Math.PI * 0.5) * 0.3;
+    rightArm.rotation.x = Math.sin(step + Math.PI * 1.5) * 0.3;
+
+    // Engranajes girando
+    mouth.children.forEach(gear => {
+        if (gear.isMesh && gear.geometry.type === 'CylinderGeometry') {
+            gear.rotation.z += 0.05;
+        }
+    });
+
   } else {
-    // Idle suave (respiración)
+    // Idle (ligeramente oscilante)
     step += 0.05;
-    body.scale.y = 1 + Math.sin(step) * 0.03;
-    player.position.y = 0.6;
-    leftHand.position.y = -0.2 + Math.sin(step) * 0.05;
-    rightHand.position.y = -0.2 + Math.sin(step) * 0.05;
-    
-    // Parpadeo amigable
-    if(Math.floor(step * 5) % 30 === 0) {
-      leftEye.scale.y = 0.1; rightEye.scale.y = 0.1;
+    player.rotation.y = yaw + Math.PI + Math.sin(step * 0.5) * 0.05;
+    leftLeg.rotation.x = Math.sin(step * 0.1) * 0.1;
+    rightLeg.rotation.x = Math.sin(step * 0.1 + Math.PI) * 0.1;
+    leftArm.rotation.x = Math.sin(step * 0.1 + Math.PI * 0.5) * 0.05;
+    rightArm.rotation.x = Math.sin(step * 0.1 + Math.PI * 1.5) * 0.05;
+
+    // Parpadeo
+    if (Math.floor(step * 10) % 60 === 0) {
+      leftPupil.scale.y = 0.1; rightPupil.scale.y = 0.1;
     } else {
-      leftEye.scale.y = 1; rightEye.scale.y = 1;
+      leftPupil.scale.y = 1; rightPupil.scale.y = 1;
     }
+  }
+
+  // Animación de burbujas
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+      const bubble = bubbles[i];
+      bubble.position.y += bubble.userData.velocity;
+      bubble.scale.x = bubble.scale.y = bubble.scale.z += 0.001; // Crecen ligeramente
+      if (bubble.position.y > player.position.y + 3) { // Desaparecen arriba
+          scene.remove(bubble);
+          bubbles.splice(i, 1);
+      }
+  }
+
+  // Gravedad simple
+  if (player.position.y > 1.0) { // Si está "saltando"
+      player.position.y -= 0.03;
+  }
+  if (player.position.y < 1.0) {
+      player.position.y = 1.0; // Asegura que se mantenga en el suelo
   }
 
   // Cámara
   const camPos = new THREE.Vector3(0, 3, 6).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
   camera.position.lerp(player.position.clone().add(camPos), 0.1);
-  camera.lookAt(player.position);
+  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 1.0, 0))); // Mira al centro de la caja
 
   renderer.render(scene, camera);
 }
