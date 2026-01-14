@@ -5,22 +5,15 @@
   <title>Funbox Launcher</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="center">
+<body>
 
-  <h1>🧱 Funbox Engine</h1>
+<div class="launcher">
+  <h1>🎮 Funbox</h1>
+  <p>Crear y jugar mundos</p>
 
-  <button onclick="goEditor()">➕ Crear / Editar</button>
-  <button onclick="goPlay()">🎮 Jugar</button>
-
-  <script>
-    function goEditor() {
-      location.href = "editor.html";
-    }
-
-    function goPlay() {
-      location.href = "play.html";
-    }
-  </script>
+  <button onclick="location.href='editor.html'">🧱 Crear Juego</button>
+  <button onclick="location.href='play.html'">🎮 Jugar</button>
+</div>
 
 </body>
 </html>
