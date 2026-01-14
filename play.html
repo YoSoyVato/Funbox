@@ -192,7 +192,7 @@ function isColliding(pos) {
     return false;
 }
 
-// --- PERSONAJE (REPLICA EXACTA DE LA FOTO CON PIERNAS Y BRILLO) ---
+// --- PERSONAJE (AJUSTE CHIBI PARA VER PIERNAS) ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
@@ -208,73 +208,64 @@ function buildPlayerModel() {
     const colAuriculares = 0x007ceb;
 
     cabezaGroup = new THREE.Group();
-    cabezaGroup.position.y = 0.85; 
+    cabezaGroup.position.y = 0.7; // Bajado para look chibi
     cuerpoVisual.add(cabezaGroup);
 
-    // Cabeza
-    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.65), new THREE.MeshStandardMaterial({color: colPiel}));
+    // Cabeza proporcionalmente más grande
+    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({color: colPiel}));
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // Pelo con volumen
-    const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.67, 0.25, 0.67), new THREE.MeshStandardMaterial({color: colPelo}));
+    const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.62), new THREE.MeshStandardMaterial({color: colPelo}));
     pelo.position.y = 0.25; cabezaMesh.add(pelo);
 
-    // Ojos Grandes con BRILLO DOBLE (Cute)
+    // Ojos Cute con brillo
     function crearOjo(x) {
         const ojo = new THREE.Group();
-        const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.14, 32), new THREE.MeshBasicMaterial({color:0}));
-        
-        // Brillo principal grande
-        const brillo1 = new THREE.Mesh(new THREE.CircleGeometry(0.05, 16), new THREE.MeshBasicMaterial({color:0xffffff}));
-        brillo1.position.set(0.05, 0.05, 0.01);
-        
-        // Brillo secundario pequeño (El "toque cute")
-        const brillo2 = new THREE.Mesh(new THREE.CircleGeometry(0.02, 16), new THREE.MeshBasicMaterial({color:0xffffff}));
-        brillo2.position.set(-0.04, -0.04, 0.01);
-        
-        ojo.add(pupila, brillo1, brillo2);
-        ojo.position.set(x, -0.05, 0.33);
+        const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.12, 32), new THREE.MeshBasicMaterial({color:0}));
+        const brillo1 = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), new THREE.MeshBasicMaterial({color:0xffffff}));
+        brillo1.position.set(0.04, 0.04, 0.01);
+        ojo.add(pupila, brillo1);
+        ojo.position.set(x, -0.05, 0.31);
         listaOjos.push(ojo);
         return ojo;
     }
-    cabezaMesh.add(crearOjo(-0.18), crearOjo(0.18));
+    cabezaMesh.add(crearOjo(-0.16), crearOjo(0.16));
 
-    // Auriculares
-    const audioGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.1, 32);
+    const audioGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.08, 32);
     const aL = new THREE.Mesh(audioGeo, new THREE.MeshStandardMaterial({color: colAuriculares}));
-    aL.rotation.z = Math.PI/2; aL.position.x = -0.38;
-    const aR = aL.clone(); aR.position.x = 0.38;
+    aL.rotation.z = Math.PI/2; aL.position.x = -0.34;
+    const aR = aL.clone(); aR.position.x = 0.34;
     cabezaMesh.add(aL, aR);
 
-    // Cuerpo
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.5, 4, 16), new THREE.MeshStandardMaterial({color: colCuerpo}));
-    torso.position.y = 0.3; cuerpoVisual.add(torso);
+    // CUERPO MÁS CORTO (Para que se vean las piernas)
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.25, 4, 16), new THREE.MeshStandardMaterial({color: colCuerpo}));
+    torso.position.y = 0.35; cuerpoVisual.add(torso);
 
-    // BRAZOS CON MANOS (Pulido)
+    // Brazos proporcionales
     const crearBrazo = (x) => {
         const b = new THREE.Group();
-        const extremidad = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.3), new THREE.MeshStandardMaterial({color: colCuerpo}));
-        const mano = new THREE.Mesh(new THREE.SphereGeometry(0.08), new THREE.MeshStandardMaterial({color: colPiel}));
-        mano.position.y = -0.15;
+        const extremidad = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.25), new THREE.MeshStandardMaterial({color: colCuerpo}));
+        const mano = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshStandardMaterial({color: colPiel}));
+        mano.position.y = -0.12;
         b.add(extremidad, mano);
-        b.position.set(x, 0.5, 0);
+        b.position.set(x, 0.45, 0);
         return b;
     };
-    brazoI = crearBrazo(-0.35); brazoD = crearBrazo(0.35);
+    brazoI = crearBrazo(-0.3); brazoD = crearBrazo(0.3);
     cuerpoVisual.add(brazoI, brazoD);
 
-    // PIERNAS REALES (Pulido)
+    // PIERNAS VISIBLES
     const crearPierna = (x) => {
         const p = new THREE.Group();
-        const extremidad = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4), new THREE.MeshStandardMaterial({color: 0x004070}));
-        const zapato = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.22), new THREE.MeshStandardMaterial({color: 0x222222}));
-        zapato.position.set(0, -0.2, 0.05);
+        const extremidad = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3), new THREE.MeshStandardMaterial({color: 0x004070}));
+        const zapato = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.18), new THREE.MeshStandardMaterial({color: 0x222222}));
+        zapato.position.set(0, -0.15, 0.04);
         p.add(extremidad, zapato);
-        p.position.set(x, 0.2, 0);
+        p.position.set(x, 0.15, 0);
         return p;
     };
-    piernaI = crearPierna(-0.14); piernaD = crearPierna(0.14);
+    piernaI = crearPierna(-0.12); piernaD = crearPierna(0.12);
     player.add(piernaI, piernaD);
 }
 buildPlayerModel();
@@ -339,7 +330,6 @@ function animate() {
         
         if (!isHeadMode && onGround) {
             step += animationSpeed;
-            // Animación de caminata realista
             piernaI.rotation.x = Math.sin(step) * 0.6;
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.6;
             brazoI.rotation.x = Math.sin(step + Math.PI) * 0.6;
@@ -356,24 +346,22 @@ function animate() {
         brazoD.rotation.x = THREE.MathUtils.lerp(brazoD.rotation.x, 0, 0.1);
     }
 
-    // Modo Agachado
-    const t = 0.15;
     if (isHeadMode) {
         cuerpoVisual.children.forEach(c => { if(c !== cabezaGroup) c.scale.set(0.001,0.001,0.001); });
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.35, t);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.3, 0.15);
     } else {
         cuerpoVisual.children.forEach(c => c.scale.set(1,1,1));
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.85, t);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.7, 0.15);
     }
 
     blinkTimer--;
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
     listaOjos.forEach(ojo => { ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; });
 
-    let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 3.5);
-    const camOffset = new THREE.Vector3(0, isHeadMode ? 0.8 : 1.8, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    let camDist = keys.r ? -2.5 : (isHeadMode ? 2.2 : 3.0);
+    const camOffset = new THREE.Vector3(0, isHeadMode ? 0.6 : 1.4, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.8, 0)));
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.6, 0)));
     
     renderer.render(scene, camera);
 }
