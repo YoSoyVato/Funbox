@@ -143,7 +143,7 @@
         }
     }
 
-    // --- LÓGICA DEL PERSONAJE 3D ---
+    // --- LÓGICA DEL PERSONAJE 3D CON OJOS CUTE ---
     let charGroup;
     function init3D() {
         const container = document.getElementById('char-3d-container');
@@ -176,19 +176,29 @@
         hair.position.y = 0.25;
         head.add(hair);
 
-        // Ojos Kawaii con brillo
-        const eyeGeo = new THREE.CircleGeometry(0.1, 32);
+        // --- OJOS CUTE (Más grandes y tiernos) ---
+        const eyeGeo = new THREE.CircleGeometry(0.12, 32);
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const eL = new THREE.Mesh(eyeGeo, eyeMat);
-        eL.position.set(-0.18, -0.05, 0.31);
+        eL.position.set(-0.18, -0.08, 0.31); // Un poco más abajo
         const eR = eL.clone(); eR.position.x = 0.18;
         head.add(eL, eR);
 
-        const shineGeo = new THREE.CircleGeometry(0.03, 16);
-        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const sL = new THREE.Mesh(shineGeo, shineMat);
-        sL.position.set(0.04, 0.04, 0.01);
-        eL.add(sL); eR.add(sL.clone());
+        // Brillo principal
+        const shine1 = new THREE.Mesh(
+            new THREE.CircleGeometry(0.04, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        shine1.position.set(0.04, 0.04, 0.01);
+        eL.add(shine1); eR.add(shine1.clone());
+
+        // Brillo secundario (Efecto tierno)
+        const shine2 = new THREE.Mesh(
+            new THREE.CircleGeometry(0.015, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        shine2.position.set(-0.03, -0.04, 0.01);
+        eL.add(shine2); eR.add(shine2.clone());
 
         // Auriculares Azules
         const phoneGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 32);
