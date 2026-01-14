@@ -111,15 +111,15 @@ const rightLeg = new THREE.Mesh(legGeo, legMat);
 rightLeg.position.set(0.15,0.25,0);
 player.add(rightLeg);
 
-// --- BRAZOS (grupos para pivote natural) ---
-function createArm(x) {
+// --- BRAZOS ---
+function createArm(x){
   const group = new THREE.Group();
-  group.position.set(x,1.4,0); // posición hombro
+  group.position.set(x,1.4,0);
   const arm = new THREE.Mesh(
     new THREE.CylinderGeometry(0.12,0.12,0.5),
     new THREE.MeshStandardMaterial({color:0x00ffcc})
   );
-  arm.position.y = -0.25; // pivot en hombro
+  arm.position.y=-0.25;
   group.add(arm);
   return group;
 }
@@ -180,8 +180,13 @@ function animate(){
   if(keys.d){dir.x+=1;moving=true;}
   if(keys.shift)speed*=2;
 
-  if(dir.length()){
-    dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+  // Girar personaje hacia dirección de movimiento
+  if(dir.length()>0){
+    dir.normalize();
+    // ángulo en XZ
+    const angle=Math.atan2(dir.x, dir.z);
+    player.rotation.y = angle;
+    // mover hacia esa dirección
     player.position.addScaledVector(dir,speed);
   }
 
@@ -190,7 +195,6 @@ function animate(){
     step += 0.15*(keys.shift?2:1);
     leftLeg.rotation.x=Math.sin(step)*(keys.shift?0.7:0.5);
     rightLeg.rotation.x=Math.sin(step+Math.PI)*(keys.shift?0.7:0.5);
-    // Brazos se mueven alternados y ligeramente hacia adelante/atras
     leftArm.rotation.x=Math.sin(step+Math.PI)*(keys.shift?0.5:0.3);
     leftArm.rotation.z=Math.sin(step+Math.PI)*0.1;
     rightArm.rotation.x=Math.sin(step)*(keys.shift?0.5:0.3);
@@ -255,4 +259,3 @@ window.onresize=()=>{
 
 </body>
 </html>
-
