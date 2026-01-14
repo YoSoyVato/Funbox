@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Funbox – Jugar</title>
-
 <style>
   body {
     margin: 0;
@@ -34,7 +33,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-
 <script>
 // ======================
 // CARGAR MAPA
@@ -46,42 +44,39 @@ const map = JSON.parse(localStorage.getItem("funbox_map")) || [];
 // ======================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
-
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // ======================
 // LUCES
 // ======================
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-sun.position.set(10, 20, 10);
+scene.add(new THREE.AmbientLight(0xffffff,0.6));
+const sun = new THREE.DirectionalLight(0xffffff,0.8);
+sun.position.set(10,20,10);
 scene.add(sun);
 
 // ======================
 // SUELO
 // ======================
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({ color: 0x555555 })
+  new THREE.PlaneGeometry(200,200),
+  new THREE.MeshStandardMaterial({color:0x555555})
 );
-floor.rotation.x = -Math.PI / 2;
+floor.rotation.x=-Math.PI/2;
 scene.add(floor);
 
 // ======================
-// BLOQUES DEL EDITOR
+// BLOQUES
 // ======================
 const blockMeshes = [];
-const blockSize = 1;
-map.forEach(b => {
+map.forEach(b=>{
   const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(blockSize, blockSize, blockSize),
-    new THREE.MeshStandardMaterial({ color: 0x777777 })
+    new THREE.BoxGeometry(1,1,1),
+    new THREE.MeshStandardMaterial({color:0x777777})
   );
-  mesh.position.set(b.x, (b.z || 0) + 0.5, b.y);
+  mesh.position.set(b.x,(b.z||0)+0.5,b.y);
   scene.add(mesh);
   blockMeshes.push(mesh);
 });
@@ -93,25 +88,25 @@ const spawn = new THREE.Vector3(0,1,0);
 const player = new THREE.Group();
 player.scale.set(0.5,0.5,0.5);
 
-// --- CUERPO ---
+// CUERPO
 const body = new THREE.Mesh(
-  new THREE.CapsuleGeometry(0.4, 1.2),
-  new THREE.MeshStandardMaterial({ color: 0x00ffcc })
+  new THREE.CapsuleGeometry(0.4,1.2),
+  new THREE.MeshStandardMaterial({color:0x00ffcc})
 );
-body.position.y = 1.2;
+body.position.y=1.2;
 player.add(body);
 
-// --- PIERNAS ---
+// PIERNAS
 const legGeo = new THREE.CylinderGeometry(0.15,0.15,0.5);
 const legMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
-const leftLeg = new THREE.Mesh(legGeo, legMat);
+const leftLeg = new THREE.Mesh(legGeo,legMat);
 leftLeg.position.set(-0.15,0.25,0);
 player.add(leftLeg);
-const rightLeg = new THREE.Mesh(legGeo, legMat);
+const rightLeg = new THREE.Mesh(legGeo,legMat);
 rightLeg.position.set(0.15,0.25,0);
 player.add(rightLeg);
 
-// --- BRAZOS ---
+// BRAZOS
 function createArm(x){
   const group = new THREE.Group();
   group.position.set(x,1.4,0);
@@ -128,13 +123,13 @@ const rightArm = createArm(0.55);
 player.add(leftArm);
 player.add(rightArm);
 
-// --- OJITOS ---
+// OJITOS
 const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
-const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+const leftEye = new THREE.Mesh(eyeGeo,eyeMat);
 leftEye.position.set(-0.15,1.6,0.25);
 player.add(leftEye);
-const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+const rightEye = new THREE.Mesh(eyeGeo,eyeMat);
 rightEye.position.set(0.15,1.6,0.25);
 player.add(rightEye);
 
@@ -162,7 +157,7 @@ document.onmousemove=e=>{
   if(document.pointerLockElement!==document.body) return;
   yaw -= e.movementX*0.002;
   pitch -= e.movementY*0.002;
-  pitch = Math.max(-1.2, Math.min(0.8, pitch));
+  pitch = Math.max(-0.6,Math.min(0.6,pitch));
 };
 
 // ======================
@@ -171,23 +166,22 @@ document.onmousemove=e=>{
 function animate(){
   requestAnimationFrame(animate);
 
-  // MOVIMIENTO
-  let dir=new THREE.Vector3();
-  let moving=false;
-  let speed=0.08;
+  // MOVER
+  let dir = new THREE.Vector3();
+  let moving = false;
+  let speed = 0.08;
   if(keys.w){dir.z-=1;moving=true;}
   if(keys.s){dir.z+=1;moving=true;}
   if(keys.a){dir.x-=1;moving=true;}
   if(keys.d){dir.x+=1;moving=true;}
   if(keys.shift)speed*=2;
 
-  // Girar personaje hacia la cámara
+  // ROTAR jugador según cámara
   player.rotation.y = yaw;
 
-  // Mover personaje según WASD (manteniendo la dirección de la cámara)
+  // MOVER en dirección de cámara
   if(dir.length()>0){
     dir.normalize();
-    // aplicar la rotación de la cámara al movimiento
     const moveDir = dir.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     player.position.addScaledVector(moveDir,speed);
   }
@@ -212,8 +206,7 @@ function animate(){
 
     // Parpadeo ojos
     blinkTimer++;
-    const blinkSpeed=100;
-    if(blinkTimer%blinkSpeed<5){
+    if(blinkTimer%100<5){
       leftEye.scale.y=0.1;
       rightEye.scale.y=0.1;
     }else{
@@ -242,10 +235,11 @@ function animate(){
   // MUERTE
   if(player.position.y<-30){player.position.copy(spawn);velY=0;}
 
-  // CÁMARA
-  const camOffset=new THREE.Vector3(Math.sin(yaw)*5,2+pitch*2,Math.cos(yaw)*5);
+  // ====================== CÁMARA TIPO GTA
+  const camOffset = new THREE.Vector3(0,2,5); // atrás y arriba
+  camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
   camera.position.copy(player.position).add(camOffset);
-  camera.lookAt(player.position);
+  camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
 
   renderer.render(scene,camera);
 }
@@ -258,7 +252,5 @@ window.onresize=()=>{
   renderer.setSize(window.innerWidth,window.innerHeight);
 };
 </script>
-
 </body>
 </html>
-
