@@ -156,6 +156,7 @@ let blinkTimer=0;
 const keys = {};
 window.onkeydown = e=>keys[e.key.toLowerCase()]=true;
 window.onkeyup = e=>keys[e.key.toLowerCase()]=false;
+
 document.body.onclick=()=>document.body.requestPointerLock();
 document.onmousemove=e=>{
   if(document.pointerLockElement!==document.body) return;
@@ -180,14 +181,15 @@ function animate(){
   if(keys.d){dir.x+=1;moving=true;}
   if(keys.shift)speed*=2;
 
-  // Girar personaje hacia dirección de movimiento
+  // Girar personaje hacia la cámara
+  player.rotation.y = yaw;
+
+  // Mover personaje según WASD (manteniendo la dirección de la cámara)
   if(dir.length()>0){
     dir.normalize();
-    // ángulo en XZ
-    const angle=Math.atan2(dir.x, dir.z);
-    player.rotation.y = angle;
-    // mover hacia esa dirección
-    player.position.addScaledVector(dir,speed);
+    // aplicar la rotación de la cámara al movimiento
+    const moveDir = dir.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    player.position.addScaledVector(moveDir,speed);
   }
 
   // ====================== ANIMACIONES
@@ -259,3 +261,4 @@ window.onresize=()=>{
 
 </body>
 </html>
+
