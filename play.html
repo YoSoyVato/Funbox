@@ -1,401 +1,179 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Funbox Studio - Play</title>
-<style>
-  body { margin:0; overflow:hidden; background: #000; }
-  #ui {
-    position: fixed; top:20px; left:20px; color:#444;
-    font-family: 'Arial Rounded MT Bold', sans-serif;
-    background: rgba(255, 255, 255, 0.9);
-    padding:15px; border-radius:20px; z-index:10;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  }
-</style>
+    <meta charset="UTF-8">
+    <title>Funbox - Mi Perfil</title>
+    <style>
+        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .header { background: #151515; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .coins { background: #ffca28; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 18px; box-shadow: 0 0 10px rgba(255, 202, 40, 0.3); }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .character-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a1a 0%, #050505 100%); position: relative; }
+        #char-3d-container { width: 500px; height: 500px; cursor: grab; filter: drop-shadow(0 10px 40px rgba(0,0,0,0.9)); }
+        .char-name { margin-top: 10px; font-size: 28px; color: #4db8ff; font-weight: bold; text-shadow: 0 0 15px rgba(77, 184, 255, 0.4); }
+        .btn-play-now { margin-top: 20px; background: #4caf50; color: white; border: none; padding: 12px 40px; font-size: 18px; font-weight: bold; border-radius: 30px; cursor: pointer; transition: 0.3s; box-shadow: 0 0 20px rgba(76, 175, 80, 0.4); }
+        .btn-play-now:hover { transform: scale(1.05); background: #66bb6a; }
+        .shop-container { width: 400px; background: #111; border-left: 1px solid #333; padding: 20px; overflow-y: auto; }
+        .item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .item-card { background: #1a1a1a; border: 1px solid #333; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .item-card:hover { border-color: #4db8ff; }
+        .item-card.selected { border-color: #4caf50; background: rgba(76, 175, 80, 0.1); border-width: 2px; }
+        .item-emoji { font-size: 40px; display: block; margin-bottom: 5px; }
+    </style>
 </head>
 <body>
 
-<div id="ui">
-  📦🛠️ **Funbox Studio**<br>
-  WASD: Moverse | **Shift: CORRER** | **C: Agacharse** | **R: Cámara Frontal**
+<div class="header">
+    <div style="font-weight: bold; font-size: 20px;">👤 PERFIL DE USUARIO</div>
+    <div class="coins">🪙 <span id="coin-count">500</span></div>
+</div>
+
+<div class="main-container">
+    <div class="character-view">
+        <div id="char-3d-container"></div>
+        <div id="user-display-name" class="char-name">Usuario</div>
+        <button class="btn-play-now" onclick="location.href='play.html'">🎮 JUGAR AHORA</button>
+    </div>
+    <div class="shop-container">
+        <div style="color: #888; font-size: 12px; margin-bottom: 10px; letter-spacing: 1px;">MI INVENTARIO</div>
+        <div class="item-grid" id="inventory-items"></div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
 <script>
-// --- CARGAR CONFIGURACIÓN ---
-const config = JSON.parse(localStorage.getItem("funbox_config")) || { 
-    floorColor: "#eeeeee", 
-    floorSize: 500,
-    skyColor: "#87ceeb", 
-    ambientIntensity: 0.9 
-};
+    const userSession = JSON.parse(sessionStorage.getItem("funbox_session")) || { user: "Jugador" };
+    document.getElementById("user-display-name").innerText = userSession.user;
 
-const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
+    let ownedItems = JSON.parse(localStorage.getItem("funbox_items")) || ["👨", "🥷", "🤖"];
+    let currentSkin = localStorage.getItem("funbox_current_skin") || "👨";
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(config.skyColor);
-
-const fogDensity = config.skyColor === "#1a1a2e" ? 0.05 : 0.01;
-scene.fog = new THREE.FogExp2(config.skyColor, fogDensity);
-
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.toneMapping = THREE.ReinhardToneMapping;
-document.body.appendChild(renderer.domElement);
-
-const hemiLight = new THREE.HemisphereLight(config.skyColor, config.floorColor, 0.6);
-scene.add(hemiLight);
-
-const ambient = new THREE.AmbientLight(0xffffff, config.ambientIntensity * 0.5);
-scene.add(ambient);
-
-const sunLight = new THREE.DirectionalLight(0xffffff, config.ambientIntensity);
-sunLight.position.set(50, 100, 50);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
-scene.add(sunLight);
-
-// --- EL SUELO ---
-const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(config.floorSize, config.floorSize), 
-    new THREE.MeshStandardMaterial({
-        color: config.floorColor,
-        roughness: 0.8,
-        metalness: 0.1
-    })
-);
-floor.rotation.x = -Math.PI/2;
-floor.receiveShadow = true;
-floor.position.y = 0; 
-scene.add(floor);
-
-// --- ASSETS (Muebles) ---
-function createAssetMesh(type) {
-    const group = new THREE.Group();
-    const woodMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.7});
-    const ironMat = new THREE.MeshStandardMaterial({color: 0x222222, metalness: 0.5, roughness: 0.3});
-    const fabricMat = new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 1});
-
-    if (type === 'chair') {
-        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.5), woodMat);
-        seat.position.y = 0.4;
-        const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.08), woodMat);
-        back.position.set(0, 0.65, -0.21);
-        group.add(seat, back);
-        const legGeo = new THREE.BoxGeometry(0.06, 0.4, 0.06);
-        for(let x of [-0.2, 0.2]) for(let z of [-0.2, 0.2]) {
-            const leg = new THREE.Mesh(legGeo, woodMat);
-            leg.position.set(x, 0.2, z);
-            group.add(leg);
-        }
-    } else if (type === 'table') {
-        const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 1.2), woodMat);
-        top.position.y = 0.75;
-        group.add(top);
-        const legGeo = new THREE.BoxGeometry(0.1, 0.75, 0.1);
-        for(let x of [-0.5, 0.5]) for(let z of [-0.5, 0.5]) {
-            const leg = new THREE.Mesh(legGeo, woodMat);
-            leg.position.set(x, 0.375, z);
-            group.add(leg);
-        }
-    } else if (type === 'pc') {
-        const stand = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.2), ironMat);
-        const neck = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.05), ironMat);
-        neck.position.y = 0.1;
-        const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.05), ironMat);
-        monitor.position.y = 0.35;
-        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.39, 0.01), new THREE.MeshBasicMaterial({color: 0x111111}));
-        screen.position.set(0, 0.35, 0.026);
-        group.add(stand, neck, monitor, screen);
-        group.position.y = 0.79;
-    } else if (type === 'bed') {
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.2, 2.1), woodMat);
-        frame.position.y = 0.15;
-        const mattress = new THREE.Mesh(new THREE.BoxGeometry(1, 0.25, 2), fabricMat);
-        mattress.position.y = 0.3;
-        const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.12, 0.4), fabricMat);
-        pillow.position.set(0, 0.45, -0.7);
-        const headboard = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.8, 0.1), woodMat);
-        headboard.position.set(0, 0.4, -1.05);
-        group.add(frame, mattress, pillow, headboard);
-    } else if (type === 'flashlight') {
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3), ironMat);
-        body.rotation.x = Math.PI/2;
-        const head = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.1), ironMat);
-        head.rotation.x = Math.PI/2; head.position.z = 0.15;
-        const light = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({color: 0xffffaa}));
-        light.position.z = 0.2;
-        group.add(body, head, light);
-        group.position.y = 0.1;
+    function renderInventory() {
+        const container = document.getElementById("inventory-items");
+        container.innerHTML = "";
+        ownedItems.forEach(emoji => {
+            const card = document.createElement("div");
+            card.className = "item-card" + (currentSkin === emoji ? " selected" : "");
+            card.onclick = () => {
+                currentSkin = emoji;
+                localStorage.setItem("funbox_current_skin", emoji);
+                renderInventory();
+                updateCharacterPreview();
+            };
+            card.innerHTML = `<span class="item-emoji">${emoji}</span><div style="font-size: 10px; color: #888;">${emoji === "👨" ? "CLÁSICO" : "SKIN"}</div>`;
+            container.appendChild(card);
+        });
     }
-    group.traverse(child => { if(child.isMesh) { child.castShadow = true; child.receiveShadow = true; }});
-    return group;
-}
 
-// --- CARGA DE BLOQUES Y FÍSICA ---
-const physicalBlocks = [];
-physicalBlocks.push(floor);
+    let scene, camera, renderer, charGroup;
 
-const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-const spawnGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2); 
-const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3});
-const spawnMat = new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.4});
+    function init3D() {
+        const container = document.getElementById('char-3d-container');
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
+        camera.position.set(0, 0.7, 3.2);
 
-let spawnPoint = new THREE.Vector3(0, 0, 0);
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(500, 500);
+        container.appendChild(renderer.domElement);
 
-mapData.forEach(b => {
-    let block;
-    if (b.type === "spawn") {
-        block = new THREE.Mesh(spawnGeo, spawnMat);
-        block.position.set(b.x + 0.5, 0.05, b.y + 0.5);
-        spawnPoint.set(block.position.x, 0, block.position.z);
-        physicalBlocks.push(block);
-    } else if (b.type === "block") {
-        block = new THREE.Mesh(boxGeo, boxMat);
-        block.position.set(b.x + 0.5, 0.5, b.y + 0.5);
-        physicalBlocks.push(block);
-    } else {
-        block = createAssetMesh(b.type);
-        block.position.set(b.x + 0.5, 0, b.y + 0.5);
-        let hW = 0.9, hH = (b.type === 'table') ? 0.8 : (b.type === 'bed') ? 0.5 : 1, hD = 0.9;
-        if(b.type === 'table') { hW = 1.2; hD = 1.2; }
-        if(b.type === 'bed') { hW = 1.1; hD = 2.1; }
-        const hitbox = new THREE.Mesh(new THREE.BoxGeometry(hW, hH, hD), new THREE.MeshBasicMaterial({visible: false}));
-        hitbox.position.set(b.x + 0.5, hH/2, b.y + 0.5);
-        physicalBlocks.push(hitbox);
-    }
-    scene.add(block);
-});
+        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 5);
+        scene.add(light);
 
-// --- SISTEMA DE SUPERFICIE Y COLISIONES ---
-function getSurfaceY(pos) {
-    let maxY = -100;
-    const pR = 0.25; 
-    physicalBlocks.forEach(b => {
-        if (b === floor) {
-            const halfSize = config.floorSize / 2;
-            if (pos.x > -halfSize && pos.x < halfSize && pos.z > -halfSize && pos.z < halfSize) {
-                maxY = Math.max(maxY, 0);
+        charGroup = new THREE.Group();
+        scene.add(charGroup);
+
+        updateCharacterPreview();
+
+        let isDragging = false, startX = 0;
+        container.onmousedown = (e) => { isDragging = true; startX = e.clientX; };
+        window.onmouseup = () => isDragging = false;
+        window.onmousemove = (e) => {
+            if (isDragging) {
+                charGroup.rotation.y += (e.clientX - startX) * 0.01;
+                startX = e.clientX;
             }
+        };
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!isDragging) charGroup.rotation.y += 0.005;
+            charGroup.position.y = -0.4 + Math.sin(Date.now() * 0.002) * 0.05;
+            renderer.render(scene, camera);
+        }
+        animate();
+    }
+
+    function updateCharacterPreview() {
+        while(charGroup.children.length > 0){ charGroup.remove(charGroup.children[0]); }
+
+        if (currentSkin === "👨") {
+            // Cabeza Cúbica
+            const head = new THREE.Mesh(
+                new THREE.BoxGeometry(0.7, 0.7, 0.7),
+                new THREE.MeshStandardMaterial({ color: 0xc4a484 })
+            );
+            head.position.y = 0.85;
+
+            // Pelo
+            const hair = new THREE.Mesh(
+                new THREE.BoxGeometry(0.72, 0.22, 0.72),
+                new THREE.MeshStandardMaterial({ color: 0x3d2b1f })
+            );
+            hair.position.y = 0.25;
+            head.add(hair);
+
+            // Ojos Cute Grandes
+            const eyeGeo = new THREE.CircleGeometry(0.16, 32);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const eL = new THREE.Mesh(eyeGeo, eyeMat);
+            eL.position.set(-0.22, -0.05, 0.36);
+            const eR = eL.clone();
+            eR.position.x = 0.22;
+            
+            const shine = new THREE.Mesh(new THREE.CircleGeometry(0.05, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            shine.position.set(0.06, 0.06, 0.01);
+            eL.add(shine); eR.add(shine.clone());
+            head.add(eL, eR);
+
+            // Auriculares
+            const pMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
+            const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.12, 32), pMat);
+            pL.rotation.z = Math.PI/2; pL.position.x = -0.42;
+            const pR = pL.clone(); pR.position.x = 0.42;
+            head.add(pL, pR);
+
+            // Cuerpo Cápsula
+            const body = new THREE.Mesh(
+                new THREE.CapsuleGeometry(0.32, 0.6, 4, 16),
+                new THREE.MeshStandardMaterial({ color: 0x005a9e })
+            );
+            body.position.y = 0.25;
+
+            // PATAS (Las que pediste)
+            const footGeo = new THREE.SphereGeometry(0.14, 16, 16);
+            const footMat = new THREE.MeshStandardMaterial({ color: 0x004070 });
+            const footL = new THREE.Mesh(footGeo, footMat);
+            footL.position.set(-0.16, -0.15, 0.05);
+            footL.scale.y = 0.6;
+            const footR = footL.clone();
+            footR.position.x = 0.16;
+
+            charGroup.add(head, body, footL, footR);
         } else {
-            const bounds = new THREE.Box3().setFromObject(b);
-            if (pos.x > bounds.min.x - pR && pos.x < bounds.max.x + pR &&
-                pos.z > bounds.min.z - pR && pos.z < bounds.max.z + pR) {
-                if (pos.y >= bounds.max.y - 0.25) {
-                    maxY = Math.max(maxY, bounds.max.y);
-                }
-            }
-        }
-    });
-    return maxY;
-}
-
-function isColliding(pos) {
-    const pR = 0.3;
-    for (let b of physicalBlocks) {
-        if (b === floor) continue;
-        const bounds = new THREE.Box3().setFromObject(b);
-        if (pos.y < bounds.max.y - 0.1 && pos.y + 1.2 > bounds.min.y) {
-            if (pos.x > bounds.min.x - pR && pos.x < bounds.max.x + pR &&
-                pos.z > bounds.min.z - pR && pos.z < bounds.max.z + pR) return true;
-        }
-    }
-    return false;
-}
-
-// --- PERSONAJE CUTE (NUEVO DISEÑO INTEGRADO) ---
-const player = new THREE.Group();
-player.position.copy(spawnPoint); 
-const cuerpoVisual = new THREE.Group();
-player.add(cuerpoVisual);
-
-// Materiales Cute
-const matPiel = new THREE.MeshStandardMaterial({color: 0xc4a484, roughness: 0.8});
-const matPelo = new THREE.MeshStandardMaterial({color: 0x3d2b1f, roughness: 0.9}); 
-const matAzulCuerpo = new THREE.MeshStandardMaterial({color: 0x005a9e, roughness: 0.7});
-const matAuriculares = new THREE.MeshStandardMaterial({color: 0x007ceb});
-const matOjoNegro = new THREE.MeshBasicMaterial({color: 0x000000});
-const matBrillo = new THREE.MeshBasicMaterial({color: 0xffffff});
-
-const cabezaGroup = new THREE.Group();
-cabezaGroup.position.y = 0.8; 
-cuerpoVisual.add(cabezaGroup);
-
-// Cabeza Cúbica
-const cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), matPiel);
-cabezaMesh.castShadow = true;
-cabezaGroup.add(cabezaMesh);
-
-// Pelo superior
-const peloTop = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.62), matPelo);
-peloTop.position.y = 0.22; cabezaMesh.add(peloTop);
-
-// Ojos Grandes con Brillo
-const listaOjos = [];
-function crearOjoCute(x) {
-    const ojoGroup = new THREE.Group();
-    const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.12, 32), matOjoNegro);
-    const brillo = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), matBrillo);
-    brillo.position.set(0.04, 0.04, 0.002);
-    ojoGroup.add(pupila, brillo);
-    ojoGroup.position.set(x, -0.05, 0.31);
-    listaOjos.push(ojoGroup);
-    return ojoGroup;
-}
-cabezaMesh.add(crearOjoCute(-0.18), crearOjoCute(0.18));
-
-// Auriculares laterales
-const audioL = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 32), matAuriculares);
-audioL.rotation.z = Math.PI/2; audioL.position.x = -0.35;
-const audioR = audioL.clone(); audioR.position.x = 0.35;
-cabezaMesh.add(audioL, audioR);
-
-// Cuerpo de Cápsula
-const cuerpoRef = new THREE.Mesh(new THREE.CapsuleGeometry(0.25, 0.5, 4, 16), matAzulCuerpo);
-cuerpoRef.position.y = 0.35; cuerpoVisual.add(cuerpoRef);
-
-// Brazos
-function crearBrazo(x) {
-    const bGroup = new THREE.Group();
-    const hombro = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matAzulCuerpo);
-    const mano = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), matPiel);
-    mano.position.y = -0.25;
-    bGroup.add(hombro, mano);
-    bGroup.position.set(x, 0.5, 0);
-    return bGroup;
-}
-const brazoI = crearBrazo(-0.32);
-const brazoD = crearBrazo(0.32);
-cuerpoVisual.add(brazoI, brazoD);
-
-// Piernas (Invisibles o fusionadas con la cápsula para efecto "limpio", pero aquí las ponemos para animación)
-function crearPierna(x) {
-    const pGroup = new THREE.Group();
-    const pierna = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.1, 4, 8), new THREE.MeshStandardMaterial({color:0x004070}));
-    pGroup.add(pierna);
-    pGroup.position.set(x, 0.1, 0);
-    return pGroup;
-}
-const piernaI = crearPierna(-0.12);
-const piernaD = crearPierna(0.12);
-player.add(piernaI, piernaD);
-
-scene.add(player);
-
-// --- LÓGICA DE JUEGO ---
-let vy = 0, onGround = true, isDead = false, isHeadMode = false;
-const gravity = -0.015, jumpForce = 0.3;
-const keys = {};
-let yaw = 0, step = 0, rollStep = 0, blinkTimer = 0;
-
-window.addEventListener("keydown", e => {
-    keys[e.key.toLowerCase()] = true;
-    if(e.code === "Space" && onGround && !isDead) vy = jumpForce;
-    if(e.key.toLowerCase() === "c" && onGround && !isDead) isHeadMode = !isHeadMode;
-});
-window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-document.body.onclick = () => document.body.requestPointerLock();
-document.addEventListener("mousemove", e => { if(document.pointerLockElement) yaw -= e.movementX * 0.003; });
-
-function animate() {
-    requestAnimationFrame(animate);
-
-    const currentSurfaceY = getSurfaceY(player.position);
-    player.position.y += vy;
-    
-    if (player.position.y > currentSurfaceY) {
-        vy += gravity;
-        onGround = false;
-    } else {
-        if (currentSurfaceY > -50) {
-            player.position.y = currentSurfaceY;
-            vy = Math.max(0, vy); 
-            onGround = true;
-        } else {
-            onGround = false;
-            vy += gravity;
+            // Placeholder para otros personajes
+            const mystery = new THREE.Mesh(
+                new THREE.TorusKnotGeometry(0.3, 0.1, 64, 8),
+                new THREE.MeshStandardMaterial({ color: 0x4db8ff })
+            );
+            mystery.position.y = 0.5;
+            charGroup.add(mystery);
         }
     }
 
-    if (player.position.y < -15) {
-        player.position.copy(spawnPoint); 
-        player.position.y = 5;
-        vy = 0;
-    }
-
-    let moving = false, dir = new THREE.Vector3();
-    if(!isDead) {
-        if(keys.w){ dir.z -= 1; moving = true; }
-        if(keys.s){ dir.z += 1; moving = true; }
-        if(keys.a){ dir.x -= 1; moving = true; }
-        if(keys.d){ dir.x += 1; moving = true; }
-    }
-
-    let moveSpeed = isHeadMode ? 0.12 : 0.09;
-    let animationSpeed = (keys.shift && !isHeadMode) ? 0.45 : 0.25;
-    if (keys.shift && !isHeadMode) moveSpeed = 0.18;
-
-    player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
-
-    if(moving && !isDead) {
-        const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        const nextX = player.position.clone(); nextX.x += moveDir.x * moveSpeed;
-        if (!isColliding(nextX)) player.position.x = nextX.x;
-        const nextZ = player.position.clone(); nextZ.z += moveDir.z * moveSpeed;
-        if (!isColliding(nextZ)) player.position.z = nextZ.z;
-        
-        if (!isHeadMode && onGround) {
-            step += animationSpeed;
-            piernaI.rotation.x = Math.sin(step) * 0.8;
-            piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-            brazoI.rotation.x = Math.sin(step + Math.PI) * 0.5;
-            brazoD.rotation.x = Math.sin(step) * 0.5;
-        } else if (isHeadMode) {
-            rollStep += 0.15;
-            cabezaMesh.rotation.x = -rollStep; 
-        }
-    } else {
-        step = THREE.MathUtils.lerp(step, 0, 0.1);
-        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
-        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
-        brazoI.rotation.x = THREE.MathUtils.lerp(brazoI.rotation.x, 0, 0.1);
-        brazoD.rotation.x = THREE.MathUtils.lerp(brazoD.rotation.x, 0, 0.1);
-        if(!isHeadMode) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
-    }
-
-    // Modo Agachado/Cabeza
-    const t = 0.15;
-    if (isHeadMode && !isDead) {
-        cuerpoRef.scale.set(0,0,0); brazoI.scale.set(0,0,0); brazoD.scale.set(0,0,0);
-        piernaI.scale.set(0,0,0); piernaD.scale.set(0,0,0);
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.3, t);
-    } else {
-        cuerpoRef.scale.set(1, 1, 1); brazoI.scale.set(1,1,1); brazoD.scale.set(1,1,1);
-        piernaI.scale.set(1,1,1); piernaD.scale.set(1,1,1);
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.8, t);
-    }
-
-    blinkTimer--;
-    if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
-    listaOjos.forEach(ojo => { ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; });
-
-    let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 3.5);
-    const camOffset = new THREE.Vector3(0, isHeadMode ? 0.8 : 1.8, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.8, 0)));
-    
-    renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
+    renderInventory();
+    window.onload = init3D;
 </script>
 </body>
 </html>
