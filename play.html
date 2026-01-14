@@ -34,8 +34,6 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(config.skyColor);
 
-// --- MEJORA 1: Niebla Realista (FogExp2) ---
-// La niebla exponencial se ve mucho más suave que la normal
 const fogDensity = config.skyColor === "#1a1a2e" ? 0.05 : 0.01;
 scene.fog = new THREE.FogExp2(config.skyColor, fogDensity);
 
@@ -43,12 +41,9 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHei
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-// Mejora de color del renderizado
 renderer.toneMapping = THREE.ReinhardToneMapping;
 document.body.appendChild(renderer.domElement);
 
-// --- MEJORA 2: Iluminación Hemisférica ---
-// Esto hace que la luz venga del cielo (arriba) y del suelo (abajo), dando realismo
 const hemiLight = new THREE.HemisphereLight(config.skyColor, config.floorColor, 0.6);
 scene.add(hemiLight);
 
@@ -58,12 +53,10 @@ scene.add(ambient);
 const sunLight = new THREE.DirectionalLight(0xffffff, config.ambientIntensity);
 sunLight.position.set(50, 100, 50);
 sunLight.castShadow = true;
-// Mejorar calidad de sombras
 sunLight.shadow.mapSize.width = 2048;
 sunLight.shadow.mapSize.height = 2048;
 scene.add(sunLight);
 
-// --- MEJORA 3: Un Sol/Luna visual en el cielo ---
 const sunGeo = new THREE.SphereGeometry(10, 32, 32);
 const sunMat = new THREE.MeshBasicMaterial({
     color: config.skyColor === "#1a1a2e" ? 0xffffcc : 0xffffee 
@@ -72,7 +65,6 @@ const sunVisual = new THREE.Mesh(sunGeo, sunMat);
 sunVisual.position.set(100, 150, -200);
 scene.add(sunVisual);
 
-// --- SUELO DINÁMICO (BASEPLATE) ---
 const floorSize = config.floorSize; 
 const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(floorSize, floorSize), 
@@ -86,19 +78,34 @@ floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// --- CARGA DE BLOQUES DEL EDITOR ---
+// --- CARGA DE BLOQUES Y SISTEMA DE COLISIÓN ---
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-const boxMat = new THREE.MeshStandardMaterial({color: 0x888888});
+const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3}); // Usamos el azul de tu editor
+const physicalBlocks = [];
+
 mapData.forEach(b => {
     const block = new THREE.Mesh(boxGeo, boxMat);
-    block.position.set(b.x, 0.5, b.y); 
+    // IMPORTANTE: Ajuste de +0.5 para alinear el bloque con el centro de la rejilla del editor
+    block.position.set(b.x + 0.5, 0.5, b.y + 0.5); 
     block.castShadow = true;
     block.receiveShadow = true;
     scene.add(block);
+    physicalBlocks.push(block);
 });
 
-// --- PERSONAJE (TU CÓDIGO ORIGINAL) ---
+function checkCollision(targetPos) {
+    const pRadius = 0.35; // Radio de colisión del personaje
+    for (let block of physicalBlocks) {
+        const dx = Math.abs(targetPos.x - block.position.x);
+        const dz = Math.abs(targetPos.z - block.position.z);
+        // Si el personaje intenta entrar en el área del bloque 1x1
+        if (dx < 0.5 + pRadius && dz < 0.5 + pRadius) return true;
+    }
+    return false;
+}
+
+// --- PERSONAJE ---
 const player = new THREE.Group();
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
@@ -151,7 +158,7 @@ piernaD.position.set(0.12, 0.1, 0); player.add(piernaD);
 
 scene.add(player);
 
-// --- LÓGICA (TU CÓDIGO ORIGINAL) ---
+// --- LÓGICA ---
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
 const gravity = -0.012, jumpForce = 0.25;
 const keys = {};
@@ -207,17 +214,19 @@ function animate() {
 
     let moveSpeed = isHeadMode ? 0.12 : 0.09;
     let animationSpeed = 0.25;
-
-    if (keys.shift && !isHeadMode) {
-        moveSpeed = 0.18;      
-        animationSpeed = 0.45; 
-    }
+    if (keys.shift && !isHeadMode) { moveSpeed = 0.18; animationSpeed = 0.45; }
 
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
 
-    if(moving) {
+    if(moving && !isDead) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        player.position.addScaledVector(moveDir, moveSpeed);
+        
+        // --- ARREGLO DE COLISIÓN (Deslizamiento en ejes) ---
+        const nextPosX = player.position.clone().add(new THREE.Vector3(moveDir.x * moveSpeed, 0, 0));
+        if(!checkCollision(nextPosX)) player.position.x = nextPosX.x;
+
+        const nextPosZ = player.position.clone().add(new THREE.Vector3(0, 0, moveDir.z * moveSpeed));
+        if(!checkCollision(nextPosZ)) player.position.z = nextPosZ.z;
         
         if (!isHeadMode && onGround) {
             step += animationSpeed;
