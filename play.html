@@ -91,7 +91,6 @@ function createAssetMesh(type) {
         const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.08), woodMat);
         back.position.set(0, 0.65, -0.21);
         group.add(seat, back);
-        // 4 Patas
         const legGeo = new THREE.BoxGeometry(0.06, 0.4, 0.06);
         for(let x of [-0.2, 0.2]) for(let z of [-0.2, 0.2]) {
             const leg = new THREE.Mesh(legGeo, woodMat);
@@ -102,7 +101,6 @@ function createAssetMesh(type) {
         const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 1.2), woodMat);
         top.position.y = 0.75;
         group.add(top);
-        // 4 Patas largas
         const legGeo = new THREE.BoxGeometry(0.1, 0.75, 0.1);
         for(let x of [-0.5, 0.5]) for(let z of [-0.5, 0.5]) {
             const leg = new THREE.Mesh(legGeo, woodMat);
@@ -118,7 +116,6 @@ function createAssetMesh(type) {
         const screen = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.39, 0.01), new THREE.MeshBasicMaterial({color: 0x111111}));
         screen.position.set(0, 0.35, 0.026);
         group.add(stand, neck, monitor, screen);
-        group.position.y = 0.79; // Colocar sobre la mesa por defecto si se desea
     } else if (type === 'bed') {
         const frame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.2, 2.1), woodMat);
         frame.position.y = 0.15;
@@ -171,10 +168,11 @@ mapData.forEach(b => {
     } else {
         block = createAssetMesh(b.type);
         block.position.set(b.x + 0.5, 0, b.y + 0.5);
-        // Hitbox de colisión personalizada
         let hW = 0.9, hH = 1, hD = 0.9;
-        if(b.type === 'table') { hW = 1.2; hD = 1.2; }
-        if(b.type === 'bed') { hW = 1.1; hD = 2.1; }
+        if(b.type === 'table') { hW = 1.2; hD = 1.2; hH = 0.83; }
+        if(b.type === 'bed') { hW = 1.1; hD = 2.1; hH = 0.5; }
+        if(b.type === 'chair') { hH = 0.5; }
+        if(b.type === 'pc') { hH = 0.6; }
         if(b.type === 'flashlight') { hW = 0.2; hD = 0.2; hH = 0.2; }
         
         const hitbox = new THREE.Mesh(new THREE.BoxGeometry(hW, hH, hD), new THREE.MeshBasicMaterial({visible: false}));
@@ -184,15 +182,16 @@ mapData.forEach(b => {
     scene.add(block);
 });
 
-// FUNCIONES DE COLISIÓN
+// FUNCIONES DE COLISIÓN (PULIDAS PARA NO FLOTAR)
 function getSurfaceY(pos) {
     let maxY = 0; 
-    const pR = 0.3; 
+    const pR = 0.25; 
     physicalBlocks.forEach(b => {
         const bounds = new THREE.Box3().setFromObject(b);
         if (pos.x > bounds.min.x - pR && pos.x < bounds.max.x + pR &&
             pos.z > bounds.min.z - pR && pos.z < bounds.max.z + pR) {
-            if (pos.y >= bounds.max.y - 0.2) maxY = Math.max(maxY, bounds.max.y);
+            // Ajuste fino para detectar la superficie superior sin margen de flotación
+            if (pos.y >= bounds.max.y - 0.25) maxY = Math.max(maxY, bounds.max.y);
         }
     });
     return maxY;
@@ -202,7 +201,8 @@ function isColliding(pos) {
     const pR = 0.3;
     for (let b of physicalBlocks) {
         const bounds = new THREE.Box3().setFromObject(b);
-        if (pos.y < bounds.max.y && pos.y + 1.5 > bounds.min.y) {
+        // Solo colisiona si el jugador está "dentro" de la altura del bloque pero no encima
+        if (pos.y < bounds.max.y - 0.1 && pos.y + 1.2 > bounds.min.y) {
             if (pos.x > bounds.min.x - pR && pos.x < bounds.max.x + pR &&
                 pos.z > bounds.min.z - pR && pos.z < bounds.max.z + pR) return true;
         }
@@ -282,18 +282,24 @@ function animate() {
     requestAnimationFrame(animate);
 
     const currentSurfaceY = getSurfaceY(player.position);
+    
+    // Si estamos por encima de la superficie, aplicamos gravedad
+    if (player.position.y > currentSurfaceY) {
+        vy += gravity;
+        onGround = false;
+    } else {
+        // Pegamos al jugador al suelo exactamente
+        player.position.y = currentSurfaceY;
+        vy = 0;
+        onGround = true;
+    }
+
     player.position.y += vy;
     
     const half = floorSize / 2;
     const outOfBounds = Math.abs(player.position.x) > half || Math.abs(player.position.z) > half;
 
-    if (player.position.y > currentSurfaceY || outOfBounds) {
-        vy += gravity; onGround = false;
-    } else if (!isDead) {
-        player.position.y = currentSurfaceY; vy = 0; onGround = true;
-    }
-
-    if (player.position.y < -5) {
+    if (player.position.y < -5 || outOfBounds && player.position.y < -5) {
         isDead = true;
         panicStep += 0.5;
         brazoI.position.y = 0.4 + Math.sin(panicStep) * 0.2;
