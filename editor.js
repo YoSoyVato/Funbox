@@ -32,7 +32,7 @@ content.innerHTML = `
         <button onclick="currentTool='block'" class="asset-btn active" title="Bloque">🟦</button>
         <button onclick="currentTool='chair'" class="asset-btn" title="Silla">🪑</button>
         <button onclick="currentTool='table'" class="asset-btn" title="Mesa">🧱</button>
-        <button onclick="currentTool='border'" class="asset-btn" title="Cama">🛏️</button>
+        <button onclick="currentTool='bed'" class="asset-btn" title="Cama">🛏️</button>
         <button onclick="currentTool='pc'" class="asset-btn" title="Computadora">🖥️</button>
         <button onclick="currentTool='flashlight'" class="asset-btn" title="Linterna">🔦</button>
     </div>
@@ -55,7 +55,7 @@ content.innerHTML = `
         </div>
         <canvas id="canvas" style="cursor: crosshair; background: #111; flex: 1;"></canvas>
         
-        <div id="editor-console" style="background: #1a1a1a; color: #ff5555; font-family: monospace; font-size: 12px; padding: 10px; border-top: 2px solid #333; display: none; max-height: 80px; overflow-y: auto;">
+        <div id="editor-console" style="background: #2a0000; color: #ff6666; font-family: monospace; font-size: 12px; padding: 10px; border-top: 2px solid #ff4444; display: none; max-height: 100px; overflow-y: auto; white-space: pre-wrap;">
         </div>
     </div>
 
@@ -134,19 +134,20 @@ document.getElementById("open-script").onclick = () => {
 
         if (isMalicious) {
             editorConsole.style.display = "block";
-            editorConsole.innerHTML = "❌ SEGURIDAD: Uso prohibido de: " + detectedWord;
-            alert("Error de seguridad detectado. Revisa la consola del editor.");
+            editorConsole.innerHTML = "❌ ERROR DE SEGURIDAD: Uso prohibido de la palabra: " + detectedWord;
+            alert("Error de seguridad detectado. Revisa la consola roja.");
         } else {
             // 2. VALIDACIÓN DE SINTAXIS (CONSOLA)
             try {
                 new Function('game', inputCode); // Prueba de compilación
                 customScriptCode = inputCode;
+                localStorage.setItem("funbox_custom_script", customScriptCode); // Guardar preventivamente
                 editorConsole.style.display = "none";
                 alert("Script actualizado y verificado correctamente.");
             } catch (e) {
                 editorConsole.style.display = "block";
-                editorConsole.innerHTML = "❌ ERROR DE SINTAXIS: " + e.message;
-                alert("Tu código tiene errores. Revisa la consola roja en el editor.");
+                editorConsole.innerHTML = "❌ ERROR DE SINTAXIS:\n" + e.message;
+                alert("Tu código tiene errores. Revisa la consola roja abajo.");
             }
         }
     }
@@ -189,6 +190,7 @@ document.getElementById("clear").onclick = () => {
         blocks = [{ x: 0, y: 0, type: "spawn" }]; 
         customScriptCode = "// Escribe tu código PRO aquí\n// Ejemplo: game.setFloor('red');";
         localStorage.removeItem("funbox_custom_script");
+        localStorage.removeItem("funbox_map");
         editorConsole.style.display = "none";
         alert("Todo limpio.");
     }
