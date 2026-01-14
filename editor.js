@@ -43,6 +43,9 @@ content.innerHTML = `
         .asset-btn.active { border-color: #2196f3; background: #1a3a5a; }
         .workspace-item { cursor: pointer; transition: 0.2s; }
         .workspace-item:hover { background: #444 !important; }
+        /* Scrollbar para la consola */
+        #editor-console::-webkit-scrollbar { width: 8px; }
+        #editor-console::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
     </style>
 
     <div style="flex: 1; display: flex; flex-direction: column; background: #222;">
@@ -55,7 +58,8 @@ content.innerHTML = `
         </div>
         <canvas id="canvas" style="cursor: crosshair; background: #111; flex: 1;"></canvas>
         
-        <div id="editor-console" style="background: #2a0000; color: #ff6666; font-family: monospace; font-size: 12px; padding: 10px; border-top: 2px solid #ff4444; display: none; max-height: 100px; overflow-y: auto; white-space: pre-wrap;">
+        <div id="editor-console" style="background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; font-size: 12px; padding: 12px; border-top: 2px solid #333; height: 130px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4;">
+            <div style="color: #666;">> Funbox Studio Console v1.0 - Lista para scripts.</div>
         </div>
     </div>
 
@@ -99,6 +103,15 @@ canvas = document.getElementById("canvas");
 ctx = canvas.getContext("2d");
 const editorConsole = document.getElementById("editor-console");
 
+// Función para imprimir mensajes en la consola visual
+function printToConsole(msg, color = "#00ff00") {
+    const line = document.createElement("div");
+    line.style.color = color;
+    line.textContent = `> ${msg}`;
+    editorConsole.appendChild(line);
+    editorConsole.scrollTop = editorConsole.scrollHeight;
+}
+
 // LÓGICA DE INPUTS
 document.getElementById("floorColor").oninput = (e) => gameConfig.floorColor = e.target.value;
 document.getElementById("floorSize").oninput = (e) => {
@@ -115,8 +128,6 @@ document.getElementById("open-script").onclick = () => {
     const inputCode = prompt("📜 SCRIPT EDITOR (PRO):\nEscribe tu código JavaScript. Usa 'game' para interactuar.", customScriptCode);
     
     if (inputCode !== null) {
-        editorConsole.style.display = "none"; // Limpiar consola al abrir
-
         // 1. SEGURIDAD (ANTI-MALWARE)
         const forbiddenWords = ["while", "setInterval", "localStorage", "location", "document", "window", "fetch", "XMLHttpRequest"];
         let isMalicious = false;
@@ -133,21 +144,18 @@ document.getElementById("open-script").onclick = () => {
         if (inputCode.match(/for\s*\(\s*;\s*;\s*\)/)) isMalicious = true;
 
         if (isMalicious) {
-            editorConsole.style.display = "block";
-            editorConsole.innerHTML = "❌ ERROR DE SEGURIDAD: Uso prohibido de la palabra: " + detectedWord;
-            alert("Error de seguridad detectado. Revisa la consola roja.");
+            printToConsole("❌ ERROR DE SEGURIDAD: Uso prohibido de: " + detectedWord, "#ff4444");
+            alert("Error de seguridad detectado. Revisa la consola.");
         } else {
             // 2. VALIDACIÓN DE SINTAXIS (CONSOLA)
             try {
                 new Function('game', inputCode); // Prueba de compilación
                 customScriptCode = inputCode;
-                localStorage.setItem("funbox_custom_script", customScriptCode); // Guardar preventivamente
-                editorConsole.style.display = "none";
-                alert("Script actualizado y verificado correctamente.");
+                localStorage.setItem("funbox_custom_script", customScriptCode); 
+                printToConsole("✅ Script verificado y guardado con éxito.", "#4caf50");
             } catch (e) {
-                editorConsole.style.display = "block";
-                editorConsole.innerHTML = "❌ ERROR DE SINTAXIS:\n" + e.message;
-                alert("Tu código tiene errores. Revisa la consola roja abajo.");
+                printToConsole("❌ ERROR DE SINTAXIS:\n" + e.message, "#ff4444");
+                alert("Tu código tiene errores. Revisa la consola.");
             }
         }
     }
@@ -191,7 +199,7 @@ document.getElementById("clear").onclick = () => {
         customScriptCode = "// Escribe tu código PRO aquí\n// Ejemplo: game.setFloor('red');";
         localStorage.removeItem("funbox_custom_script");
         localStorage.removeItem("funbox_map");
-        editorConsole.style.display = "none";
+        printToConsole("🧹 Workspace limpiado.", "#888");
         alert("Todo limpio.");
     }
 };
