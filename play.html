@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Funko Pro Fixed</title>
+<title>Funbox - Parkour Pro</title>
 <style>
   body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
@@ -17,8 +17,8 @@
 <body>
 
 <div id="ui">
-  🏃 **Funbox Pro: Animación Mejorada**<br>
-  WASD: Caminar | **Espacio: SALTAR** | **C: Squish**
+  🏃 **Funbox: Parkour Mode**<br>
+  WASD: Moverse | **Espacio: SALTO (con inercia)** | **C: Squish**
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -60,7 +60,6 @@ const matOjoNegro = new THREE.MeshBasicMaterial({color: 0x111111});
 // CABEZA
 const cabeza = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.5, 0.5), matPiel);
 cabeza.position.y = 0.75;
-cabeza.castShadow = true;
 cuerpoVisual.add(cabeza);
 
 const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.22, 0.52), matPelo);
@@ -68,7 +67,7 @@ pelo.position.y = 0.2; cabeza.add(pelo);
 const barba = new THREE.Mesh(new THREE.BoxGeometry(0.57, 0.15, 0.51), matPelo);
 barba.position.y = -0.18; cabeza.add(barba);
 
-// OJOS (CUTE CON DOBLE BRILLO)
+// OJOS CUTE
 const listaOjos = [];
 function crearOjo(x) {
     const ojoGroup = new THREE.Group();
@@ -132,20 +131,23 @@ function animate() {
     if (player.position.y < -0.5) {
         isDead = true;
         panicStep += 0.5;
-        // Pataleo y agitación de brazos
         brazoI.position.y = 0.4 + Math.sin(panicStep) * 0.2;
         brazoD.position.y = 0.4 + Math.cos(panicStep) * 0.2;
         piernaI.rotation.x = Math.sin(panicStep * 1.5) * 1;
         piernaD.rotation.x = Math.cos(panicStep * 1.5) * 1;
-        cabeza.rotation.x = -0.4; // Cabeza hacia atrás por el susto
+        cabeza.rotation.x = -0.4;
         
-        if (player.position.y < -20) { // Respawn
+        if (player.position.y < -20) {
             player.position.set(0, 5, 0);
             cabeza.rotation.set(0,0,0);
+            // RESET DE BRAZOS TRAS MORIR
+            brazoI.position.y = 0.4;
+            brazoD.position.y = 0.4;
             isDead = false; vy = 0; panicStep = 0;
         }
     }
 
+    // MOVIMIENTO (Ahora funciona en el aire)
     let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
@@ -154,19 +156,35 @@ function animate() {
         if(keys.d){ dir.x += 1; moving = true; }
     }
 
-    if(moving && onGround) {
+    if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+        // Aplica movimiento siempre
         player.position.addScaledVector(moveDir, keys.c ? 0.04 : 0.09);
         player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
-        step += 0.25;
-        piernaI.rotation.x = Math.sin(step) * 0.8;
-        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-        brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
-        brazoD.position.z = Math.sin(step) * 0.15;
-    } else if (!isDead) {
-        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, onGround ? 0 : -0.5, 0.1);
-        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, onGround ? 0 : -0.5, 0.1);
-        cabeza.rotation.x = THREE.MathUtils.lerp(cabeza.rotation.x, 0, 0.1);
+        
+        if(onGround) {
+            step += 0.25;
+            piernaI.rotation.x = Math.sin(step) * 0.8;
+            piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
+            brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
+            brazoD.position.z = Math.sin(step) * 0.15;
+        }
+    }
+
+    // Animación de Salto (Fix de brazos quietos)
+    if(!onGround && !isDead) {
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, -0.5, 0.1);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, -0.5, 0.1);
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.6, 0.1);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.6, 0.1);
+    } else if (onGround) {
+        // RESET SUAVE DE POSICIONES AL TOCAR SUELO
+        if(!moving) {
+            piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.2);
+            piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.2);
+        }
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
     }
 
     // Pestañeo
