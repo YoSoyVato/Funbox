@@ -23,10 +23,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
+// --- NUEVO: CARGAR CONFIGURACIÓN DEL EDITOR ---
+const floorConfig = JSON.parse(localStorage.getItem("funbox_floor_config")) || { color: "#eeeeee", size: 500 };
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf0f2f5); 
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000); // Aumentado rango de visión para tamaños grandes
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -38,11 +41,11 @@ light.position.set(5, 10, 5);
 light.castShadow = true;
 scene.add(light);
 
-// --- AJUSTE SUELO 500x500 ---
-const floorSize = 500; // Mundo grande
+// --- SUELO DINÁMICO (BASEPLATE) ---
+const floorSize = floorConfig.size; 
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(floorSize, floorSize), // Plano en vez de círculo
-    new THREE.MeshStandardMaterial({color: 0xeeeeee})
+    new THREE.PlaneGeometry(floorSize, floorSize), 
+    new THREE.MeshStandardMaterial({color: floorConfig.color}) // Aplica el color del editor
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
@@ -133,7 +136,7 @@ function animate() {
     requestAnimationFrame(animate);
     player.position.y += vy;
     
-    // --- LÓGICA DE CAÍDA ACTUALIZADA PARA 500x500 ---
+    // --- LÓGICA DE CAÍDA ACTUALIZADA PARA TAMAÑO DINÁMICO ---
     const half = floorSize / 2;
     const outOfBounds = Math.abs(player.position.x) > half || Math.abs(player.position.z) > half;
 
