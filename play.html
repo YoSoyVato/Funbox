@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Humano Cute</title>
+<title>Funbox - Estilo Funko</title>
 <style>
-  body { margin:0; overflow:hidden; background: #e0f7fa; }
+  body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
-    position: fixed; top:20px; left:20px; color:#333;
+    position: fixed; top:20px; left:20px; color:#444;
     font-family: 'Arial Rounded MT Bold', sans-serif;
     background: rgba(255, 255, 255, 0.9);
     padding:15px; border-radius:20px; z-index:10;
@@ -17,14 +17,14 @@
 <body>
 
 <div id="ui">
-  👦 **Funbox: Personaje Humano**<br>
+  📦 **Funbox: Estilo Funko**<br>
   WASD: Caminar | **C: Squish** | **R: Frontal**
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xa2d2ff); 
+scene.background = new THREE.Color(0xf0f0f0); 
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
@@ -32,84 +32,80 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// ILUMINACIÓN AMIGABLE
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-const light = new THREE.DirectionalLight(0xffffff, 0.8);
-light.position.set(5, 12, 8);
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const light = new THREE.DirectionalLight(0xffffff, 0.6);
+light.position.set(5, 10, 5);
 light.castShadow = true;
 scene.add(light);
 
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(100, 100), 
-    new THREE.MeshStandardMaterial({color: 0xffffff})
+    new THREE.CircleGeometry(50, 32), 
+    new THREE.MeshStandardMaterial({color: 0xdddddd})
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// --- 2. EL PERSONAJE HUMANO ---
+// --- 2. EL PERSONAJE FUNKO ---
 const player = new THREE.Group();
-player.position.y = 0.4; 
+player.position.y = 0.2; 
 
-// Materiales
-const matPiel = new THREE.MeshStandardMaterial({color: 0xffdbac}); // Tono piel claro
-const matCamiseta = new THREE.MeshStandardMaterial({color: 0x3a86ff}); // Azul brillante
-const matPantalon = new THREE.MeshStandardMaterial({color: 0x333333}); // Gris oscuro
-const matPelo = new THREE.MeshStandardMaterial({color: 0x4e342e}); // Marrón
-const matOjo = new THREE.MeshStandardMaterial({color: 0x222222});
+const matPiel = new THREE.MeshStandardMaterial({color: 0xffdbac});
+const matPelo = new THREE.MeshStandardMaterial({color: 0x4e342e}); // Marrón barba/pelo
+const matRopa = new THREE.MeshStandardMaterial({color: 0x2196f3}); // Azul
+const matNegro = new THREE.MeshStandardMaterial({color: 0x111111});
 
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
 
-// CABEZA (Chibi)
-const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.28, 32, 32), matPiel);
-cabeza.position.y = 0.85;
+// CABEZA GRANDE (Típica de Funko: Cuadrada-redondeada)
+const cabezaGeo = new THREE.BoxGeometry(0.55, 0.5, 0.5);
+// Suavizamos un poco las esquinas con una esfera si prefieres, 
+// pero usaremos una caja redondeada visualmente con materiales.
+const cabeza = new THREE.Mesh(cabezaGeo, matPiel);
+cabeza.position.y = 0.75;
 cabeza.castShadow = true;
 cuerpoVisual.add(cabeza);
 
-// PELO (Un estilo de peinado simple)
-const pelo = new THREE.Mesh(new THREE.SphereGeometry(0.29, 32, 32, 0, Math.PI * 2, 0, Math.PI / 1.8), matPelo);
-pelo.position.y = 0.88;
+// PELO
+const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.2, 0.53), matPelo);
+pelo.position.y = 0.2;
 cabeza.add(pelo);
 
-// TORSO (Camiseta)
-const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.35, 8, 20), matCamiseta);
-torso.position.y = 0.45;
-torso.castShadow = true;
-cuerpoVisual.add(torso);
+// BARBITA (Rodeando la parte baja de la cara)
+const barba = new THREE.Mesh(new THREE.BoxGeometry(0.57, 0.15, 0.52), matPelo);
+barba.position.y = -0.18;
+cabeza.add(barba);
 
-// OJOS KAWAII
+// CUERPO PEQUEÑITO (Compacto)
+const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.2, 4, 12), matRopa);
+cuerpo.position.y = 0.35;
+cuerpo.castShadow = true;
+cuerpoVisual.add(cuerpo);
+
+// OJOS FUNKO (Grandes, negros y separados)
 function crearOjo(x) {
-    const ojo = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), matOjo);
-    ojo.position.set(x, 0.85, 0.25);
-    const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({color:0xffffff}));
-    brillo.position.set(0.015, 0.015, 0.03);
+    const ojo = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), matNegro);
+    ojo.position.set(x, 0, 0.26); // Posicionados en la cara de la cabeza
+    const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    brillo.position.set(0.02, 0.02, 0.05);
     ojo.add(brillo);
     return ojo;
 }
-const ojoI = crearOjo(-0.1);
-const ojoD = crearOjo(0.1);
-cuerpoVisual.add(ojoI, ojoD);
+cabeza.add(crearOjo(-0.18), crearOjo(0.18));
 
-// BOCA (Sonrisa pequeña)
-const bocaGeo = new THREE.TorusGeometry(0.04, 0.01, 10, 20, Math.PI);
-const boca = new THREE.Mesh(bocaGeo, matOjo);
-boca.rotation.x = Math.PI; 
-boca.position.set(0, 0.78, 0.25);
-cuerpoVisual.add(boca);
-
-// BRAZOS (Con mangas)
-const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCamiseta);
-brazoI.position.set(-0.35, 0.5, 0);
-const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCamiseta);
-brazoD.position.set(0.35, 0.5, 0);
+// BRAZOS (Bolas pequeñas)
+const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), matPiel);
+brazoI.position.set(-0.3, 0.4, 0);
+const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), matPiel);
+brazoD.position.set(0.3, 0.4, 0);
 cuerpoVisual.add(brazoI, brazoD);
 
-// PIERNAS (Pantalones)
-const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.15, 4, 8), matPantalon);
-piernaI.position.set(-0.14, 0.1, 0);
-const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.15, 4, 8), matPantalon);
-piernaD.position.set(0.14, 0.1, 0);
+// PIERNAS CORTITAS
+const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.1, 4, 8), matNegro);
+piernaI.position.set(-0.12, 0.1, 0);
+const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.1, 4, 8), matNegro);
+piernaD.position.set(0.12, 0.1, 0);
 player.add(piernaI, piernaD);
 
 scene.add(player);
@@ -135,32 +131,27 @@ function animate() {
     if(keys.d){ dir.x += 1; moving = true; }
 
     const isCrouching = keys.c;
-    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, isCrouching ? 0.7 : 1.0, 0.15);
-    cuerpoVisual.scale.x = cuerpoVisual.scale.z = THREE.MathUtils.lerp(cuerpoVisual.scale.x, isCrouching ? 1.1 : 1.0, 0.15);
+    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, isCrouching ? 0.7 : 1.0, 0.2);
+    cuerpoVisual.scale.x = cuerpoVisual.scale.z = THREE.MathUtils.lerp(cuerpoVisual.scale.x, isCrouching ? 1.2 : 1.0, 0.2);
 
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.09);
+        player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.08);
         player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
-        step += 0.2;
-        piernaI.rotation.x = Math.sin(step) * 0.6;
-        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.6;
-        brazoI.position.y = 0.5 + Math.sin(step + Math.PI) * 0.05;
-        brazoD.position.y = 0.5 + Math.sin(step) * 0.05;
+        step += 0.25;
+        piernaI.rotation.x = Math.sin(step) * 0.8;
+        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
     } else {
         piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.2);
         piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.2);
         step += 0.05;
-        // Parpadeo
-        const blink = Math.floor(Date.now() / 200) % 40 === 0;
-        ojoI.scale.y = ojoD.scale.y = THREE.MathUtils.lerp(ojoI.scale.y, blink ? 0.1 : 1, 0.4);
     }
     
-    player.position.y = 0.1 + (moving ? Math.abs(Math.sin(step)) * 0.04 : Math.sin(step) * 0.01);
+    // Rebote de cabeza (bobblehead)
+    cabeza.position.y = 0.75 + Math.sin(step * 2) * 0.02;
 
-    // Cámara
-    let dist = keys.r ? -2.5 : 3.5;
-    const camOffset = new THREE.Vector3(0, 1.6, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    let dist = keys.r ? -2.2 : 3.2;
+    const camOffset = new THREE.Vector3(0, 1.4, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.6, 0)));
 
