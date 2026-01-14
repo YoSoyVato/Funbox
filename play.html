@@ -36,10 +36,10 @@
 
 <script>
 // ======================
-// DATOS DEL MAPA
+// CARGAR MAPA
 // ======================
 const games = JSON.parse(localStorage.getItem("funbox_games")) || [];
-const game = games[games.length - 1]; // último creado
+const game = games[games.length - 1];
 const map = game?.map || [];
 
 // ======================
@@ -48,12 +48,7 @@ const map = game?.map || [];
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
-const camera = new THREE.PerspectiveCamera(
-  75,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
-);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -69,31 +64,34 @@ sun.position.set(10, 20, 10);
 scene.add(sun);
 
 // ======================
-// BLOQUES 3D DESDE EL EDITOR
+// SUELO BASE (SIEMPRE EXISTE)
 // ======================
-const BLOCK = 1;
-const blockMeshes = [];
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  new THREE.MeshStandardMaterial({ color: 0x555555 })
+);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
 
+// ======================
+// BLOQUES DEL EDITOR
+// ======================
+const blockMeshes = [];
 map.forEach(b => {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(BLOCK, BLOCK, BLOCK),
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshStandardMaterial({ color: 0x777777 })
   );
 
-  mesh.position.set(
-    b.x * BLOCK,
-    b.z * BLOCK,
-    b.y * BLOCK
-  );
-
-  scene.add(mesh);
-  blockMeshes.push(mesh);
+  m.position.set(b.x, b.z + 0.5, b.y);
+  scene.add(m);
+  blockMeshes.push(m);
 });
 
 // ======================
 // JUGADOR
 // ======================
-const spawn = new THREE.Vector3(0, 5, 0);
+const spawn = new THREE.Vector3(0, 2, 0);
 
 const player = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.4, 1.2),
@@ -114,17 +112,17 @@ let pitch = 0;
 // INPUT
 // ======================
 const keys = {};
-window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+window.onkeydown = e => keys[e.key.toLowerCase()] = true;
+window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 
 document.body.onclick = () => document.body.requestPointerLock();
 
-document.addEventListener("mousemove", e => {
+document.onmousemove = e => {
   if (document.pointerLockElement !== document.body) return;
   yaw -= e.movementX * 0.002;
   pitch -= e.movementY * 0.002;
   pitch = Math.max(-1.2, Math.min(0.8, pitch));
-});
+};
 
 // ======================
 // LOOP
@@ -150,7 +148,13 @@ function animate() {
   velY += gravity;
   player.position.y += velY;
 
-  // COLISIÓN SIMPLE CON BLOQUES
+  // COLISIÓN CON SUELO BASE
+  if (player.position.y <= 1.2) {
+    player.position.y = 1.2;
+    velY = 0;
+  }
+
+  // COLISIÓN CON BLOQUES
   blockMeshes.forEach(b => {
     if (
       Math.abs(player.position.x - b.position.x) < 0.6 &&
@@ -162,11 +166,10 @@ function animate() {
     }
   });
 
-  // MUERTE
-  if (player.position.y < -20) {
+  // MUERTE (SIN MENSAJE)
+  if (player.position.y < -30) {
     player.position.copy(spawn);
     velY = 0;
-    alert("💀 Moriste");
   }
 
   // CÁMARA
@@ -175,6 +178,7 @@ function animate() {
     2 + pitch * 2,
     Math.cos(yaw) * 5
   );
+
   camera.position.copy(player.position).add(camOffset);
   camera.lookAt(player.position);
 
@@ -183,8 +187,6 @@ function animate() {
 
 animate();
 
-// ======================
-// RESIZE
 // ======================
 window.onresize = () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -195,4 +197,5 @@ window.onresize = () => {
 
 </body>
 </html>
+
 
