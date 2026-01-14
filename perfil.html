@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Funbox - Mi Perfil</title>
     <style>
-        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
         /* Header con Monedas */
         .header { background: #151515; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
@@ -15,10 +15,9 @@
         /* Lado Izquierdo: Visualizador de Personaje */
         .character-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a1a 0%, #050505 100%); position: relative; }
         
-        /* Contenedor del Personaje 3D */
         #char-3d-container { 
-            width: 450px; 
-            height: 450px; 
+            width: 500px; 
+            height: 500px; 
             cursor: grab; 
             filter: drop-shadow(0 10px 40px rgba(0,0,0,0.9));
         }
@@ -26,7 +25,7 @@
 
         .char-name { margin-top: 10px; font-size: 28px; color: #4db8ff; font-weight: bold; text-shadow: 0 0 15px rgba(77, 184, 255, 0.4); }
 
-        /* Botón Jugar dinámico */
+        /* Botón Jugar */
         .btn-play-now {
             margin-top: 20px;
             background: #4caf50;
@@ -90,9 +89,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
-    // 1. Datos iniciales y Sesión
-    const userSession = JSON.parse(sessionStorage.getItem("funbox_session"));
-    if (!userSession) location.href = "index.html";
+    const userSession = JSON.parse(sessionStorage.getItem("funbox_session")) || { user: "Invitado" };
     document.getElementById("user-display-name").innerText = userSession.user;
 
     let coins = parseInt(localStorage.getItem("funbox_coins")) || 500;
@@ -103,12 +100,9 @@
         { name: "Ninja", emoji: "🥷", price: 200 },
         { name: "Robot", emoji: "🤖", price: 400 },
         { name: "Astronauta", emoji: "👨‍🚀", price: 600 },
-        { name: "Rey", emoji: "🤴", price: 1000 },
-        { name: "Gato Pro", emoji: "🐱", price: 150 },
-        { name: "Científico", emoji: "👨‍🔬", price: 300 }
+        { name: "Gato Pro", emoji: "🐱", price: 150 }
     ];
 
-    // SVG Cabeza Cute ACTUALIZADO
     const cuteHeadIcon = `
         <svg class="custom-head-svg" viewBox="0 0 100 100">
             <rect x="5" y="40" width="12" height="25" rx="4" fill="#007ceb" /> 
@@ -127,7 +121,6 @@
         localStorage.setItem("funbox_coins", coins);
         localStorage.setItem("funbox_items", JSON.stringify(ownedItems));
         localStorage.setItem("funbox_current_skin", currentSkin);
-        
         renderShop();
         renderInventory();
     }
@@ -140,11 +133,7 @@
                 const card = document.createElement("div");
                 card.className = "item-card";
                 card.onclick = () => comprar(item);
-                card.innerHTML = `
-                    <span class="item-emoji">${item.emoji}</span>
-                    <div style="font-size: 12px; margin-bottom: 5px;">${item.name}</div>
-                    <div class="item-price">🪙 ${item.price}</div>
-                `;
+                card.innerHTML = `<span class="item-emoji">${item.emoji}</span><div class="item-price">🪙 ${item.price}</div>`;
                 container.appendChild(card);
             }
         });
@@ -156,26 +145,8 @@
         ownedItems.forEach(emoji => {
             const card = document.createElement("div");
             card.className = "item-card" + (currentSkin === emoji ? " selected" : "");
-            card.onclick = () => { 
-                currentSkin = emoji; 
-                updateUI(); 
-            };
-
-            if(emoji === "👤") {
-                card.innerHTML = `
-                    ${cuteHeadIcon}
-                    <div style="font-size: 10px; color: #4caf50; font-weight: bold;">
-                        ${currentSkin === emoji ? "EQUIPADO" : "EQUIPAR"}
-                    </div>
-                `;
-            } else {
-                card.innerHTML = `
-                    <span class="item-emoji">${emoji}</span>
-                    <div style="font-size: 10px; color: #4caf50; font-weight: bold;">
-                        ${currentSkin === emoji ? "EQUIPADO" : "EQUIPAR"}
-                    </div>
-                `;
-            }
+            card.onclick = () => { currentSkin = emoji; updateUI(); };
+            card.innerHTML = emoji === "👤" ? cuteHeadIcon : `<span class="item-emoji">${emoji}</span>`;
             container.appendChild(card);
         });
     }
@@ -184,94 +155,74 @@
         if (coins >= item.price) {
             coins -= item.price;
             ownedItems.push(item.emoji);
-            alert(`¡Has comprado ${item.name}!`);
             updateUI();
-        } else {
-            alert("No tienes suficientes monedas.");
-        }
+        } else alert("Sin monedas");
     }
 
-    // --- LÓGICA 3D ACTUALIZADA (COINCIDE CON LA IMAGEN) ---
-    let charGroup;
+    // --- RENDERIZADO 3D (CUTE CON PIERNAS) ---
     function init3D() {
         const container = document.getElementById('char-3d-container');
-        container.innerHTML = "";
-
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
-        camera.position.set(0, 0.7, 2.8);
+        camera.position.set(0, 0.4, 3);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(450, 450);
+        renderer.setSize(500, 500);
         container.appendChild(renderer.domElement);
 
-        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 3);
+        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 4);
         scene.add(light);
 
-        charGroup = new THREE.Group();
+        const charGroup = new THREE.Group();
         scene.add(charGroup);
 
-        // CABEZA CÚBICA
-        const head = new THREE.Mesh(
-            new THREE.BoxGeometry(0.7, 0.7, 0.7),
-            new THREE.MeshStandardMaterial({ color: 0xc4a484 })
-        );
+        // Cabeza
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshStandardMaterial({ color: 0xc4a484 }));
         head.position.y = 0.8;
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.25, 0.72), new THREE.MeshStandardMaterial({ color: 0x3d2b1f }));
+        hair.position.y = 0.25; head.add(hair);
 
-        // PELO CAFÉ (COMO LA CAPTURA)
-        const hair = new THREE.Mesh(
-            new THREE.BoxGeometry(0.72, 0.25, 0.72),
-            new THREE.MeshStandardMaterial({ color: 0x3d2b1f })
-        );
-        hair.position.y = 0.25;
-        head.add(hair);
-
-        // OJOS GRANDES CON BRILLO
-        const eyeGeo = new THREE.CircleGeometry(0.15, 32);
+        // Ojos Proporcionales
+        const eyeGeo = new THREE.CircleGeometry(0.14, 32);
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-        const eL = new THREE.Mesh(eyeGeo, eyeMat);
-        eL.position.set(-0.22, -0.05, 0.36);
-        const eR = eL.clone(); eR.position.x = 0.22;
+        const eL = new THREE.Mesh(eyeGeo, eyeMat); eL.position.set(-0.2, -0.05, 0.36);
+        const eR = eL.clone(); eR.position.x = 0.2;
+        const sL = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        sL.position.set(0.05, 0.05, 0.01); eL.add(sL); eR.add(sL.clone());
         head.add(eL, eR);
 
-        const shineGeo = new THREE.CircleGeometry(0.05, 16);
-        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const sL = new THREE.Mesh(shineGeo, shineMat);
-        sL.position.set(0.06, 0.06, 0.01);
-        eL.add(sL); eR.add(sL.clone());
-
-        // AURICULARES AZULES (CILINDROS)
-        const phoneGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.12, 32);
+        // Auriculares
+        const phoneGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.1, 32);
         const phoneMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
-        const pL = new THREE.Mesh(phoneGeo, phoneMat);
-        pL.rotation.z = Math.PI/2; pL.position.x = -0.42;
-        const pR = pL.clone(); pR.position.x = 0.42;
+        const pL = new THREE.Mesh(phoneGeo, phoneMat); pL.rotation.z = Math.PI/2; pL.position.x = -0.4;
+        const pR = pL.clone(); pR.position.x = 0.4;
         head.add(pL, pR);
 
-        // CUERPO ESTILO CÁPSULA (COMO LA CAPTURA)
-        const body = new THREE.Mesh(
-            new THREE.CapsuleGeometry(0.3, 0.7, 4, 16),
-            new THREE.MeshStandardMaterial({ color: 0x005a9e })
-        );
-        body.position.y = 0.1;
+        // Cuerpo Cápsula
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.5, 4, 16), new THREE.MeshStandardMaterial({ color: 0x005a9e }));
+        body.position.y = 0.25;
 
-        charGroup.add(head, body);
+        // Piernas (NUEVAS)
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x004070 });
+        const legI = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.15, 4, 8), legMat);
+        legI.position.set(-0.12, -0.1, 0);
+        const legD = legI.clone(); legD.position.x = 0.12;
 
-        // Animación y Rotación
-        let isDragging = false;
-        let startX = 0;
-        container.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX; });
-        window.addEventListener('mouseup', () => isDragging = false);
-        window.addEventListener('mousemove', (e) => {
+        charGroup.add(head, body, legI, legD);
+
+        let isDragging = false, startX = 0;
+        container.onmousedown = (e) => { isDragging = true; startX = e.clientX; };
+        window.onmouseup = () => isDragging = false;
+        window.onmousemove = (e) => {
             if (isDragging) {
                 charGroup.rotation.y += (e.clientX - startX) * 0.01;
                 startX = e.clientX;
             }
-        });
+        };
 
         function animate() {
             requestAnimationFrame(animate);
-            if (!isDragging) charGroup.rotation.y += 0.005;
+            if (!isDragging) charGroup.rotation.y += 0.01;
             charGroup.position.y = Math.sin(Date.now() * 0.002) * 0.05;
             renderer.render(scene, camera);
         }
@@ -281,6 +232,5 @@
     updateUI();
     window.onload = init3D;
 </script>
-
 </body>
 </html>
