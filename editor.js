@@ -33,7 +33,7 @@ content.innerHTML = `
         <button onclick="currentTool='block'" class="asset-btn active" title="Bloque">🟦</button>
         <button onclick="currentTool='chair'" class="asset-btn" title="Silla">🪑</button>
         <button onclick="currentTool='table'" class="asset-btn" title="Mesa">🧱</button>
-        <button onclick="currentTool='bed'" class="asset-btn" title="Cama">🛏️</button>
+        <button onclick="currentTool='border'" class="asset-btn" title="Cama">🛏️</button>
         <button onclick="currentTool='pc'" class="asset-btn" title="Computadora">🖥️</button>
         <button onclick="currentTool='flashlight'" class="asset-btn" title="Linterna">🔦</button>
     </div>
@@ -107,12 +107,34 @@ document.getElementById("skyPreset").onchange = (e) => {
     gameConfig.ambientIntensity = (e.target.value === "#1a1a2e") ? 0.3 : 0.9;
 };
 
-// MODIFICADO: Sistema de Scripting para PROS
+// MODIFICADO: Sistema de Scripting con SEGURIDAD
 document.getElementById("open-script").onclick = () => {
     const inputCode = prompt("📜 SCRIPT EDITOR (PRO):\nEscribe tu código JavaScript. Usa 'game' para interactuar.", customScriptCode);
+    
     if (inputCode !== null) {
-        customScriptCode = inputCode;
-        alert("Script actualizado correctamente.");
+        // --- NUEVO: SISTEMA DE SEGURIDAD (FILTRO ANTI-MALWARE) ---
+        const forbiddenWords = ["while", "setInterval", "localStorage", "location", "document", "window", "fetch", "XMLHttpRequest"];
+        let isMalicious = false;
+        let detectedWord = "";
+
+        // 1. Buscamos palabras que puedan tumbar la página o robar datos
+        for (let word of forbiddenWords) {
+            if (inputCode.toLowerCase().includes(word.toLowerCase())) {
+                isMalicious = true;
+                detectedWord = word;
+                break;
+            }
+        }
+
+        // 2. Bloqueamos bucles for sospechosos (muy largos o infinitos)
+        if (inputCode.match(/for\s*\(\s*;\s*;\s*\)/)) isMalicious = true;
+
+        if (isMalicious) {
+            alert("❌ SEGURIDAD: El Script que estas creando no esta permitido, podría tumbar la pagina (Uso prohibido de: " + detectedWord + ")");
+        } else {
+            customScriptCode = inputCode;
+            alert("Script actualizado y verificado correctamente.");
+        }
     }
 };
 
