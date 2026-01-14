@@ -31,7 +31,6 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// Se cargan los datos del mapa
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
 const scene = new THREE.Scene();
@@ -281,17 +280,16 @@ const game = {
 
 if (customScript) {
     try {
-        // Envolvemos el script en un bloque try/catch secundario para seguridad en tiempo de ejecución
         const runScript = new Function('game', `
             try {
                 ${customScript}
             } catch(e) {
-                console.error("Error en ejecución de script:", e);
+                console.error("Error de Script al iniciar:", e);
             }
         `);
         runScript(game);
     } catch (e) {
-        console.error("Error al cargar el Script:", e);
+        console.error("Error Crítico de sintaxis:", e);
     }
 }
 
@@ -307,12 +305,11 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 function animate() {
     requestAnimationFrame(animate);
 
-    // Ejecutar Script PRO de forma segura
     if (userUpdateFunc) {
         try {
             userUpdateFunc();
         } catch(e) {
-            userUpdateFunc = null; // Desactiva el update si da error para no tumbar la página
+            userUpdateFunc = null; 
             console.error("Script onUpdate detenido por error:", e);
         }
     }
