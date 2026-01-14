@@ -4,22 +4,17 @@
 <meta charset="UTF-8">
 <title>Funbox – Jugar</title>
 <style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: black;
-  }
-
+  body { margin:0; overflow:hidden; background:black; }
   #ui {
     position: fixed;
-    top: 10px;
-    left: 10px;
-    color: white;
+    top:10px;
+    left:10px;
+    color:white;
     font-family: Arial;
     background: rgba(0,0,0,0.6);
-    padding: 10px;
-    border-radius: 8px;
-    z-index: 10;
+    padding:10px;
+    border-radius:8px;
+    z-index:10;
   }
 </style>
 </head>
@@ -123,14 +118,15 @@ const rightArm = createArm(0.55);
 player.add(leftArm);
 player.add(rightArm);
 
-// OJITOS
+// OJITOS CORREGIDOS: adelante del personaje
 const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
 const leftEye = new THREE.Mesh(eyeGeo,eyeMat);
-leftEye.position.set(-0.15,1.6,0.25);
-player.add(leftEye);
 const rightEye = new THREE.Mesh(eyeGeo,eyeMat);
-rightEye.position.set(0.15,1.6,0.25);
+// posición Z positiva delante del cuerpo
+leftEye.position.set(-0.15,1.6,0.4);
+rightEye.position.set(0.15,1.6,0.4);
+player.add(leftEye);
 player.add(rightEye);
 
 player.position.copy(spawn);
