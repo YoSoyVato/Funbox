@@ -37,9 +37,13 @@ let canvas, ctx;
 let blocks = [];
 let cam = { x: 0, y: 0 };
 let mode = "place";
+let editorRunning = false;
+let editorRAF = null;
+
 const SIZE = 40;
 
 function startEditor(map = []) {
+  editorRunning = true;
   blocks = JSON.parse(JSON.stringify(map));
   cam = { x: 0, y: 0 };
 
@@ -80,7 +84,7 @@ function startEditor(map = []) {
   exit.onclick = () => location.reload();
   playMode.onclick = () => startPlay3D(blocks);
 
-  requestAnimationFrame(render2D);
+  render2D();
 }
 
 // ======================
@@ -120,10 +124,11 @@ function moveCam(e) {
 }
 
 // ======================
-// RENDER EDITOR
+// RENDER 2D
 // ======================
 function render2D() {
-  if (!ctx) return;
+  if (!editorRunning) return;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   blocks.sort((a, b) => a.z - b.z).forEach(b => {
@@ -136,7 +141,7 @@ function render2D() {
     );
   });
 
-  requestAnimationFrame(render2D);
+  editorRAF = requestAnimationFrame(render2D);
 }
 
 // ======================
@@ -156,24 +161,34 @@ function saveGame() {
 // MODO JUGAR 3D
 // ======================
 function startPlay3D(map) {
-  content.innerHTML = `
-    <button id="back" style="
-      position:fixed;
-      top:100px;
-      left:10px;
-      z-index:20;
-    ">⬅ Volver al editor</button>
-  `;
+  // apagar editor
+  editorRunning = false;
+  if (editorRAF) cancelAnimationFrame(editorRAF);
 
+  content.innerHTML = "";
+
+  const back = document.createElement("button");
+  back.textContent = "⬅ Volver al editor";
+  back.style.position = "fixed";
+  back.style.top = "100px";
+  back.style.left = "10px";
+  back.style.zIndex = "10";
   back.onclick = () => startEditor(map);
+  document.body.appendChild(back);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87ceeb);
 
-  const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(innerWidth, innerHeight);
-  content.appendChild(renderer.domElement);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.5));
   const sun = new THREE.DirectionalLight(0xffffff, 1);
@@ -206,8 +221,8 @@ function startPlay3D(map) {
   camera.position.set(0, 4, 6);
 
   const keys = {};
-  onkeydown = e => keys[e.key] = true;
-  onkeyup = e => keys[e.key] = false;
+  window.onkeydown = e => keys[e.key] = true;
+  window.onkeyup = e => keys[e.key] = false;
 
   function animate() {
     requestAnimationFrame(animate);
