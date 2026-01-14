@@ -118,14 +118,13 @@ const rightArm = createArm(0.55);
 player.add(leftArm);
 player.add(rightArm);
 
-// OJITOS CORREGIDOS: adelante del personaje
+// OJITOS: delante del jugador
 const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
 const leftEye = new THREE.Mesh(eyeGeo,eyeMat);
 const rightEye = new THREE.Mesh(eyeGeo,eyeMat);
-// posición Z positiva delante del cuerpo
-leftEye.position.set(-0.15,1.6,0.4);
-rightEye.position.set(0.15,1.6,0.4);
+leftEye.position.set(-0.15,1.6,-0.25);
+rightEye.position.set(0.15,1.6,-0.25);
 player.add(leftEye);
 player.add(rightEye);
 
