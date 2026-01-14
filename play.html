@@ -31,6 +31,9 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
+// NUEVO: Cargar configuración del Script del Workspace
+const wsScript = JSON.parse(localStorage.getItem("funbox_script")) || { dayNightCycle: false, randomEvents: false };
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(config.skyColor);
 
@@ -227,15 +230,11 @@ barba.position.y = -0.18; cabezaMesh.add(barba);
 const listaOjos = [];
 function crearOjo(x) {
     const ojoGroup = new THREE.Group();
-    // Pupila más grande
     const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.09, 32), matOjoNegro);
-    // Brillo principal
     const b1 = new THREE.Mesh(new THREE.CircleGeometry(0.035, 16), matBrillo);
     b1.position.set(0.03, 0.03, 0.002);
-    // Brillo secundario (Cute effect)
     const b2 = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16), matBrillo);
     b2.position.set(-0.03, -0.03, 0.002);
-    
     ojoGroup.add(pupila, b1, b2);
     ojoGroup.position.set(x, -0.02, 0.251);
     listaOjos.push(ojoGroup);
@@ -264,6 +263,7 @@ const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
 let yaw = 0, step = 0, rollStep = 0;
 let blinkTimer = 0;
+let dayTime = 0; // Para el ciclo de día
 
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
@@ -276,6 +276,21 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // --- NUEVO: SISTEMA DE SCRIPTING (DIA/NOCHE Y EVENTOS) ---
+    if(wsScript.dayNightCycle) {
+        dayTime += 0.005;
+        const sunIntensity = Math.sin(dayTime) * 0.5 + 0.5;
+        sunLight.intensity = sunIntensity;
+        // Cambiar color de fondo suavemente
+        scene.background.setHSL(0.5, 0.4, sunIntensity * 0.5);
+    }
+
+    if(wsScript.randomEvents && Math.random() < 0.001) {
+        // Evento: El suelo cambia a un color aleatorio
+        floor.material.color.setHex(Math.random() * 0xffffff);
+    }
+    // --------------------------------------------------------
 
     const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
@@ -323,7 +338,7 @@ function animate() {
             brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
             brazoD.position.z = Math.sin(step) * 0.15;
         } else if (isHeadMode) {
-            rollStep += 0.1; // Rotación lenta y controlada
+            rollStep += 0.1;
             cabezaMesh.rotation.x = -rollStep; 
         }
     } else {
@@ -335,7 +350,6 @@ function animate() {
         if(!isHeadMode) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
     }
 
-    // ANIMACION DE SALTO
     if (!onGround && !isHeadMode) {
         piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, -0.5, 0.2);
         piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, -0.5, 0.2);
