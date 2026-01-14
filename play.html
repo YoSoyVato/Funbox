@@ -2,42 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox – Jugar</title>
+<title>Capsula con Gravedad</title>
 <style>
   body { margin:0; overflow:hidden; background:black; }
-  #ui {
-    position: fixed;
-    top:10px;
-    left:10px;
-    color:white;
-    font-family: Arial;
-    background: rgba(0,0,0,0.6);
-    padding:10px;
-    border-radius:8px;
-    z-index:10;
-  }
 </style>
 </head>
 <body>
 
-<div id="ui">
-  🎮 Funbox Play<br>
-  WASD mover<br>
-  Shift correr<br>
-  Mouse cámara<br>
-  R cambiar vista
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-// ======================
-// CARGAR MAPA
-// ======================
-const map = JSON.parse(localStorage.getItem("funbox_map")) || [];
-
-// ======================
 // ESCENA
-// ======================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -45,13 +19,13 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth,window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// LUCES
+// LUZ
 scene.add(new THREE.AmbientLight(0xffffff,0.6));
 const sun = new THREE.DirectionalLight(0xffffff,0.8);
 sun.position.set(10,20,10);
 scene.add(sun);
 
-// SUELO
+// SUELO (para referencia)
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(200,200),
   new THREE.MeshStandardMaterial({color:0x555555})
@@ -60,228 +34,54 @@ floor.rotation.x=-Math.PI/2;
 floor.position.y=0;
 scene.add(floor);
 
-// BLOQUES
-const blockMeshes = [];
-map.forEach(b=>{
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(1,1,1),
-    new THREE.MeshStandardMaterial({color:0x777777})
-  );
-  mesh.position.set(b.x,0.5 + (b.z||0),b.y);
-  scene.add(mesh);
-  blockMeshes.push(mesh);
-});
-
-// SPAWN
-const spawn = new THREE.Vector3(0,1.2,0);
-
 // ======================
-// PERSONAJE CUTE
+// CAPSULA
 // ======================
-const player = new THREE.Group();
-player.scale.set(0.5,0.5,0.5);
-
-// CUERPO
-const bodyHeight = 1.2;
-const body = new THREE.Mesh(
-  new THREE.CapsuleGeometry(0.4,bodyHeight),
-  new THREE.MeshStandardMaterial({color:0x00ffcc})
+const capsuleHeight = 2;
+const capsule = new THREE.Mesh(
+  new THREE.CapsuleGeometry(0.5, capsuleHeight),
+  new THREE.MeshStandardMaterial({color:0xff0000})
 );
-body.position.y=1.2;
-player.add(body);
-
-// PIERNAS
-const legGeo = new THREE.CylinderGeometry(0.15,0.15,0.5);
-const legMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
-const leftLeg = new THREE.Mesh(legGeo,legMat);
-leftLeg.position.set(-0.15,0.25,0);
-player.add(leftLeg);
-const rightLeg = new THREE.Mesh(legGeo,legMat);
-rightLeg.position.set(0.15,0.25,0);
-player.add(rightLeg);
-
-// BRAZOS
-function createArm(x){
-  const group = new THREE.Group();
-  group.position.set(x,1.4,0);
-  const arm = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12,0.12,0.5),
-    new THREE.MeshStandardMaterial({color:0x00ffcc})
-  );
-  arm.position.y=-0.25;
-  group.add(arm);
-  return group;
-}
-const leftArm = createArm(-0.55);
-const rightArm = createArm(0.55);
-player.add(leftArm);
-player.add(rightArm);
-
-// OJITOS
-const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
-const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
-const leftEye = new THREE.Mesh(eyeGeo,eyeMat);
-const rightEye = new THREE.Mesh(eyeGeo,eyeMat);
-// Delante del cuerpo
-leftEye.position.set(-0.15,1.6,0.25);
-rightEye.position.set(0.15,1.6,0.25);
-player.add(leftEye);
-player.add(rightEye);
-
-player.position.copy(spawn);
-scene.add(player);
+capsule.position.set(0,10,0); // empieza en el aire
+scene.add(capsule);
 
 // ======================
-// VARIABLES
+// GRAVEDAD
 // ======================
-let velY=0;
-const gravity=-0.03;
-let yaw=0, pitch=0;
-let step=0;
-let blinkTimer=0;
-let f5View=false;
-
-// ======================
-// INPUT
-// ======================
-const keys = {};
-window.onkeydown = e=>{
-  keys[e.key.toLowerCase()]=true;
-  if(e.key.toLowerCase()==="r") f5View = !f5View;
-};
-window.onkeyup = e=>keys[e.key.toLowerCase()]=false;
-
-document.body.onclick=()=>document.body.requestPointerLock();
-document.onmousemove=e=>{
-  if(document.pointerLockElement!==document.body) return;
-  yaw -= e.movementX*0.002;
-  pitch -= e.movementY*0.002;
-  pitch = Math.max(-0.6,Math.min(0.6,pitch));
-};
-
-// ======================
-// FUNCION COLISION + GRAVEDAD
-// ======================
-function updatePlayer() {
-  velY += gravity;
-  player.position.y += velY;
-
-  let onGround = false;
-  const playerBaseY = player.position.y - 0.6; // base del jugador
-
-  // Suelo
-  if(playerBaseY <= 0){
-    player.position.y = 0.6;
-    velY = 0;
-    onGround = true;
-  }
-
-  // Bloques
-  blockMeshes.forEach(b=>{
-    const top = b.position.y + 0.5;
-    if(Math.abs(player.position.x - b.position.x) < 0.75 &&
-       Math.abs(player.position.z - b.position.z) < 0.75 &&
-       playerBaseY <= top){
-         player.position.y = top + 0.6;
-         velY = 0;
-         onGround = true;
-    }
-  });
-
-  // Muerte por caída
-  if(playerBaseY < -5){
-    player.position.copy(spawn);
-    velY = 0;
-  }
-
-  return onGround;
-}
+let velY = 0;
+const gravity = -0.1;
 
 // ======================
 // LOOP
 // ======================
-function animate(){
+function animate() {
   requestAnimationFrame(animate);
 
-  // MOVIMIENTO
-  let dir = new THREE.Vector3();
-  let moving = false;
-  let speed = 0.08;
-  if(keys.w){dir.z-=1;moving=true;}
-  if(keys.s){dir.z+=1;moving=true;}
-  if(keys.a){dir.x-=1;moving=true;}
-  if(keys.d){dir.x+=1;moving=true;}
-  if(keys.shift)speed*=2;
+  // Gravedad
+  velY += gravity;
+  capsule.position.y += velY;
 
-  // ROTAR jugador según cámara
-  player.rotation.y = yaw;
-
-  // MOVER en dirección de cámara
-  if(dir.length()>0){
-    dir.normalize();
-    const moveDir = dir.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    player.position.addScaledVector(moveDir,speed);
+  // Muerte por caída (reinicia)
+  if(capsule.position.y < -10){
+    capsule.position.y = 10;
+    velY = 0;
   }
 
-  // ANIMACIONES
-  if(moving){
-    step += 0.15*(keys.shift?2:1);
-    leftLeg.rotation.x=Math.sin(step)*(keys.shift?0.7:0.5);
-    rightLeg.rotation.x=Math.sin(step+Math.PI)*(keys.shift?0.7:0.5);
-    leftArm.rotation.x=Math.sin(step+Math.PI)*(keys.shift?0.5:0.3);
-    leftArm.rotation.z=Math.sin(step+Math.PI)*0.1;
-    rightArm.rotation.x=Math.sin(step)*(keys.shift?0.5:0.3);
-    rightArm.rotation.z=Math.sin(step)*0.1;
-  }else{
-    step+=0.02;
-    leftLeg.rotation.x=Math.sin(step*0.2)*0.05;
-    rightLeg.rotation.x=Math.sin(step*0.2+Math.PI)*0.05;
-    leftArm.rotation.x=Math.sin(step*0.2+Math.PI)*0.02;
-    leftArm.rotation.z=Math.sin(step*0.2+Math.PI)*0.02;
-    rightArm.rotation.x=Math.sin(step*0.2)*0.02;
-    rightArm.rotation.z=Math.sin(step*0.2)*0.02;
-
-    // Parpadeo ojos
-    blinkTimer++;
-    if(blinkTimer%100<5){
-      leftEye.scale.y=0.1;
-      rightEye.scale.y=0.1;
-    }else{
-      leftEye.scale.y=1;
-      rightEye.scale.y=1;
-    }
-  }
-
-  // GRAVEDAD + COLISION
-  updatePlayer();
-
-  // CÁMARA
-  let camOffset;
-  if(f5View){
-    camOffset = new THREE.Vector3(0,2,-3);
-    camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    camera.position.copy(player.position).add(camOffset);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
-  } else {
-    camOffset = new THREE.Vector3(0,2,5);
-    camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    camera.position.copy(player.position).add(camOffset);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
-  }
+  // Cámara
+  camera.position.set(0,5,15);
+  camera.lookAt(0,0,0);
 
   renderer.render(scene,camera);
 }
 animate();
 
-// ======================
 // RESIZE
-// ======================
 window.onresize=()=>{
   camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth,window.innerHeight);
 };
 </script>
+
 </body>
 </html>
-
