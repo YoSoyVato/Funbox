@@ -1,84 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Funbox Launcher</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* Estilos rápidos para que coincida con tu imagen si el CSS no carga */
-    body { background: #0a0a0a; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .launcher { text-align: center; }
-    .launcher h1 { font-size: 48px; margin-bottom: 0; }
-    .launcher p { color: #888; margin-top: 5px; margin-bottom: 30px; }
-    
-    .form-registro { display: flex; flex-direction: column; gap: 10px; width: 250px; margin: 0 auto; }
-    input { padding: 12px; background: #151515; border: 1px solid #333; color: white; border-radius: 5px; outline: none; }
-    
-    button { 
-      width: 250px; padding: 15px; background: #eee; color: #000; border: none; 
-      border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; 
-      margin-top: 10px; transition: 0.3s;
-    }
-    button:hover { background: #ccc; }
-    .hidden { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Funbox Launcher</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #0a0a0a; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .launcher { text-align: center; }
+        .launcher h1 { font-size: 48px; margin-bottom: 0; }
+        .launcher p { color: #888; margin-top: 5px; margin-bottom: 30px; letter-spacing: 2px; }
+        
+        .form-container { display: flex; flex-direction: column; gap: 12px; width: 280px; margin: 0 auto; background: #151515; padding: 25px; border-radius: 10px; border: 1px solid #333; }
+        input { padding: 12px; background: #000; border: 1px solid #444; color: white; border-radius: 5px; outline: none; }
+        
+        .btn-main { width: 280px; padding: 15px; background: #eee; color: #000; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-main:hover { background: #fff; transform: scale(1.02); }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
 
 <div class="launcher">
-  <h1>🎮 Funbox</h1>
-  <p id="sub-header">Launcher</p>
+    <h1>🎮 Funbox</h1>
+    <p id="launcher-status">Launcher</p>
 
-  <div id="section-registro" class="form-registro">
-    <input type="text" id="reg-user" placeholder="Usuario">
-    <input type="password" id="reg-pass" placeholder="Contraseña">
-    <button onclick="registrar()">REGISTRARSE</button>
-  </div>
+    <div id="view-register" class="form-container">
+        <input type="text" id="reg-user" placeholder="Usuario">
+        <input type="password" id="reg-pass" placeholder="Contraseña">
+        <button class="btn-main" onclick="registrar()">REGISTRARSE</button>
+    </div>
 
-  <div id="section-botones" class="hidden">
-    <button onclick="location.href='editor.html'">
-      🧱 Crear Juego
-    </button>
-    <button onclick="location.href='play.html'">
-      🎮 Jugar
-    </button>
-    <p style="font-size: 12px; cursor: pointer; text-decoration: underline; margin-top: 20px;" onclick="cerrarSesion()">Cerrar Sesión</p>
-  </div>
+    <div id="view-menu" class="hidden">
+        <button class="btn-main" onclick="location.href='editor.html'">
+            🧱 Crear Juego
+        </button>
+        <button class="btn-main" onclick="alert('Próximamente...')">
+            🎮 Jugar
+        </button>
+        <p style="font-size: 12px; color: #444; cursor: pointer; margin-top: 20px;" onclick="cerrarSesion()">Cerrar Sesión</p>
+    </div>
 </div>
 
 <script>
-  // Al cargar la página, verificamos si ya existe una sesión
-  window.onload = () => {
     const session = sessionStorage.getItem("funbox_session");
+
     if (session) {
-      mostrarBotones(JSON.parse(session).user);
+        showMenu(JSON.parse(session).user);
     }
-  };
 
-  function registrar() {
-    const u = document.getElementById("reg-user").value;
-    const p = document.getElementById("reg-pass").value;
-
-    if (u.length > 2 && p.length > 2) {
-      const userData = { user: u };
-      sessionStorage.setItem("funbox_session", JSON.stringify(userData));
-      mostrarBotones(u);
-    } else {
-      alert("Por favor, ingresa un usuario y contraseña válidos.");
+    function registrar() {
+        const u = document.getElementById("reg-user").value;
+        const p = document.getElementById("reg-pass").value;
+        if (u.length > 2 && p.length > 2) {
+            sessionStorage.setItem("funbox_session", JSON.stringify({ user: u }));
+            showMenu(u);
+        } else {
+            alert("Usuario y contraseña demasiado cortos.");
+        }
     }
-  }
 
-  function mostrarBotones(userName) {
-    document.getElementById("section-registro").classList.add("hidden");
-    document.getElementById("section-botones").classList.remove("hidden");
-    document.getElementById("sub-header").innerText = `Hola, ${userName}!`;
-  }
+    function showMenu(name) {
+        document.getElementById("view-register").classList.add("hidden");
+        document.getElementById("view-menu").classList.remove("hidden");
+        document.getElementById("launcher-status").innerText = `Hola, ${name}`;
+    }
 
-  function cerrarSesion() {
-    sessionStorage.removeItem("funbox_session");
-    location.reload();
-  }
+    function cerrarSesion() {
+        sessionStorage.clear();
+        location.reload();
+    }
 </script>
-
 </body>
 </html>
