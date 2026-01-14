@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Head Roller Mode</title>
+<title>Funbox - Head Roller Fixed</title>
 <style>
   body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
@@ -17,8 +17,8 @@
 <body>
 
 <div id="ui">
-  🤯 **Modo Cabeza Rodante**<br>
-  WASD: Rodar | **C: Transformarse / Volver** | Espacio: Salto
+  🤯 **Modo Cabeza Rodante (Fixed)**<br>
+  WASD: Moverse | **C: Transformarse** | Espacio: Salto
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -57,7 +57,6 @@ const matPelo = new THREE.MeshStandardMaterial({color: 0x4e342e});
 const matRopa = new THREE.MeshStandardMaterial({color: 0x2196f3});
 const matOjoNegro = new THREE.MeshBasicMaterial({color: 0x111111});
 
-// CABEZA (Contenedor para poder rotarla independientemente)
 const cabezaGroup = new THREE.Group();
 cabezaGroup.position.y = 0.75;
 cuerpoVisual.add(cabezaGroup);
@@ -71,7 +70,6 @@ pelo.position.y = 0.2; cabezaMesh.add(pelo);
 const barba = new THREE.Mesh(new THREE.BoxGeometry(0.57, 0.15, 0.51), matPelo);
 barba.position.y = -0.18; cabezaMesh.add(barba);
 
-// OJOS
 const listaOjos = [];
 function crearOjo(x) {
     const ojoGroup = new THREE.Group();
@@ -87,7 +85,6 @@ function crearOjo(x) {
 }
 cabezaMesh.add(crearOjo(-0.18), crearOjo(0.18));
 
-// CUERPO Y EXTREMIDADES
 const cuerpoRef = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.2, 4, 12), matRopa);
 cuerpoRef.position.y = 0.35; cuerpoVisual.add(cuerpoRef);
 
@@ -107,7 +104,7 @@ scene.add(player);
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
 const gravity = -0.012, jumpForce = 0.25;
 const keys = {};
-let yaw = 0, step = 0, rollX = 0, rollZ = 0;
+let yaw = 0, step = 0, panicStep = 0;
 let blinkTimer = 0;
 
 window.addEventListener("keydown", e => {
@@ -123,9 +120,33 @@ function animate() {
     requestAnimationFrame(animate);
     player.position.y += vy;
     
-    if (player.position.y > 0) { vy += gravity; onGround = false; } 
-    else { player.position.y = 0; vy = 0; onGround = true; }
+    // RESTAURADO: Físicas de caída y bordes
+    const distDesdeCentro = Math.sqrt(player.position.x**2 + player.position.z**2);
+    const outOfBounds = distDesdeCentro > floorSize;
 
+    if (player.position.y > 0 || outOfBounds) {
+        vy += gravity; onGround = false;
+    } else if (!isDead) {
+        player.position.y = 0; vy = 0; onGround = true;
+    }
+
+    // ANIMACIÓN DE MUERTE
+    if (player.position.y < -0.5) {
+        isDead = true;
+        panicStep += 0.5;
+        brazoI.position.y = 0.4 + Math.sin(panicStep) * 0.2;
+        brazoD.position.y = 0.4 + Math.cos(panicStep) * 0.2;
+        piernaI.rotation.x = Math.sin(panicStep * 1.5) * 1;
+        piernaD.rotation.x = Math.cos(panicStep * 1.5) * 1;
+        
+        if (player.position.y < -20) {
+            player.position.set(0, 5, 0);
+            isDead = false; vy = 0; panicStep = 0;
+            isHeadMode = false;
+        }
+    }
+
+    // MOVIMIENTO
     let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
@@ -134,44 +155,47 @@ function animate() {
         if(keys.d){ dir.x += 1; moving = true; }
     }
 
-    const currentSpeed = isHeadMode ? 0.12 : 0.09;
-
+    const moveSpeed = isHeadMode ? 0.12 : 0.09;
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        player.position.addScaledVector(moveDir, currentSpeed);
+        player.position.addScaledVector(moveDir, moveSpeed);
+        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
         
-        if (!isHeadMode) {
-            player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
+        if (!isHeadMode && onGround) {
             step += 0.25;
             piernaI.rotation.x = Math.sin(step) * 0.8;
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-        } else {
-            // EFECTO DE RODAR LA CABEZA
-            // Rotamos la malla interna basándonos en el movimiento
-            cabezaMesh.rotation.x -= currentSpeed * 4; 
+            brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
+            brazoD.position.z = Math.sin(step) * 0.15;
+        } else if (isHeadMode) {
+            // Velocidad de rodado corregida (más lenta y natural)
+            cabezaMesh.rotation.x -= 0.15; 
+        }
+    } else {
+        // CORREGIDO: Vuelve a posición neutra mirando al frente
+        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
+        if (onGround && !isDead) {
+            step = THREE.MathUtils.lerp(step, 0, 0.1);
+            piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
+            piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
+            brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.1);
+            brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.1);
         }
     }
 
-    // --- TRANSFORMACIÓN ---
-    const t = 0.15; // Velocidad de transición
-    if (isHeadMode) {
-        // Desaparecer cuerpo y piernas
-        cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 0, t), THREE.MathUtils.lerp(cuerpoRef.scale.y, 0, t), THREE.MathUtils.lerp(cuerpoRef.scale.z, 0, t));
+    // TRANSFORMACIÓN SUAVE
+    const t = 0.15;
+    if (isHeadMode && !isDead) {
+        cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 0, t), 0, 0);
         brazoI.scale.set(0,0,0); brazoD.scale.set(0,0,0);
         piernaI.scale.set(0,0,0); piernaD.scale.set(0,0,0);
-        
-        // Bajar cabeza al suelo (radio de la cabeza es aprox 0.25)
         cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.25, t);
     } else {
-        // Reaparecer todo
-        cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 1, t), THREE.MathUtils.lerp(cuerpoRef.scale.y, 1, t), THREE.MathUtils.lerp(cuerpoRef.scale.z, 1, t));
+        cuerpoRef.scale.set(1, 1, 1);
         brazoI.scale.set(1,1,1); brazoD.scale.set(1,1,1);
         piernaI.scale.set(1,1,1); piernaD.scale.set(1,1,1);
-        
-        // Volver a posición original y resetear rotación de rodado
         cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.75, t);
-        cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, t);
-        cabezaMesh.rotation.z = THREE.MathUtils.lerp(cabezaMesh.rotation.z, 0, t);
+        if(!moving) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, t);
     }
 
     // Pestañeo
@@ -179,10 +203,9 @@ function animate() {
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
     listaOjos.forEach(ojo => ojo.scale.y = THREE.MathUtils.lerp(ojo.scale.y, (blinkTimer < 10) ? 0.1 : 1, 0.3));
 
-    // Cámara dinámica
+    // Cámara
     let camY = isHeadMode ? 0.8 : 1.8;
-    let camDist = isHeadMode ? 2.5 : 3.5;
-    const camOffset = new THREE.Vector3(0, camY, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    const camOffset = new THREE.Vector3(0, camY, isHeadMode ? 2.5 : 3.5).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.8, 0)));
     
