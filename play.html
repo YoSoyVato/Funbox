@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Funko Humano Mejorado</title>
+<title>Funbox - Funko Ultra Cute</title>
 <style>
   body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
@@ -17,7 +17,7 @@
 <body>
 
 <div id="ui">
-  📦 **Funbox: Funko Pulido**<br>
+  ✨ **Funbox: Mirada Cute**<br>
   WASD: Caminar | **C: Squish** | **R: Frontal**
 </div>
 
@@ -32,9 +32,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// ILUMINACIÓN (Más clara para evitar sombras raras en la cara)
 scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-const light = new THREE.DirectionalLight(0xffffff, 0.5);
+const light = new THREE.DirectionalLight(0xffffff, 0.6);
 light.position.set(5, 10, 5);
 light.castShadow = true;
 scene.add(light);
@@ -47,14 +46,14 @@ floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// --- PERSONAJE FUNKO PULIDO ---
+// --- PERSONAJE ---
 const player = new THREE.Group();
 player.position.y = 0.2; 
 
-const matPiel = new THREE.MeshStandardMaterial({color: 0xffdbac, roughness: 0.8});
-const matPelo = new THREE.MeshStandardMaterial({color: 0x4e342e}); // Marrón vuelto
+const matPiel = new THREE.MeshStandardMaterial({color: 0xffdbac});
+const matPelo = new THREE.MeshStandardMaterial({color: 0x4e342e}); 
 const matRopa = new THREE.MeshStandardMaterial({color: 0x2196f3});
-const matOjoPro = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.1});
+const matOjoNegro = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.1});
 
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
@@ -65,107 +64,18 @@ cabeza.position.y = 0.75;
 cabeza.castShadow = true;
 cuerpoVisual.add(cabeza);
 
-// PELO (Marrón)
+// PELO Y BARBA (Marrón como pediste)
 const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.22, 0.52), matPelo);
 pelo.position.y = 0.2;
 cabeza.add(pelo);
 
-// BARBITA (Marrón)
 const barba = new THREE.Mesh(new THREE.BoxGeometry(0.57, 0.15, 0.51), matPelo);
 barba.position.y = -0.18;
 cabeza.add(barba);
 
-// OJOS MEJORADOS (Menos turbios)
+// OJOS ULTRA CUTE (Con doble brillo)
 function crearOjo(x) {
     const ojoGroup = new THREE.Group();
-    // La base negra es un disco un poco más plano para que no parezca una pupila gigante
-    const ojoBase = new THREE.Mesh(new THREE.SphereGeometry(0.065, 20, 20), matOjoPro);
-    ojoBase.scale.z = 0.3; // Lo hacemos un poco más plano contra la cara
     
-    // El brillo es clave para que se vea amigable
-    const brillo = new THREE.Mesh(
-        new THREE.SphereGeometry(0.02, 12, 12), 
-        new THREE.MeshBasicMaterial({color: 0xffffff})
-    );
-    brillo.position.set(0.02, 0.02, 0.05);
-    
-    ojoGroup.add(ojoBase, brillo);
-    ojoGroup.position.set(x, 0, 0.26);
-    return ojoGroup;
-}
-cabeza.add(crearOjo(-0.18), crearOjo(0.18));
-
-// CUERPO PEQUEÑO
-const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.2, 4, 12), matRopa);
-cuerpo.position.y = 0.35;
-cuerpo.castShadow = true;
-cuerpoVisual.add(cuerpo);
-
-// BRAZOS Y PIERNAS
-const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), matPiel);
-brazoI.position.set(-0.3, 0.4, 0);
-const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), matPiel);
-brazoD.position.set(0.3, 0.4, 0);
-cuerpoVisual.add(brazoI, brazoD);
-
-const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.1, 4, 8), matOjoPro);
-piernaI.position.set(-0.12, 0.1, 0);
-const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.1, 4, 8), matOjoPro);
-piernaD.position.set(0.12, 0.1, 0);
-player.add(piernaI, piernaD);
-
-scene.add(player);
-
-// --- LÓGICA ---
-const keys = {};
-let yaw = 0, step = 0;
-window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-document.body.onclick = () => document.body.requestPointerLock();
-document.addEventListener("mousemove", e => {
-    if(document.pointerLockElement) yaw -= e.movementX * 0.003;
-});
-
-function animate() {
-    requestAnimationFrame(animate);
-    let dir = new THREE.Vector3();
-    let moving = false;
-    if(keys.w){ dir.z -= 1; moving = true; }
-    if(keys.s){ dir.z += 1; moving = true; }
-    if(keys.a){ dir.x -= 1; moving = true; }
-    if(keys.d){ dir.x += 1; moving = true; }
-
-    const isCrouching = keys.c;
-    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, isCrouching ? 0.75 : 1.0, 0.2);
-
-    if(moving) {
-        const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.08);
-        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
-        step += 0.25;
-        piernaI.rotation.x = Math.sin(step) * 0.8;
-        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-    } else {
-        step += 0.05;
-    }
-    
-    // Efecto muelle de la cabeza
-    cabeza.position.y = 0.75 + Math.sin(step * 2) * 0.015;
-
-    let dist = keys.r ? -2.2 : 3.2;
-    const camOffset = new THREE.Vector3(0, 1.4, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.6, 0)));
-
-    renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-</script>
-</body>
-</html>
+    // Base del ojo (Pupila)
+    const pupila = new THREE.Mesh(
