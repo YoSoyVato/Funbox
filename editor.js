@@ -14,11 +14,8 @@ let gameConfig = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// NUEVO: Configuración del Script de Workspace
-let workspaceScript = JSON.parse(localStorage.getItem("funbox_script")) || {
-    dayNightCycle: true,
-    randomEvents: true
-};
+// MODIFICADO: Ahora cargamos el texto del script directamente
+let customScriptCode = localStorage.getItem("funbox_custom_script") || "// Escribe tu código PRO aquí\n// Ejemplo: game.setFloor('red');";
 
 let canvas, ctx;
 const gridDisplaySize = 40; 
@@ -110,13 +107,13 @@ document.getElementById("skyPreset").onchange = (e) => {
     gameConfig.ambientIntensity = (e.target.value === "#1a1a2e") ? 0.3 : 0.9;
 };
 
-// NUEVO: Abrir configuración de Script al hacer clic en 📜 Script
+// MODIFICADO: Sistema de Scripting para PROS
 document.getElementById("open-script").onclick = () => {
-    const dn = confirm("📜 SCRIPT CONFIG:\n¿Activar Ciclo Día/Noche automático?");
-    const re = confirm("📜 SCRIPT CONFIG:\n¿Activar Eventos Random (Cambio de color del suelo)?");
-    workspaceScript.dayNightCycle = dn;
-    workspaceScript.randomEvents = re;
-    alert("Script actualizado en Workspace.");
+    const inputCode = prompt("📜 SCRIPT EDITOR (PRO):\nEscribe tu código JavaScript. Usa 'game' para interactuar.", customScriptCode);
+    if (inputCode !== null) {
+        customScriptCode = inputCode;
+        alert("Script actualizado correctamente.");
+    }
 };
 
 document.querySelectorAll('.asset-btn').forEach(btn => {
@@ -147,7 +144,8 @@ canvas.onmousedown = e => {
 document.getElementById("play").onclick = () => {
     localStorage.setItem("funbox_map", JSON.stringify(blocks));
     localStorage.setItem("funbox_config", JSON.stringify(gameConfig));
-    localStorage.setItem("funbox_script", JSON.stringify(workspaceScript)); // GUARDAR SCRIPT
+    // GUARDAR EL CÓDIGO PERSONALIZADO
+    localStorage.setItem("funbox_custom_script", customScriptCode); 
     location.href = "play.html";
 };
 
