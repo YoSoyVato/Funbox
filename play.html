@@ -61,6 +61,7 @@ const floor = new THREE.Mesh(
   new THREE.MeshStandardMaterial({color:0x555555})
 );
 floor.rotation.x=-Math.PI/2;
+floor.position.y = 0; // baseplate nivelado en y=0
 scene.add(floor);
 
 // ======================
@@ -72,7 +73,7 @@ map.forEach(b=>{
     new THREE.BoxGeometry(1,1,1),
     new THREE.MeshStandardMaterial({color:0x777777})
   );
-  mesh.position.set(b.x,(b.z||0)+0.5,b.y);
+  mesh.position.set(b.x,1 + (b.z||0),b.y); // base de bloques sobre y=1
   scene.add(mesh);
   blockMeshes.push(mesh);
 });
@@ -80,7 +81,7 @@ map.forEach(b=>{
 // ======================
 // PERSONAJE CUTE
 // ======================
-const spawn = new THREE.Vector3(0,1,0);
+const spawn = new THREE.Vector3(0,1.2,0); // nivel inicial del personaje sobre el suelo
 const player = new THREE.Group();
 player.scale.set(0.5,0.5,0.5);
 
@@ -148,7 +149,7 @@ let f5View=false;
 const keys = {};
 window.onkeydown = e=>{
   keys[e.key.toLowerCase()]=true;
-  if(e.key.toLowerCase()==="r") f5View = !f5View; // alternar vista
+  if(e.key.toLowerCase()==="r") f5View = !f5View;
 };
 window.onkeyup = e=>keys[e.key.toLowerCase()]=false;
 
@@ -232,14 +233,17 @@ function animate(){
        }
   });
 
-  // MUERTE
-  if(player.position.y<-30){player.position.copy(spawn);velY=0;}
+  // ====================== MUERTE POR CAIDA
+  if(player.position.y<-10){
+    player.position.copy(spawn);
+    velY=0;
+  }
 
   // ====================== CÁMARA
   let camOffset;
   if(f5View){
     // cámara frontal
-    camOffset = new THREE.Vector3(0,2,-3); // adelante
+    camOffset = new THREE.Vector3(0,2,-3);
     camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.copy(player.position).add(camOffset);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
@@ -264,4 +268,5 @@ window.onresize=()=>{
 </script>
 </body>
 </html>
+
 
