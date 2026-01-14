@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Fixed Hands & Camera R</title>
+<title>Funbox - Running Edition</title>
 <style>
   body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
@@ -17,8 +17,8 @@
 <body>
 
 <div id="ui">
-  🤯 **Funbox Pro Fixed**<br>
-  WASD: Moverse | **C: Cabeza Rodante** | **R: Cámara Frontal** | Espacio: Salto
+  🏃 **Funbox Pro: Personaje Completo**<br>
+  WASD: Moverse | **Shift: CORRER** | **C: Cabeza Rodante** | **R: Cámara Frontal**
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -143,13 +143,12 @@ function animate() {
             player.position.set(0, 5, 0);
             isDead = false; vy = 0; panicStep = 0;
             isHeadMode = false;
-            // Reset de manos tras muerte
             brazoI.position.set(-0.3, 0.4, 0);
             brazoD.position.set(0.3, 0.4, 0);
         }
     }
 
-    // MOVIMIENTO
+    // MOVIMIENTO Y CORRER
     let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
@@ -158,7 +157,15 @@ function animate() {
         if(keys.d){ dir.x += 1; moving = true; }
     }
 
-    const moveSpeed = isHeadMode ? 0.12 : 0.09;
+    // Lógica de Velocidad (Normal vs Correr vs Cabeza)
+    let moveSpeed = isHeadMode ? 0.12 : 0.09;
+    let animationSpeed = 0.25;
+
+    if (keys.shift && !isHeadMode) {
+        moveSpeed = 0.18;      // Velocidad al correr
+        animationSpeed = 0.45; // Animación de piernas más rápida
+    }
+
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
 
     if(moving) {
@@ -166,7 +173,7 @@ function animate() {
         player.position.addScaledVector(moveDir, moveSpeed);
         
         if (!isHeadMode && onGround) {
-            step += 0.25;
+            step += animationSpeed;
             piernaI.rotation.x = Math.sin(step) * 0.8;
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
             brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
@@ -175,7 +182,7 @@ function animate() {
             cabezaMesh.rotation.x -= 0.15; 
         }
     } else {
-        // RESET DE MANOS Y PIERNAS (Fix del bug visual)
+        // RESET DE POSE NEUTRA
         if (onGround && !isDead) {
             step = THREE.MathUtils.lerp(step, 0, 0.1);
             piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
@@ -187,7 +194,7 @@ function animate() {
         }
     }
 
-    // TRANSFORMACIÓN
+    // TRANSFORMACIÓN CABEZA
     const t = 0.15;
     if (isHeadMode && !isDead) {
         cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 0, t), 0, 0);
@@ -207,7 +214,7 @@ function animate() {
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
     listaOjos.forEach(ojo => ojo.scale.y = THREE.MathUtils.lerp(ojo.scale.y, (blinkTimer < 10) ? 0.1 : 1, 0.3));
 
-    // CÁMARA DINÁMICA CON "R"
+    // CÁMARA
     let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 3.5);
     let camY = isHeadMode ? 0.8 : 1.8;
     const camOffset = new THREE.Vector3(0, camY, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
