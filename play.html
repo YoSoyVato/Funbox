@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Estados Españoles - Prototipo RP (Diagnóstico)</title>
+<title>Estados Españoles - Personaje Original</title>
 <style>
   body { margin:0; overflow:hidden; background:black; }
   #ui {
@@ -15,8 +15,8 @@
 <body>
 
 <div id="ui">
-  🎮 **Modo Diagnóstico**<br>
-  Si te sales del mapa, TODO el personaje se pondrá <b style="color:red">ROJO</b>.
+  🎮 **Estados Españoles RP**<br>
+  Personaje original restaurado.
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -34,7 +34,7 @@ const sun = new THREE.DirectionalLight(0xffffff,0.8);
 sun.position.set(10,20,10);
 scene.add(sun);
 
-// SUELO (200x200)
+// SUELO
 const floorSize = 200;
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(floorSize, floorSize),
@@ -43,38 +43,55 @@ const floor = new THREE.Mesh(
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
-// 2. PERSONAJE
+// 2. PERSONAJE ORIGINAL (RECONSTRUIDO)
 const playerHeight = 1.2;
 const player = new THREE.Group();
 
-// --- EL TRUCO ESTÁ AQUÍ ---
-// Usamos el MISMO material para cuerpo, piernas y brazos
+// Material único para que cambie TODO a rojo
 const bodyMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
 
+// CUERPO PRINCIPAL
 const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, playerHeight), bodyMat);
 body.position.y = playerHeight;
 player.add(body);
 
+// PIERNAS
 const legGeo = new THREE.CylinderGeometry(0.15,0.15,0.5);
-// Le ponemos bodyMat a las piernas
-player.add(new THREE.Mesh(legGeo, bodyMat)).position.set(-0.15,0.25,0);
-player.add(new THREE.Mesh(legGeo, bodyMat)).position.set(0.15,0.25,0);
+const legL = new THREE.Mesh(legGeo, bodyMat);
+legL.position.set(-0.15,0.25,0);
+player.add(legL);
 
+const legR = new THREE.Mesh(legGeo, bodyMat);
+legR.position.set(0.15,0.25,0);
+player.add(legR);
+
+// BRAZOS
 const armGeo = new THREE.CylinderGeometry(0.12,0.12,0.5);
-// Le ponemos bodyMat a los brazos
-player.add(new THREE.Mesh(armGeo, bodyMat)).position.set(-0.55,1.15,0);
-player.add(new THREE.Mesh(armGeo, bodyMat)).position.set(0.55,1.15,0);
+const armL = new THREE.Mesh(armGeo, bodyMat);
+armL.position.set(-0.55,1.15,0);
+player.add(armL);
 
+const armR = new THREE.Mesh(armGeo, bodyMat);
+armR.position.set(0.55,1.15,0);
+player.add(armR);
+
+// OJOS (Se quedan negros)
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
-player.add(new THREE.Mesh(new THREE.SphereGeometry(0.1), eyeMat)).position.set(-0.15,1.6,0.25);
-player.add(new THREE.Mesh(new THREE.SphereGeometry(0.1), eyeMat)).position.set(0.15,1.6,0.25);
+const eyeGeo = new THREE.SphereGeometry(0.1);
+const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+eyeL.position.set(-0.15,1.6,0.25);
+player.add(eyeL);
+
+const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+eyeR.position.set(0.15,1.6,0.25);
+player.add(eyeR);
 
 player.position.set(0,5,0);
 scene.add(player);
 
-// 3. VARIABLES
+// 3. MOVIMIENTO Y FÍSICAS
 let velY = 0;
-const gravity = -0.03; 
+const gravity = -0.03;
 let yaw=0, pitch=0;
 let speed = 0.15;
 const keys = {};
@@ -86,32 +103,31 @@ document.body.onclick = () => document.body.requestPointerLock();
 document.addEventListener("pointerlockchange", () => pointerLocked = document.pointerLockElement === document.body);
 document.addEventListener("mousemove", e=>{
   if(!pointerLocked) return;
-  yaw -= e.movementX*0.002; pitch -= e.movementY*0.002; pitch = Math.max(-0.6, Math.min(0.6, pitch));
+  yaw -= e.movementX*0.002;
 });
 
-// 4. LOOP PRINCIPAL
 function animate(){
   requestAnimationFrame(animate);
 
   let dir = new THREE.Vector3();
   if(keys.w) dir.z-=1; if(keys.s) dir.z+=1; if(keys.a) dir.x-=1; if(keys.d) dir.x+=1;
-  let moveSpeed = speed * (keys.shift?2:1);
-  if(dir.length()>0) player.position.addScaledVector(dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw), moveSpeed);
+  if(dir.length()>0) player.position.addScaledVector(dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw), speed * (keys.shift?2:1));
 
   velY += gravity;
   player.position.y += velY;
 
-  const limite = floorSize / 2; 
+  const limite = floorSize / 2;
   const estaDentro = Math.abs(player.position.x) <= limite && Math.abs(player.position.z) <= limite;
 
   if (estaDentro) {
-      bodyMat.color.set(0x00ffcc); // Cambia TODO lo que use bodyMat a cian
+      bodyMat.color.set(0x00ffcc); 
       if (player.position.y <= playerHeight) {
           player.position.y = playerHeight;
           velY = 0;
       }
   } else {
-      bodyMat.color.set(0xff0000); // Cambia TODO lo que use bodyMat a rojo
+      // AQUÍ SE PONE TODO ROJO (Cuerpo, piernas y brazos)
+      bodyMat.color.set(0xff0000); 
   }
 
   if(player.position.y < -50){ player.position.set(0,10,0); velY = 0; }
