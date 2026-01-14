@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Funko Ultra Cute</title>
+<title>Funbox - Funko Fixed</title>
 <style>
   body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
@@ -17,8 +17,8 @@
 <body>
 
 <div id="ui">
-  ✨ **Funbox: Mirada Cute**<br>
-  WASD: Caminar | **C: Squish** | **R: Frontal**
+  ✨ **Funbox: Arreglado**<br>
+  WASD: Caminar | **C: Agacharse** | **R: Frontal**
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -53,7 +53,7 @@ player.position.y = 0.2;
 const matPiel = new THREE.MeshStandardMaterial({color: 0xffdbac});
 const matPelo = new THREE.MeshStandardMaterial({color: 0x4e342e}); 
 const matRopa = new THREE.MeshStandardMaterial({color: 0x2196f3});
-const matOjoNegro = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.1});
+const matOjoNegro = new THREE.MeshBasicMaterial({color: 0x111111});
 
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
@@ -64,7 +64,7 @@ cabeza.position.y = 0.75;
 cabeza.castShadow = true;
 cuerpoVisual.add(cabeza);
 
-// PELO Y BARBA (Marrón como pediste)
+// PELO Y BARBA
 const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.22, 0.52), matPelo);
 pelo.position.y = 0.2;
 cabeza.add(pelo);
@@ -73,33 +73,20 @@ const barba = new THREE.Mesh(new THREE.BoxGeometry(0.57, 0.15, 0.51), matPelo);
 barba.position.y = -0.18;
 cabeza.add(barba);
 
-// OJOS ULTRA CUTE (Con doble brillo)
+// OJOS PLANOS (Para que no se salgan)
 function crearOjo(x) {
     const ojoGroup = new THREE.Group();
+    // Usamos CircleGeometry para que esté pegado a la cara perfectamente
+    const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.07, 32), matOjoNegro);
     
-    // Base del ojo (Pupila)
-    const pupila = new THREE.Mesh(
-        new THREE.SphereGeometry(0.07, 24, 24), 
-        matOjoNegro
-    );
-    pupila.scale.z = 0.2; // Plano contra la cara
+    const brillo1 = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    brillo1.position.set(0.025, 0.025, 0.001);
 
-    // Brillo Principal (Grande)
-    const brillo1 = new THREE.Mesh(
-        new THREE.SphereGeometry(0.025, 12, 12), 
-        new THREE.MeshBasicMaterial({color: 0xffffff})
-    );
-    brillo1.position.set(0.025, 0.025, 0.06);
-
-    // Brillo Secundario (Pequeño - Esto da el toque Cute)
-    const brillo2 = new THREE.Mesh(
-        new THREE.SphereGeometry(0.01, 8, 8), 
-        new THREE.MeshBasicMaterial({color: 0xffffff})
-    );
-    brillo2.position.set(-0.02, -0.02, 0.06);
+    const brillo2 = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    brillo2.position.set(-0.02, -0.02, 0.001);
     
     ojoGroup.add(pupila, brillo1, brillo2);
-    ojoGroup.position.set(x, -0.02, 0.26); // Un poco más abajo para ser tierno
+    ojoGroup.position.set(x, -0.02, 0.251); // 0.251 para evitar Z-fighting con la cara
     return ojoGroup;
 }
 cabeza.add(crearOjo(-0.18), crearOjo(0.18));
@@ -117,15 +104,15 @@ const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), matPiel);
 brazoD.position.set(0.3, 0.4, 0);
 cuerpoVisual.add(brazoI, brazoD);
 
-const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.1, 4, 8), matOjoNegro);
+const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.1, 4, 8), new THREE.MeshStandardMaterial({color:0x333333}));
 piernaI.position.set(-0.12, 0.1, 0);
-const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.1, 4, 8), matOjoNegro);
+const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.1, 4, 8), new THREE.MeshStandardMaterial({color:0x333333}));
 piernaD.position.set(0.12, 0.1, 0);
 player.add(piernaI, piernaD);
 
 scene.add(player);
 
-// --- ANIMACIÓN ---
+// --- LÓGICA DE ANIMACIÓN ---
 const keys = {};
 let yaw = 0, step = 0;
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
@@ -152,17 +139,17 @@ function animate() {
         player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.08);
         player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
         step += 0.25;
+        // Caminata
         piernaI.rotation.x = Math.sin(step) * 0.8;
         piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
     } else {
+        // RESET SUAVE DE PIERNAS (Para que no se quede caminando)
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.15);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.15);
         step += 0.05;
-        // Parpadeo tierno aleatorio
-        const b = Math.floor(Date.now() / 200) % 30 === 0;
-        cabeza.children.filter(c => c.type === 'Group').forEach(ojo => {
-            ojo.scale.y = THREE.MathUtils.lerp(ojo.scale.y, b ? 0.1 : 1, 0.5);
-        });
     }
     
+    // Movimiento sutil de cabeza
     cabeza.position.y = 0.75 + Math.sin(step * 2) * 0.012;
 
     let dist = keys.r ? -2.2 : 3.2;
