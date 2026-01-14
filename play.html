@@ -45,17 +45,13 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth,window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// ======================
 // LUCES
-// ======================
 scene.add(new THREE.AmbientLight(0xffffff,0.6));
 const sun = new THREE.DirectionalLight(0xffffff,0.8);
 sun.position.set(10,20,10);
 scene.add(sun);
 
-// ======================
 // SUELO
-// ======================
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(200,200),
   new THREE.MeshStandardMaterial({color:0x555555})
@@ -64,31 +60,31 @@ floor.rotation.x=-Math.PI/2;
 floor.position.y=0;
 scene.add(floor);
 
-// ======================
 // BLOQUES
-// ======================
 const blockMeshes = [];
 map.forEach(b=>{
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(1,1,1),
     new THREE.MeshStandardMaterial({color:0x777777})
   );
-  // Base de bloque a y=0.5, así el jugador camina sobre ellos
   mesh.position.set(b.x,0.5 + (b.z||0),b.y);
   scene.add(mesh);
   blockMeshes.push(mesh);
 });
 
+// SPAWN
+const spawn = new THREE.Vector3(0,1.2,0);
+
 // ======================
 // PERSONAJE CUTE
 // ======================
-const spawn = new THREE.Vector3(0,1.2,0);
 const player = new THREE.Group();
 player.scale.set(0.5,0.5,0.5);
 
 // CUERPO
+const bodyHeight = 1.2;
 const body = new THREE.Mesh(
-  new THREE.CapsuleGeometry(0.4,1.2),
+  new THREE.CapsuleGeometry(0.4,bodyHeight),
   new THREE.MeshStandardMaterial({color:0x00ffcc})
 );
 body.position.y=1.2;
@@ -126,8 +122,9 @@ const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
 const leftEye = new THREE.Mesh(eyeGeo,eyeMat);
 const rightEye = new THREE.Mesh(eyeGeo,eyeMat);
-leftEye.position.set(-0.15,1.6,-0.25);
-rightEye.position.set(0.15,1.6,-0.25);
+// Delante del cuerpo
+leftEye.position.set(-0.15,1.6,0.25);
+rightEye.position.set(0.15,1.6,0.25);
 player.add(leftEye);
 player.add(rightEye);
 
@@ -218,20 +215,19 @@ function animate(){
   }
 
   // GRAVEDAD
-  velY+=gravity;
-  player.position.y+=velY;
+  velY += gravity;
+  player.position.y += velY;
 
-  // COLISION CON BLOQUES Y SUELO
+  // ====================== COLISION CON BLOQUES Y SUELO
   let onGround = false;
 
-  // Colisión con suelo base
+  // Suelo base
   if(player.position.y <= 0.6){player.position.y = 0.6; velY = 0; onGround = true;}
 
-  // Colisión con bloques
+  // Bloques
   blockMeshes.forEach(b=>{
-    const halfSize = 0.5; // bloque 1x1
-    if(Math.abs(player.position.x - b.position.x) < 0.5 + 0.25 &&
-       Math.abs(player.position.z - b.position.z) < 0.5 + 0.25 &&
+    if(Math.abs(player.position.x - b.position.x) < 0.75 &&
+       Math.abs(player.position.z - b.position.z) < 0.75 &&
        player.position.y <= b.position.y + 0.6){
          player.position.y = b.position.y + 0.6;
          velY = 0;
