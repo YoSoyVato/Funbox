@@ -265,6 +265,32 @@ let yaw = 0, step = 0, rollStep = 0;
 let blinkTimer = 0;
 let dayTime = 0; // Para el ciclo de día
 
+// --- NUEVO: SISTEMA DE SCRIPTING PRO ---
+const customScript = localStorage.getItem("funbox_custom_script");
+let userUpdateFunc = null;
+
+const game = {
+    scene: scene,
+    player: player,
+    camera: camera,
+    floor: floor,
+    sun: sunLight,
+    blocks: physicalBlocks,
+    THREE: THREE,
+    setFloor: (color) => floor.material.color.set(color),
+    onUpdate: (fn) => { userUpdateFunc = fn; } // Para que el PRO corra código cada frame
+};
+
+if (customScript) {
+    try {
+        const runScript = new Function('game', customScript);
+        runScript(game);
+    } catch (e) {
+        console.error("Error en el Script del usuario:", e);
+    }
+}
+// ----------------------------------------
+
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
     if(e.code === "Space" && onGround && !isDead) vy = jumpForce;
@@ -277,17 +303,18 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 function animate() {
     requestAnimationFrame(animate);
 
+    // Ejecutar la actualización del usuario si existe (Nivel PRO)
+    if (userUpdateFunc) userUpdateFunc();
+
     // --- NUEVO: SISTEMA DE SCRIPTING (DIA/NOCHE Y EVENTOS) ---
     if(wsScript.dayNightCycle) {
         dayTime += 0.005;
         const sunIntensity = Math.sin(dayTime) * 0.5 + 0.5;
         sunLight.intensity = sunIntensity;
-        // Cambiar color de fondo suavemente
         scene.background.setHSL(0.5, 0.4, sunIntensity * 0.5);
     }
 
     if(wsScript.randomEvents && Math.random() < 0.001) {
-        // Evento: El suelo cambia a un color aleatorio
         floor.material.color.setHex(Math.random() * 0xffffff);
     }
     // --------------------------------------------------------
