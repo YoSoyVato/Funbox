@@ -91,28 +91,6 @@ function createBlock(x, y, z = 0, color = 0x777777) {
 // Cargar bloques guardados
 map.forEach(b => createBlock(b.x, b.y, b.z || 0));
 
-// Bloque “fantasma” verde
-let ghostBlock = createBlock(0, 0, 0, 0x00ff00);
-ghostBlock.material.transparent = true;
-ghostBlock.material.opacity = 0.5;
-
-// Raycaster para el bloque fantasma
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
-window.addEventListener("mousemove", e => {
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObject(floor);
-  if (intersects.length > 0) {
-    const point = intersects[0].point;
-    ghostBlock.position.x = Math.round(point.x);
-    ghostBlock.position.z = Math.round(point.z);
-  }
-});
-
 // ======================
 // JUGADOR
 // ======================
@@ -222,5 +200,4 @@ window.onresize = () => {
 
 </body>
 </html>
-
 
