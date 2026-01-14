@@ -1,76 +1,49 @@
 * {
   box-sizing: border-box;
-  font-family: system-ui, Arial;
+  font-family: Arial, sans-serif;
 }
 
 body {
   margin: 0;
-  background: #0b0b0b;
-  color: #fff;
-  overflow: hidden;
+  background: #0e0e0e;
+  color: white;
 }
 
-header {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  background: rgba(20,20,20,.9);
-  padding: 12px;
-  border-radius: 12px;
-  z-index: 10;
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
 }
 
-nav button {
-  margin: 4px;
-  padding: 8px 14px;
+button {
+  margin: 8px;
+  padding: 10px 20px;
   background: #222;
+  color: white;
   border: none;
-  color: #fff;
   border-radius: 8px;
   cursor: pointer;
 }
 
-nav button:hover {
+button:hover {
   background: #444;
-}
-
-#content {
-  margin-top: 90px;
-  padding: 15px;
 }
 
 canvas {
   background: #111;
-  border: 1px solid #333;
+  display: block;
+  margin: auto;
 }
 
 .editor-ui {
   position: fixed;
-  top: 90px;
+  top: 10px;
   left: 10px;
-  background: rgba(15,15,15,.95);
-  padding: 12px;
-  border-radius: 10px;
-  width: 190px;
-  z-index: 20;
+  background: rgba(0,0,0,0.8);
+  padding: 10px;
+  border-radius: 8px;
 }
 
-.editor-ui h3 {
-  margin: 0 0 8px 0;
-}
-
-.editor-ui button {
-  width: 100%;
-  margin: 4px 0;
-  padding: 6px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background: #222;
-  color: white;
-}
-
-.editor-ui button.active {
-  background: #00aaff;
-}
 
