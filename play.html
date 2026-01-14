@@ -2,95 +2,123 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Personaje Original</title>
+<title>Funbox - Edición Premium</title>
 <style>
-  body { margin:0; overflow:hidden; background: #e0e0e0; }
+  body { margin:0; overflow:hidden; background: #111; }
   #ui {
-    position: fixed; top:20px; left:20px; color:#333;
-    font-family: 'Segoe UI', sans-serif;
-    background: rgba(255, 255, 255, 0.9);
-    padding:15px; border-radius:12px; z-index:10;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    position: fixed; top:20px; left:20px; color:white;
+    font-family: 'Arial Rounded MT Bold', sans-serif;
+    background: rgba(0, 0, 0, 0.7);
+    padding:15px; border-radius:20px; z-index:10;
+    backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
   }
 </style>
 </head>
 <body>
 
 <div id="ui">
-  🎮 **Funbox: Modelo Original**<br>
-  WASD: Caminar | **C: Agacharse** | **R: Vista Frontal**
+  ✨ **Funbox: Personaje Pulido**<br>
+  WASD: Moverse | **C: Agacharse** | **R: Frontal**
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xb2e2f2); 
+scene.background = new THREE.Color(0x222222);
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-// Luz sencilla para que el color sea sólido
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-const light = new THREE.DirectionalLight(0xffffff, 0.5);
-light.position.set(5, 10, 5);
-light.castShadow = true;
-scene.add(light);
+// ILUMINACIÓN DE ALTA CALIDAD
+const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambient);
 
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({color: 0xffffff}));
+const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+sun.position.set(5, 10, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 2048; 
+sun.shadow.mapSize.height = 2048;
+scene.add(sun);
+
+// SUELO CON REFLEJO SUTIL
+const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(100, 100), 
+    new THREE.MeshStandardMaterial({color: 0x252525, roughness: 0.6})
+);
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// 2. PERSONAJE (EL DE LA CAPTURA)
+// 2. PERSONAJE PULIDO
 const player = new THREE.Group();
 player.position.y = 0.4; 
 
-const matCuerpo = new THREE.MeshStandardMaterial({color: 0xa81d1d, roughness: 0.5}); // Rojo mate como la foto
-const matNegro = new THREE.MeshStandardMaterial({color: 0x000000});
+// Materiales Mejorados
+const matRojoPro = new THREE.MeshPhysicalMaterial({
+    color: 0xc41212, 
+    roughness: 0.2, 
+    metalness: 0.1,
+    clearcoat: 1.0, 
+    clearcoatRoughness: 0.1
+});
+const matNegroHoyo = new THREE.MeshBasicMaterial({color: 0x050505});
 
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
 
-// CUERPO CÁPSULA
-const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.4, 4, 16), matCuerpo);
+// CUERPO (Cápsula más definida)
+const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.32, 0.45, 10, 32), matRojoPro);
 cuerpo.position.y = 0.5;
 cuerpo.castShadow = true;
 cuerpoVisual.add(cuerpo);
 
-// OJOS PEQUEÑOS (PUNTOS NEGROS)
+// OJOS (Puntos negros con brillo interno)
 function crearOjo(x) {
-    const ojo = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), matNegro);
-    ojo.position.set(x, 0.65, 0.28);
+    const ojo = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 16), matNegroHoyo);
+    ojo.position.set(x, 0.68, 0.29);
+    const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({color:0xffffff}));
+    brillo.position.set(0.018, 0.018, 0.04);
+    ojo.add(brillo);
     return ojo;
 }
-const ojoI = crearOjo(-0.1);
-const ojoD = crearOjo(0.1);
+const ojoI = crearOjo(-0.12);
+const ojoD = crearOjo(0.12);
 cuerpoVisual.add(ojoI, ojoD);
 
-// BOCA (AGUJERO/LÍNEA REPO)
-const boca = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.05), matNegro);
-boca.position.set(0, 0.52, 0.28);
+// BOCA AGUJERO (TIPO REPO - REDONDEADA)
+const bocaGeo = new THREE.CapsuleGeometry(0.06, 0.04, 4, 12);
+const boca = new THREE.Mesh(bocaGeo, matNegroHoyo);
+boca.rotation.x = Math.PI/2;
+boca.position.set(0, 0.52, 0.32);
 cuerpoVisual.add(boca);
 
-// BRAZOS DE ESFERA (IGUAL QUE TU FOTO)
-const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCuerpo);
-brazoI.position.set(-0.38, 0.5, 0);
-const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCuerpo);
-brazoD.position.set(0.38, 0.5, 0);
+// BRAZOS ESFÉRICOS PULIDOS
+const brazoGeo = new THREE.SphereGeometry(0.09, 20, 20);
+const brazoI = new THREE.Mesh(brazoGeo, matRojoPro);
+brazoI.position.set(-0.43, 0.5, 0);
+brazoI.castShadow = true;
+const brazoD = new THREE.Mesh(brazoGeo, matRojoPro);
+brazoD.position.set(0.43, 0.5, 0);
+brazoD.castShadow = true;
 cuerpoVisual.add(brazoI, brazoD);
 
-// PIERNITAS ROJAS
-const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.12, 4, 8), matCuerpo);
-piernaI.position.set(-0.15, 0.1, 0);
-const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.12, 4, 8), matCuerpo);
-piernaD.position.set(0.15, 0.1, 0);
+// PIERNAS ROJAS MEJORADAS
+const piernaGeo = new THREE.CapsuleGeometry(0.08, 0.12, 4, 12);
+const piernaI = new THREE.Mesh(piernaGeo, matRojoPro);
+piernaI.position.set(-0.16, 0.1, 0);
+piernaI.castShadow = true;
+const piernaD = new THREE.Mesh(piernaGeo, matRojoPro);
+piernaD.position.set(0.16, 0.1, 0);
+piernaD.castShadow = true;
 player.add(piernaI, piernaD);
 
 scene.add(player);
 
-// 3. LÓGICA
+// 3. ANIMACIÓN Y CONTROLES
 const keys = {};
 let yaw = 0, step = 0;
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
@@ -111,35 +139,38 @@ function animate() {
     if(keys.d){ dir.x += 1; moving = true; }
 
     const isCrouching = keys.c;
-    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, isCrouching ? 0.6 : 1.0, 0.2);
-    cuerpoVisual.scale.x = cuerpoVisual.scale.z = THREE.MathUtils.lerp(cuerpoVisual.scale.x, isCrouching ? 1.1 : 1.0, 0.2);
+    
+    // Suavizado de deformación (Squash & Stretch)
+    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, isCrouching ? 0.65 : 1.0, 0.15);
+    cuerpoVisual.scale.x = cuerpoVisual.scale.z = THREE.MathUtils.lerp(cuerpoVisual.scale.x, isCrouching ? 1.2 : 1.0, 0.15);
 
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.08);
-        player.rotation.y = yaw + Math.PI;
-        step += 0.2;
-        piernaI.rotation.x = Math.sin(step) * 0.8;
-        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-        brazoI.position.y = 0.5 + Math.sin(step + Math.PI) * 0.05;
-        brazoD.position.y = 0.5 + Math.sin(step) * 0.05;
+        player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.09);
+        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
+        
+        step += 0.22;
+        piernaI.rotation.x = Math.sin(step) * 0.75;
+        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.75;
+        brazoI.position.y = 0.5 + Math.sin(step + Math.PI) * 0.08;
+        brazoD.position.y = 0.5 + Math.sin(step) * 0.08;
     } else {
-        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.2);
-        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.2);
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
         step += 0.05;
-        // Parpadeo
-        if(Math.floor(Date.now() / 250) % 20 === 0) {
-            ojoI.scale.y = ojoD.scale.y = 0.1;
-        } else {
-            ojoI.scale.y = ojoD.scale.y = 1;
-        }
+        // Parpadeo aleatorio
+        const blink = Math.floor(Date.now() / 150) % 35 === 0;
+        ojoI.scale.y = ojoD.scale.y = THREE.MathUtils.lerp(ojoI.scale.y, blink ? 0.1 : 1, 0.4);
     }
-    player.position.y = 0.15 + (moving ? Math.abs(Math.sin(step)) * 0.05 : Math.sin(step) * 0.02);
+    
+    // Balanceo de altura
+    player.position.y = 0.12 + (moving ? Math.abs(Math.sin(step)) * 0.07 : Math.sin(step) * 0.02);
 
-    let dist = keys.r ? -2.5 : 3.5;
-    const camOffset = new THREE.Vector3(0, 1.5, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    // Cámara dinámica cinemática
+    let dist = keys.r ? -2.8 : 3.5;
+    const camOffset = new THREE.Vector3(0, 1.8, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.4, 0)));
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.5, 0)));
 
     renderer.render(scene, camera);
 }
