@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Funbox - Mi Perfil</title>
+    <style>
+        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Header con Monedas */
+        .header { background: #151515; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .coins { background: #ffca28; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 18px; box-shadow: 0 0 10px rgba(255, 202, 40, 0.3); }
+
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+
+        /* Lado Izquierdo: Visualizador de Personaje */
+        .character-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a1a 0%, #050505 100%); position: relative; }
+        .char-preview { font-size: 120px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); transition: 0.3s; }
+        .char-name { margin-top: 20px; font-size: 24px; color: #4db8ff; font-weight: bold; }
+
+        /* Lado Derecho: Tienda e Inventario */
+        .shop-container { width: 400px; background: #111; border-left: 1px solid #333; padding: 20px; overflow-y: auto; }
+        .section-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        
+        .item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .item-card { background: #1a1a1a; border: 1px solid #333; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .item-card:hover { border-color: #4db8ff; background: #222; transform: translateY(-2px); }
+        .item-card.owned { border-color: #4caf50; opacity: 0.8; }
+        .item-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+        .item-price { color: #ffca28; font-weight: bold; font-size: 14px; }
+        
+        .btn-back { position: absolute; top: 20px; left: 20px; background: none; border: 1px solid #444; color: #888; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-back:hover { color: white; border-color: white; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="font-weight: bold; font-size: 20px;">👤 PERFIL DE USUARIO</div>
+    <div class="coins">🪙 <span id="coin-count">500</span></div>
+</div>
+
+<div class="main-container">
+    <div class="character-view">
+        <button class="btn-back" onclick="location.href='index.html'">⬅ VOLVER</button>
+        <div id="char-display" class="char-preview">👤</div>
+        <div id="user-display-name" class="char-name">Usuario</div>
+        <p style="color: #444; font-size: 12px;">Tu personaje actual</p>
+    </div>
+
+    <div class="shop-container">
+        <div class="section-title">Personajes Disponibles</div>
+        <div class="item-grid" id="shop-items">
+            </div>
+
+        <div class="section-title">Mi Inventario</div>
+        <div class="item-grid" id="inventory-items">
+            </div>
+    </div>
+</div>
+
+<script>
+    // 1. Datos iniciales
+    const userSession = JSON.parse(sessionStorage.getItem("funbox_session"));
+    if (!userSession) location.href = "index.html";
+
+    document.getElementById("user-display-name").innerText = userSession.user;
+
+    // Sistema de Economía
+    let coins = parseInt(localStorage.getItem("funbox_coins")) || 500;
+    let ownedItems = JSON.parse(localStorage.getItem("funbox_items")) || ["👤"];
+    let currentSkin = localStorage.getItem("funbox_current_skin") || "👤";
+
+    const shopData = [
+        { name: "Ninja", emoji: "🥷", price: 200 },
+        { name: "Robot", emoji: "🤖", price: 400 },
+        { name: "Astronauta", emoji: "👨‍🚀", price: 600 },
+        { name: "Rey", emoji: "🤴", price: 1000 },
+        { name: "Gato Pro", emoji: "🐱", price: 150 },
+        { name: "Científico", emoji: "👨‍🔬", price: 300 }
+    ];
+
+    function updateUI() {
+        document.getElementById("coin-count").innerText = coins;
+        document.getElementById("char-display").innerText = currentSkin;
+        localStorage.setItem("funbox_coins", coins);
+        localStorage.setItem("funbox_items", JSON.stringify(ownedItems));
+        localStorage.setItem("funbox_current_skin", currentSkin);
+        
+        renderShop();
+        renderInventory();
+    }
+
+    function renderShop() {
+        const container = document.getElementById("shop-items");
+        container.innerHTML = "";
+        
+        shopData.forEach(item => {
+            if (!ownedItems.includes(item.emoji)) {
+                const card = document.createElement("div");
+                card.className = "item-card";
+                card.onclick = () => comprar(item);
+                card.innerHTML = `
+                    <span class="item-emoji">${item.emoji}</span>
+                    <div style="font-size: 12px; margin-bottom: 5px;">${item.name}</div>
+                    <div class="item-price">🪙 ${item.price}</div>
+                `;
+                container.appendChild(card);
+            }
+        });
+    }
+
+    function renderInventory() {
+        const container = document.getElementById("inventory-items");
+        container.innerHTML = "";
+        
+        ownedItems.forEach(emoji => {
+            const card = document.createElement("div");
+            card.className = "item-card owned";
+            card.onclick = () => { currentSkin = emoji; updateUI(); };
+            card.innerHTML = `
+                <span class="item-emoji">${emoji}</span>
+                <div style="font-size: 10px; color: #4caf50;">EQUIPAR</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function comprar(item) {
+        if (coins >= item.price) {
+            coins -= item.price;
+            ownedItems.push(item.emoji);
+            alert(`¡Has comprado ${item.name}!`);
+            updateUI();
+        } else {
+            alert("No tienes suficientes monedas.");
+        }
+    }
+
+    // Iniciar
+    updateUI();
+</script>
+
+</body>
+</html>
