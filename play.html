@@ -228,7 +228,7 @@ function crearOjo(x) {
     const ojoGroup = new THREE.Group();
     const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.07, 32), matOjoNegro);
     const b1 = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-    b1.position.set(0.025, 0.025, 0.001);
+    b1.position.set(0.025, 0.025, 0.002); // Más separado para evitar z-fighting
     ojoGroup.add(pupila, b1);
     ojoGroup.position.set(x, -0.02, 0.251);
     listaOjos.push(ojoGroup);
@@ -255,7 +255,7 @@ scene.add(player);
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
 const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
-let yaw = 0, step = 0, panicStep = 0;
+let yaw = 0, step = 0, rollStep = 0;
 let blinkTimer = 0;
 
 window.addEventListener("keydown", e => {
@@ -316,14 +316,29 @@ function animate() {
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
             brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
             brazoD.position.z = Math.sin(step) * 0.15;
+        } else if (isHeadMode) {
+            // ANIMACION RODAR (Lenta y suave)
+            rollStep += 0.1;
+            cabezaMesh.rotation.x = -rollStep; 
         }
     } else {
-        // RETORNO A POSICION NEUTRAL
         step = THREE.MathUtils.lerp(step, 0, 0.1);
         piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
         piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
         brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.1);
         brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.1);
+        if(!isHeadMode) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
+    }
+
+    // ANIMACION DE SALTO
+    if (!onGround && !isHeadMode) {
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, -0.5, 0.2);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, -0.5, 0.2);
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.5, 0.2);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.5, 0.2);
+    } else {
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
     }
 
     const t = 0.15;
@@ -335,12 +350,13 @@ function animate() {
         cuerpoRef.scale.set(1, 1, 1); brazoI.scale.set(1,1,1); brazoD.scale.set(1,1,1);
         piernaI.scale.set(1,1,1); piernaD.scale.set(1,1,1);
         cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.75, t);
-        if(!moving) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, t);
     }
 
     blinkTimer--;
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
-    listaOjos.forEach(ojo => ojo.scale.y = THREE.MathUtils.lerp(ojo.scale.y, (blinkTimer < 10) ? 0.1 : 1, 0.3));
+    listaOjos.forEach(ojo => {
+        ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; // Parpadeo directo para no encoger pupilas
+    });
 
     let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 3.5);
     const camOffset = new THREE.Vector3(0, isHeadMode ? 0.8 : 1.8, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
