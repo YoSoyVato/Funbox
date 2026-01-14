@@ -67,17 +67,20 @@ const sunVisual = new THREE.Mesh(sunGeo, sunMat);
 sunVisual.position.set(100, 150, -200);
 scene.add(sunVisual);
 
-const floorSize = config.floorSize; 
+// --- EL SUELO AHORA ES SOLO DECORATIVO (NO TIENE COLISIÓN) ---
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(floorSize, floorSize), 
+    new THREE.PlaneGeometry(config.floorSize, config.floorSize), 
     new THREE.MeshStandardMaterial({
         color: config.floorColor,
         roughness: 0.8,
-        metalness: 0.1
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.5 // Lo hacemos un poco transparente para avisar que es el vacío
     })
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
+floor.position.y = -0.01; // Un poco abajo para que no parpadee con los bloques
 scene.add(floor);
 
 // --- ASSETS ---
@@ -158,6 +161,8 @@ mapData.forEach(b => {
         block = new THREE.Mesh(spawnGeo, spawnMat);
         block.position.set(b.x + 0.5, 0.05, b.y + 0.5);
         spawnPoint.set(block.position.x, 0, block.position.z);
+        // El spawn también cuenta como suelo para no caerse nada más empezar
+        physicalBlocks.push(block);
     } else if (b.type === "block") {
         block = new THREE.Mesh(boxGeo, boxMat);
         block.position.set(b.x + 0.5, 0.5, b.y + 0.5);
@@ -175,14 +180,18 @@ mapData.forEach(b => {
     scene.add(block);
 });
 
+// --- SISTEMA DE SUPERFICIE MEJORADO ---
 function getSurfaceY(pos) {
-    let maxY = 0; 
+    let maxY = -100; // Por defecto es el vacío profundo
     const pR = 0.25; 
     physicalBlocks.forEach(b => {
         const bounds = new THREE.Box3().setFromObject(b);
         if (pos.x > bounds.min.x - pR && pos.x < bounds.max.x + pR &&
             pos.z > bounds.min.z - pR && pos.z < bounds.max.z + pR) {
-            if (pos.y >= bounds.max.y - 0.25) maxY = Math.max(maxY, bounds.max.y);
+            // Si estamos por encima de la parte superior del bloque
+            if (pos.y >= bounds.max.y - 0.25) {
+                maxY = Math.max(maxY, bounds.max.y);
+            }
         }
     });
     return maxY;
@@ -306,32 +315,37 @@ function animate() {
     requestAnimationFrame(animate);
 
     if (userUpdateFunc) {
-        try {
-            userUpdateFunc();
-        } catch(e) {
-            userUpdateFunc = null; 
-            console.error("Script onUpdate detenido por error:", e);
-        }
+        try { userUpdateFunc(); } catch(e) { userUpdateFunc = null; }
     }
 
     const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
     
+    // CAÍDA Y FÍSICAS
     if (player.position.y > currentSurfaceY) {
         vy += gravity;
         onGround = false;
     } else {
-        player.position.y = currentSurfaceY;
-        vy = Math.max(0, vy); 
-        onGround = true;
+        // Solo aterrizamos si no estamos cayendo al vacío profundo
+        if (currentSurfaceY > -50) {
+            player.position.y = currentSurfaceY;
+            vy = Math.max(0, vy); 
+            onGround = true;
+        } else {
+            onGround = false;
+            vy += gravity;
+        }
     }
 
+    // RESPAWN SI CAE AL VACÍO
     if (player.position.y < -15) {
-        player.position.copy(spawnPoint); player.position.y = 5;
+        player.position.copy(spawnPoint); 
+        player.position.y = 5;
         isDead = false; vy = 0; isHeadMode = false;
         brazoI.position.set(-0.3, 0.4, 0); brazoD.position.set(0.3, 0.4, 0);
     }
 
+    // MOVIMIENTO
     let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
@@ -372,6 +386,7 @@ function animate() {
         if(!isHeadMode) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
     }
 
+    // ANIMACIONES DE SALTO
     if (!onGround && !isHeadMode) {
         piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, -0.5, 0.2);
         piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, -0.5, 0.2);
