@@ -1,0 +1,46 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0e0e0e;
+  color: white;
+  overflow: hidden;
+}
+
+/* Launcher */
+.launcher {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.launcher button {
+  margin: 10px;
+  padding: 12px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Header */
+header {
+  padding: 10px;
+}
+
+/* Editor */
+canvas {
+  background: #111;
+  border: 1px solid #333;
+}
+
+/* Play */
+.back-btn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+}
