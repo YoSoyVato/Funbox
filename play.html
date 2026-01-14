@@ -92,14 +92,56 @@ function createBlock(x, y, z = 0, color = 0x777777) {
 map.forEach(b => createBlock(b.x, b.y, b.z || 0));
 
 // ======================
-// JUGADOR
+// JUGADOR CUTE
 // ======================
 const spawn = new THREE.Vector3(0, 2, 0);
+const player = new THREE.Group();
 
-const player = new THREE.Mesh(
+// --- CUERPO ---
+const body = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.4, 1.2),
   new THREE.MeshStandardMaterial({ color: 0x00ffcc })
 );
+body.position.y = 1.2;
+player.add(body);
+
+// --- PIERNAS ---
+const legGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.5);
+const legMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
+
+const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+leftLeg.position.set(-0.15, 0.25, 0);
+player.add(leftLeg);
+
+const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+rightLeg.position.set(0.15, 0.25, 0);
+player.add(rightLeg);
+
+// --- MANOS ---
+const handGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+const handMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
+
+const leftHand = new THREE.Mesh(handGeometry, handMaterial);
+leftHand.position.set(-0.6, 1.5, 0);
+player.add(leftHand);
+
+const rightHand = new THREE.Mesh(handGeometry, handMaterial);
+rightHand.position.set(0.6, 1.5, 0);
+player.add(rightHand);
+
+// --- OJITOS ---
+const eyeGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+
+const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+leftEye.position.set(-0.15, 1.6, 0.25);
+player.add(leftEye);
+
+const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+rightEye.position.set(0.15, 1.6, 0.25);
+player.add(rightEye);
+
+// --- POSICIÓN INICIAL ---
 player.position.copy(spawn);
 scene.add(player);
 
@@ -200,4 +242,5 @@ window.onresize = () => {
 
 </body>
 </html>
+
 
