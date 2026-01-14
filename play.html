@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Estados Españoles - Prototipo RP (Diagnóstico)</title>
+<title>Estados Españoles - Prototipo RP</title>
 <style>
   body { margin:0; overflow:hidden; background:black; }
   #ui {
@@ -16,7 +16,7 @@
 
 <div id="ui">
   🎮 **Modo Diagnóstico**<br>
-  Si te sales del mapa, el personaje se pondrá <b style="color:red">ROJO</b> y caerá rápido.
+  ¡Ahora todo el cuerpo se pone rojo al caer!
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -47,20 +47,25 @@ scene.add(floor);
 const playerHeight = 1.2;
 const player = new THREE.Group();
 
-// MATERIAL DEL CUERPO (Lo guardamos en variable para cambiarle el color)
+// MATERIAL ÚNICO (Para que todo cambie de color a la vez)
 const bodyMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
+
+// CUERPO
 const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, playerHeight), bodyMat);
 body.position.y = playerHeight;
 player.add(body);
 
-// Piernas/Brazos/Ojos (Decoración)
-const legMat = new THREE.MeshStandardMaterial({color:0x00ffcc});
+// PIERNAS (Usando bodyMat)
 const legGeo = new THREE.CylinderGeometry(0.15,0.15,0.5);
-player.add(new THREE.Mesh(legGeo, legMat)).position.set(-0.15,0.25,0);
-player.add(new THREE.Mesh(legGeo, legMat)).position.set(0.15,0.25,0);
+player.add(new THREE.Mesh(legGeo, bodyMat)).position.set(-0.15,0.25,0);
+player.add(new THREE.Mesh(legGeo, bodyMat)).position.set(0.15,0.25,0);
+
+// BRAZOS (Usando bodyMat)
 const armGeo = new THREE.CylinderGeometry(0.12,0.12,0.5);
-player.add(new THREE.Mesh(armGeo, legMat)).position.set(-0.55,1.15,0);
-player.add(new THREE.Mesh(armGeo, legMat)).position.set(0.55,1.15,0);
+player.add(new THREE.Mesh(armGeo, bodyMat)).position.set(-0.55,1.15,0);
+player.add(new THREE.Mesh(armGeo, bodyMat)).position.set(0.55,1.15,0);
+
+// OJOS
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
 player.add(new THREE.Mesh(new THREE.SphereGeometry(0.1), eyeMat)).position.set(-0.15,1.6,0.25);
 player.add(new THREE.Mesh(new THREE.SphereGeometry(0.1), eyeMat)).position.set(0.15,1.6,0.25);
@@ -70,7 +75,7 @@ scene.add(player);
 
 // 3. VARIABLES
 let velY = 0;
-const gravity = -0.03; // <-- GRAVEDAD MÁS FUERTE PARA PROBAR
+const gravity = -0.03; 
 let yaw=0, pitch=0;
 let speed = 0.15;
 const keys = {};
@@ -99,20 +104,18 @@ function animate(){
   velY += gravity;
   player.position.y += velY;
 
-  // --- ZONA DE PRUEBA ---
-  const limite = floorSize / 2; // 100
+  // --- LÓGICA DE COLISIÓN Y COLOR ---
+  const limite = floorSize / 2; 
   const estaDentro = Math.abs(player.position.x) <= limite && Math.abs(player.position.z) <= limite;
 
   if (estaDentro) {
-      // DENTRO DEL MAPA: Color normal, colisión activa
-      bodyMat.color.set(0x00ffcc); 
+      bodyMat.color.set(0x00ffcc); // Color normal para TODO el cuerpo
       if (player.position.y <= playerHeight) {
           player.position.y = playerHeight;
           velY = 0;
       }
   } else {
-      // FUERA DEL MAPA: ¡COLOR ROJO! y sin colisión (cae)
-      bodyMat.color.set(0xff0000); 
+      bodyMat.color.set(0xff0000); // ¡TODO el cuerpo se pone ROJO!
   }
 
   // Respawn
