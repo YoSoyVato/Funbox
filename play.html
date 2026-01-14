@@ -2,102 +2,108 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Cilindrín (Vista Frontal R)</title>
+<title>Funbox - Cápsula Prototipo Detallada</title>
 <style>
-  body { margin:0; overflow:hidden; background: #e0f2f7; }
+  body { margin:0; overflow:hidden; background: #1a1a1a; }
   #ui {
-    position: fixed; top:20px; left:20px; color:#333;
-    font-family: 'Rubik', sans-serif;
-    background: rgba(255, 255, 255, 0.9);
-    padding:18px; border-radius:15px; z-index:10;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border: 2px solid #a8dadc; 
+    position: fixed; top:20px; left:20px; color:white;
+    font-family: 'Segoe UI', sans-serif;
+    background: rgba(0, 0, 0, 0.7);
+    padding:15px; border-radius:10px; z-index:10;
+    border-left: 5px solid #00f2ff;
   }
-  @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap');
 </style>
 </head>
 <body>
 
 <div id="ui">
-  🔵 **CILINDRÍN: Modo Cámara** 🎈<br>
-  WASD: Moverse | **Mantén R: Ver cara**<br>
-  <small>Mouse para rotar cámara</small>
+  🤖 **Cápsula de Desarrollo: Funbox v2.0**<br>
+  WASD: Moverse | **MANTÉN R: Vista Frontal (F5)**<br>
+  <small>Diseño: Simple, Limpio, Detallado</small>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-// 1. ESCENA
+// 1. ESCENA TÉCNICA
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xe0f2f7); 
+scene.background = new THREE.Color(0x222222);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// LUCES
-const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+// ILUMINACIÓN DE ESTUDIO
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-dirLight.position.set(5, 10, 5);
-dirLight.castShadow = true;
-scene.add(dirLight);
+const light1 = new THREE.PointLight(0x00f2ff, 1, 50); // Luz tecnológica azul
+light1.position.set(5, 5, 5);
+scene.add(light1);
+const light2 = new THREE.DirectionalLight(0xffffff, 0.8);
+light2.position.set(-5, 10, 2);
+light2.castShadow = true;
+scene.add(light2);
 
-// SUELO
+// SUELO DE REJILLA (GRID) - Estilo desarrollo
+const grid = new THREE.GridHelper(200, 50, 0x444444, 0x333333);
+scene.add(grid);
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({color: 0xcbf1f5})
+  new THREE.MeshStandardMaterial({color: 0x111111})
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// 2. EL PERSONAJE: CILINDRÍN
+// 2. EL PERSONAJE (CÁPSULA DETALLADA)
 const player = new THREE.Group();
-player.position.y = 0.7;
+player.position.y = 1; 
 
-const mainMat = new THREE.MeshStandardMaterial({color: 0x98c1d9, roughness: 0.5, metalness: 0.1});
-const accentMat = new THREE.MeshStandardMaterial({color: 0xffa07a, roughness: 0.6});
-const eyeMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
-const smileMat = new THREE.MeshStandardMaterial({ color: 0xecf0f1 });
+// MATERIALES
+const matCapsula = new THREE.MeshStandardMaterial({
+  color: 0xeeeeee, 
+  roughness: 0.2, 
+  metalness: 0.5
+});
+const matVisor = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.1});
+const matLuz = new THREE.MeshBasicMaterial({color: 0x00f2ff});
 
-const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.0, 32), mainMat);
-body.castShadow = true;
-player.add(body);
+// CUERPO (Cápsula de juego)
+const capsule = new THREE.Mesh(
+  new THREE.CapsuleGeometry(0.5, 1, 4, 16), 
+  matCapsula
+);
+capsule.castShadow = true;
+player.add(capsule);
 
-// OJOS
-const eyeWhiteGeo = new THREE.SphereGeometry(0.18, 16, 16);
-const leftEyeWhite = new THREE.Mesh(eyeWhiteGeo, smileMat);
-leftEyeWhite.position.set(-0.2, 0.2, 0.45);
-const rightEyeWhite = new THREE.Mesh(eyeWhiteGeo, smileMat);
-rightEyeWhite.position.set(0.2, 0.2, 0.45);
-body.add(leftEyeWhite, rightEyeWhite);
+// VISOR (Para que se sepa hacia dónde mira)
+const visor = new THREE.Mesh(
+  new THREE.CapsuleGeometry(0.35, 0.1, 4, 16),
+  matVisor
+);
+visor.rotation.z = Math.PI/2;
+visor.position.set(0, 0.5, 0.3);
+player.add(visor);
 
-const pupilGeo = new THREE.SphereGeometry(0.08, 16, 16);
-const leftPupil = new THREE.Mesh(pupilGeo, eyeMat);
-leftPupil.position.z = 0.1;
-leftEyeWhite.add(leftPupil);
-const rightPupil = new THREE.Mesh(pupilGeo, eyeMat);
-rightPupil.position.z = 0.1;
-rightEyeWhite.add(rightPupil);
+// OJOS LED (Detalle tecnológico)
+const eyeGeo = new THREE.SphereGeometry(0.05, 16, 16);
+const leftEye = new THREE.Mesh(eyeGeo, matLuz);
+leftEye.position.set(-0.15, 0.5, 0.45);
+const rightEye = new THREE.Mesh(eyeGeo, matLuz);
+rightEye.position.set(0.15, 0.5, 0.45);
+player.add(leftEye, rightEye);
 
-// BOCA
-const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16, 0, Math.PI), eyeMat);
-mouth.rotation.x = Math.PI * 0.5;
-mouth.position.set(0, -0.1, 0.48);
-body.add(mouth);
-
-// BRAZOS
-const armGeo = new THREE.SphereGeometry(0.15, 16, 16);
-const leftArm = new THREE.Mesh(armGeo, accentMat);
-leftArm.position.set(-0.6, 0.1, 0);
-const rightArm = new THREE.Mesh(armGeo, accentMat);
-rightArm.position.set(0.6, 0.1, 0);
-player.add(leftArm, rightArm);
+// BASE MECÁNICA (Para que no sea solo una cápsula flotante)
+const base = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.51, 0.51, 0.1, 16),
+  matVisor
+);
+base.position.y = -0.5;
+player.add(base);
 
 scene.add(player);
 
-// 3. CONTROLES
+// 3. LOGICA DE CONTROL
 const keys = {};
 let yaw = 0;
 let step = 0;
@@ -122,32 +128,31 @@ function animate() {
 
   if(moving) {
     const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-    player.position.addScaledVector(moveDir, 0.1);
+    player.position.addScaledVector(moveDir, 0.12);
     player.rotation.y = yaw + Math.PI;
+    
+    // Inclinación aerodinámica al correr
     step += 0.2;
-    body.rotation.z = Math.sin(step) * 0.08;
-    leftArm.position.y = 0.1 + Math.sin(step) * 0.15;
-    rightArm.position.y = 0.1 + Math.sin(step + Math.PI) * 0.15;
+    capsule.rotation.x = Math.sin(step) * 0.05 + 0.1; 
   } else {
+    // Respiración Idle
     step += 0.05;
-    player.rotation.y = yaw + Math.PI + Math.sin(step * 0.5) * 0.02;
-    body.rotation.z = Math.sin(step * 0.2) * 0.02;
-    leftArm.position.y = 0.1 + Math.sin(step * 0.1) * 0.05;
-    rightArm.position.y = 0.1 + Math.sin(step * 0.1 + Math.PI) * 0.05;
+    player.position.y = 1 + Math.sin(step) * 0.02;
+    capsule.rotation.x = 0;
   }
 
-  // LOGICA DE CÁMARA (TECLA R)
-  let camOffset;
+  // CÁMARA TIPO F5 (Minecraft)
+  let camTarget;
   if (keys.r) {
-    // Cámara frontal (Mirando al personaje)
-    camOffset = new THREE.Vector3(0, 1, 3.5).applyAxisAngle(new THREE.Vector3(0,1,0), yaw + Math.PI);
+    // Mirar de frente
+    camTarget = new THREE.Vector3(0, 1.5, 4).applyAxisAngle(new THREE.Vector3(0,1,0), yaw + Math.PI);
   } else {
-    // Cámara trasera (Vista normal)
-    camOffset = new THREE.Vector3(0, 2, 4).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    // Mirar desde atrás
+    camTarget = new THREE.Vector3(0, 2, 5).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
   }
 
-  camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.7, 0)));
+  camera.position.lerp(player.position.clone().add(camTarget), 0.1);
+  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.5, 0)));
 
   renderer.render(scene, camera);
 }
