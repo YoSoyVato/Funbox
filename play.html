@@ -83,21 +83,31 @@ const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 const physicalBlocks = [];
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3});
+const spawnMat = new THREE.MeshStandardMaterial({color: 0xffffff}); // NUEVO: Material Blanco para Spawn
+
+let spawnPoint = new THREE.Vector3(0, 0, 0); // Posición inicial por defecto
 
 mapData.forEach(b => {
-    const block = new THREE.Mesh(boxGeo, boxMat);
-    // Ajuste de posición: +0.5 para alinear con la rejilla del editor
+    // Si el tipo es 'spawn', usamos el material blanco
+    const currentMat = (b.type === "spawn") ? spawnMat : boxMat;
+    const block = new THREE.Mesh(boxGeo, currentMat);
+    
     block.position.set(b.x + 0.5, 0.5, b.y + 0.5); 
     block.castShadow = true;
     block.receiveShadow = true;
     scene.add(block);
     physicalBlocks.push(block);
+
+    // Guardar la ubicación del spawn para el jugador
+    if (b.type === "spawn") {
+        spawnPoint.set(block.position.x, 0, block.position.z);
+    }
 });
 
 // FUNCIONES DE COLISIÓN
 function getSurfaceY(pos) {
-    let maxY = 0; // Baseplate por defecto
-    const pR = 0.3; // Radio del jugador
+    let maxY = 0; 
+    const pR = 0.3; 
     physicalBlocks.forEach(b => {
         if (Math.abs(pos.x - b.position.x) < 0.5 + pR && Math.abs(pos.z - b.position.z) < 0.5 + pR) {
             if (pos.y >= b.position.y + 0.4) maxY = Math.max(maxY, 1.0);
@@ -109,7 +119,6 @@ function getSurfaceY(pos) {
 function isColliding(pos) {
     const pR = 0.35;
     for (let b of physicalBlocks) {
-        // Solo colisiona lateralmente si no estamos sobre el bloque
         if (Math.abs(pos.y - b.position.y) < 0.5) {
             if (Math.abs(pos.x - b.position.x) < 0.5 + pR && Math.abs(pos.z - b.position.z) < 0.5 + pR) return true;
         }
@@ -119,6 +128,7 @@ function isColliding(pos) {
 
 // --- PERSONAJE ---
 const player = new THREE.Group();
+player.position.copy(spawnPoint); // INICIO EN SPAWN
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
 
@@ -189,7 +199,6 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 function animate() {
     requestAnimationFrame(animate);
 
-    // FÍSICA DE SUELO Y CAÍDA
     const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
     
@@ -211,7 +220,8 @@ function animate() {
         piernaD.rotation.x = Math.cos(panicStep * 1.5) * 1;
         
         if (player.position.y < -15) {
-            player.position.set(0, 5, 0);
+            player.position.copy(spawnPoint); // REAPARECER EN SPAWN
+            player.position.y = 5;
             isDead = false; vy = 0; panicStep = 0;
             isHeadMode = false;
             brazoI.position.set(-0.3, 0.4, 0);
@@ -219,7 +229,6 @@ function animate() {
         }
     }
 
-    // MOVIMIENTO CON DESLIZAMIENTO
     let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
@@ -236,11 +245,8 @@ function animate() {
 
     if(moving && !isDead) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        
-        // Eje X
         const nextX = player.position.clone(); nextX.x += moveDir.x * moveSpeed;
         if (!isColliding(nextX)) player.position.x = nextX.x;
-        // Eje Z
         const nextZ = player.position.clone(); nextZ.z += moveDir.z * moveSpeed;
         if (!isColliding(nextZ)) player.position.z = nextZ.z;
         
@@ -263,7 +269,6 @@ function animate() {
         brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
     }
 
-    // TRANSICIÓN CABEZA / CUERPO
     const t = 0.15;
     if (isHeadMode && !isDead) {
         cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 0, t), 0, 0);
