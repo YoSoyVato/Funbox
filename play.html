@@ -24,7 +24,8 @@
   🎮 Funbox Play<br>
   WASD mover<br>
   Shift correr<br>
-  Mouse cámara
+  Mouse cámara<br>
+  R cambiar vista
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -118,7 +119,7 @@ const rightArm = createArm(0.55);
 player.add(leftArm);
 player.add(rightArm);
 
-// OJITOS: delante del jugador
+// OJITOS
 const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
 const leftEye = new THREE.Mesh(eyeGeo,eyeMat);
@@ -139,12 +140,16 @@ const gravity=-0.025;
 let yaw=0, pitch=0;
 let step=0;
 let blinkTimer=0;
+let f5View=false;
 
 // ======================
 // INPUT
 // ======================
 const keys = {};
-window.onkeydown = e=>keys[e.key.toLowerCase()]=true;
+window.onkeydown = e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(e.key.toLowerCase()==="r") f5View = !f5View; // alternar vista
+};
 window.onkeyup = e=>keys[e.key.toLowerCase()]=false;
 
 document.body.onclick=()=>document.body.requestPointerLock();
@@ -230,11 +235,21 @@ function animate(){
   // MUERTE
   if(player.position.y<-30){player.position.copy(spawn);velY=0;}
 
-  // ====================== CÁMARA TIPO GTA
-  const camOffset = new THREE.Vector3(0,2,5); // atrás y arriba
-  camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-  camera.position.copy(player.position).add(camOffset);
-  camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
+  // ====================== CÁMARA
+  let camOffset;
+  if(f5View){
+    // cámara frontal
+    camOffset = new THREE.Vector3(0,2,-3); // adelante
+    camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    camera.position.copy(player.position).add(camOffset);
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
+  } else {
+    // cámara atrás normal
+    camOffset = new THREE.Vector3(0,2,5);
+    camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    camera.position.copy(player.position).add(camOffset);
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
+  }
 
   renderer.render(scene,camera);
 }
@@ -249,3 +264,4 @@ window.onresize=()=>{
 </script>
 </body>
 </html>
+
