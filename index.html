@@ -2,30 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Funbox Engine</title>
+  <title>Funbox Launcher</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="center">
 
-<header>
-  <h1>🧱 Funbox</h1>
-  <nav>
-    <button id="playBtn">Jugar</button>
-    <button id="createBtn">Crear</button>
-    <button id="loginBtn">Login</button>
-  </nav>
-</header>
+  <h1>🧱 Funbox Engine</h1>
 
-<main id="content">
-  <h2>Bienvenido a Funbox</h2>
-  <p>Esperando acción…</p>
-</main>
+  <button onclick="goEditor()">➕ Crear / Editar</button>
+  <button onclick="goPlay()">🎮 Jugar</button>
 
-<!-- 🔴 THREE.JS (SIEMPRE PRIMERO) -->
-<script src="three.min.js"></script>
+  <script>
+    function goEditor() {
+      location.href = "editor.html";
+    }
 
-<!-- 🟢 TU MOTOR -->
-<script src="main.js"></script>
+    function goPlay() {
+      location.href = "play.html";
+    }
+  </script>
 
 </body>
 </html>
