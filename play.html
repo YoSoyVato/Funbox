@@ -123,24 +123,28 @@ function animate(){
     rightLeg.rotation.x=Math.sin(step+Math.PI)*0.5;
     leftArm.rotation.x=Math.sin(step+Math.PI)*0.3;
     rightArm.rotation.x=Math.sin(step)*0.3;
+
+    // Ojos siempre abiertos mientras se mueve
+    leftEye.scale.y = 1;
+    rightEye.scale.y = 1;
   } else {
-    // Vuelve a pose neutra si está quieto
+    // Pose neutra
     leftLeg.rotation.x=Math.sin(step*0.1)*0.05;
     rightLeg.rotation.x=Math.sin(step*0.1+Math.PI)*0.05;
     leftArm.rotation.x=Math.sin(step*0.1+Math.PI)*0.02;
     leftArm.rotation.z=Math.sin(step*0.1+Math.PI)*0.02;
     rightArm.rotation.x=Math.sin(step*0.1)*0.02;
     rightArm.rotation.z=Math.sin(step*0.1)*0.02;
-  }
 
-  // Animación de ojos (parpadeo)
-  blinkTimer++;
-  if(blinkTimer%100<5){
-    leftEye.scale.y=0.1;
-    rightEye.scale.y=0.1;
-  } else {
-    leftEye.scale.y=1;
-    rightEye.scale.y=1;
+    // Animación idle: parpadeo de ojos
+    blinkTimer++;
+    if(blinkTimer % 100 < 5){
+      leftEye.scale.y=0.1;
+      rightEye.scale.y=0.1;
+    } else {
+      leftEye.scale.y=1;
+      rightEye.scale.y=1;
+    }
   }
 
   // FÍSICAS
@@ -188,3 +192,4 @@ window.addEventListener("resize", ()=>{
 </script>
 </body>
 </html>
+
