@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Capsula Jugable con Gravedad</title>
+<title>Estados Españoles - Prototipo RP</title>
 <style>
   body { margin:0; overflow:hidden; background:black; }
   #ui {
@@ -21,10 +21,11 @@
 <body>
 
 <div id="ui">
-  🎮 Controles:<br>
-  WASD mover<br>
-  Shift correr<br>
-  Mouse mover cámara
+  🎮 **Estados Españoles RP**<br>
+  WASD: Moverse<br>
+  Shift: Correr<br>
+  Mouse: Cámara<br>
+  <small>¡Cuidado con el borde!</small>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -46,12 +47,13 @@ const sun = new THREE.DirectionalLight(0xffffff,0.8);
 sun.position.set(10,20,10);
 scene.add(sun);
 
-// SUELO
+// SUELO (200x200)
+const floorSize = 200;
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200,200),
+  new THREE.PlaneGeometry(floorSize, floorSize),
   new THREE.MeshStandardMaterial({color:0x555555})
 );
-floor.rotation.x=-Math.PI/2;
+floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
 // ======================
@@ -62,14 +64,14 @@ const player = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.5, playerHeight),
   new THREE.MeshStandardMaterial({color:0xff0000})
 );
-player.position.set(0,5,0);
+player.position.set(0, 5, 0);
 scene.add(player);
 
 // ======================
 // VARIABLES
 // ======================
 let velY = 0;
-const gravity = -0.1;
+const gravity = -0.01; // Ajustado para que la caída sea más suave/realista
 let yaw = 0, pitch = 0;
 let speed = 0.15;
 
@@ -98,12 +100,12 @@ document.addEventListener("mousemove", e => {
 });
 
 // ======================
-// LOOP
+// LOOP DE ANIMACIÓN
 // ======================
 function animate(){
   requestAnimationFrame(animate);
 
-  // MOVIMIENTO
+  // 1. MOVIMIENTO HORIZONTAL
   let dir = new THREE.Vector3();
   if(keys.w) dir.z -= 1;
   if(keys.s) dir.z += 1;
@@ -119,39 +121,45 @@ function animate(){
     player.position.addScaledVector(moveDir, moveSpeed);
   }
 
-  // GRAVEDAD
+  // 2. GRAVEDAD (Siempre actúa)
   velY += gravity;
   player.position.y += velY;
 
-  // COLISION CON SUELO
-  if(player.position.y <= playerHeight/2){
-    player.position.y = playerHeight/2;
+  // 3. LÓGICA DE COLISIÓN (Arreglada)
+  const halfSize = floorSize / 2; // Es decir, 100
+  const sobreSuelo = Math.abs(player.position.x) <= halfSize && Math.abs(player.position.z) <= halfSize;
+
+  if(sobreSuelo){
+    // Si estamos sobre el suelo, no podemos caer más allá de la superficie
+    if(player.position.y <= playerHeight/2){
+      player.position.y = playerHeight/2;
+      velY = 0;
+    }
+  } 
+  // Si NO estamos sobre el suelo (sobreSuelo es false), no hacemos nada y el jugador cae.
+
+  // 4. MUERTE POR CAIDA (Respawn)
+  if(player.position.y < -30){
+    player.position.set(0, 10, 0); // Te teletransporta arriba al centro
     velY = 0;
   }
 
-  // MUERTE POR CAIDA
-  if(player.position.y < -20){
-    player.position.set(0,5,0);
-    velY = 0;
-  }
-
-  // CÁMARA TERCERA PERSONA
-  const camOffset = new THREE.Vector3(0,2,5);
+  // 5. CÁMARA TERCERA PERSONA
+  const camOffset = new THREE.Vector3(0, 2, 6);
   camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
   camera.position.copy(player.position).add(camOffset);
-  camera.lookAt(player.position.clone().add(new THREE.Vector3(0,playerHeight/2,0)));
+  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, playerHeight/2, 0)));
 
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
 }
 animate();
 
-// RESIZE
+// REAJUSTE DE VENTANA
 window.addEventListener("resize", ()=>{
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>
 </html>
-
