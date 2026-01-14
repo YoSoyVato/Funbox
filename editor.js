@@ -149,9 +149,13 @@ document.getElementById("play").onclick = () => {
     location.href = "play.html";
 };
 
+// ARREGLADO: El botón de limpiar ahora también resetea el script
 document.getElementById("clear").onclick = () => { 
-    if(confirm("¿Borrar todo? (El Spawn se mantendrá)")) {
+    if(confirm("¿Borrar todo? (Se limpiarán los bloques y el script)")) {
         blocks = [{ x: 0, y: 0, type: "spawn" }]; 
+        customScriptCode = "// Escribe tu código PRO aquí\n// Ejemplo: game.setFloor('red');";
+        localStorage.removeItem("funbox_custom_script");
+        alert("Todo limpio.");
     }
 };
 
