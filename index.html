@@ -4,21 +4,81 @@
   <meta charset="UTF-8">
   <title>Funbox Launcher</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilos rápidos para que coincida con tu imagen si el CSS no carga */
+    body { background: #0a0a0a; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .launcher { text-align: center; }
+    .launcher h1 { font-size: 48px; margin-bottom: 0; }
+    .launcher p { color: #888; margin-top: 5px; margin-bottom: 30px; }
+    
+    .form-registro { display: flex; flex-direction: column; gap: 10px; width: 250px; margin: 0 auto; }
+    input { padding: 12px; background: #151515; border: 1px solid #333; color: white; border-radius: 5px; outline: none; }
+    
+    button { 
+      width: 250px; padding: 15px; background: #eee; color: #000; border: none; 
+      border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; 
+      margin-top: 10px; transition: 0.3s;
+    }
+    button:hover { background: #ccc; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
 
 <div class="launcher">
   <h1>🎮 Funbox</h1>
-  <p>Launcher</p>
+  <p id="sub-header">Launcher</p>
 
-  <button onclick="location.href='editor.html'">
-    🧱 Crear Juego
-  </button>
+  <div id="section-registro" class="form-registro">
+    <input type="text" id="reg-user" placeholder="Usuario">
+    <input type="password" id="reg-pass" placeholder="Contraseña">
+    <button onclick="registrar()">REGISTRARSE</button>
+  </div>
 
-  <button onclick="location.href='play.html'">
-    🎮 Jugar
-  </button>
+  <div id="section-botones" class="hidden">
+    <button onclick="location.href='editor.html'">
+      🧱 Crear Juego
+    </button>
+    <button onclick="location.href='play.html'">
+      🎮 Jugar
+    </button>
+    <p style="font-size: 12px; cursor: pointer; text-decoration: underline; margin-top: 20px;" onclick="cerrarSesion()">Cerrar Sesión</p>
+  </div>
 </div>
+
+<script>
+  // Al cargar la página, verificamos si ya existe una sesión
+  window.onload = () => {
+    const session = sessionStorage.getItem("funbox_session");
+    if (session) {
+      mostrarBotones(JSON.parse(session).user);
+    }
+  };
+
+  function registrar() {
+    const u = document.getElementById("reg-user").value;
+    const p = document.getElementById("reg-pass").value;
+
+    if (u.length > 2 && p.length > 2) {
+      const userData = { user: u };
+      sessionStorage.setItem("funbox_session", JSON.stringify(userData));
+      mostrarBotones(u);
+    } else {
+      alert("Por favor, ingresa un usuario y contraseña válidos.");
+    }
+  }
+
+  function mostrarBotones(userName) {
+    document.getElementById("section-registro").classList.add("hidden");
+    document.getElementById("section-botones").classList.remove("hidden");
+    document.getElementById("sub-header").innerText = `Hola, ${userName}!`;
+  }
+
+  function cerrarSesion() {
+    sessionStorage.removeItem("funbox_session");
+    location.reload();
+  }
+</script>
 
 </body>
 </html>
