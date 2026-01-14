@@ -123,7 +123,6 @@
         document.getElementById("view-register").classList.add("hidden");
         document.getElementById("view-menu").classList.remove("hidden");
         document.getElementById("launcher-status").innerText = `BIENVENIDO, ${name}`;
-        // Pequeño delay para asegurar que el div exista antes de iniciar Three.js
         setTimeout(initCharacterPreview, 100);
     }
 
@@ -132,7 +131,6 @@
         location.reload();
     }
 
-    // --- RENDERIZADO DEL PERSONAJE ---
     function initCharacterPreview() {
         const container = document.getElementById("avatar-container");
         if (!container || container.children.length > 0) return;
@@ -151,14 +149,14 @@
         const group = new THREE.Group();
         scene.add(group);
 
-        // Cabeza Cuadrada (Color piel de la captura)
+        // Cabeza
         const head = new THREE.Mesh(
             new THREE.BoxGeometry(0.55, 0.55, 0.55), 
             new THREE.MeshStandardMaterial({ color: 0xc4a484 })
         );
         head.position.y = 0.6;
 
-        // Pelo Marrón
+        // Pelo
         const hair = new THREE.Mesh(
             new THREE.BoxGeometry(0.6, 0.25, 0.6), 
             new THREE.MeshStandardMaterial({ color: 0x3d2b1f })
@@ -166,22 +164,31 @@
         hair.position.y = 0.2; 
         head.add(hair);
 
-        // Ojos Kawaii (Grandes y brillantes)
-        const eyeGeo = new THREE.CircleGeometry(0.09, 32);
+        // --- OJOS CUTE MODIFICADOS ---
+        const eyeGeo = new THREE.CircleGeometry(0.12, 32); // Más grandes
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const eL = new THREE.Mesh(eyeGeo, eyeMat);
-        eL.position.set(-0.16, -0.05, 0.28);
+        eL.position.set(-0.16, -0.08, 0.28); // Un poco más abajo
         const eR = eL.clone(); eR.position.x = 0.16;
         head.add(eL, eR);
 
-        // Brillo en los ojos
-        const shineGeo = new THREE.CircleGeometry(0.03, 16);
-        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const sL = new THREE.Mesh(shineGeo, shineMat);
-        sL.position.set(0.03, 0.03, 0.01);
-        eL.add(sL); eR.add(sL.clone());
+        // Brillo principal (grande)
+        const shine1 = new THREE.Mesh(
+            new THREE.CircleGeometry(0.04, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        shine1.position.set(0.04, 0.04, 0.01);
+        eL.add(shine1); eR.add(shine1.clone());
 
-        // Auriculares Azules
+        // Brillo secundario (pequeño para efecto cute)
+        const shine2 = new THREE.Mesh(
+            new THREE.CircleGeometry(0.015, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        shine2.position.set(-0.03, -0.04, 0.01);
+        eL.add(shine2); eR.add(shine2.clone());
+
+        // Auriculares
         const phoneGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.1, 32);
         const phoneMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
         const pL = new THREE.Mesh(phoneGeo, phoneMat);
@@ -189,16 +196,14 @@
         const pR = pL.clone(); pR.position.x = 0.32;
         head.add(pL, pR);
 
-        // Cuerpo Azul
+        // Cuerpo
         const body = new THREE.Mesh(
             new THREE.CapsuleGeometry(0.22, 0.45, 4, 12), 
             new THREE.MeshStandardMaterial({ color: 0x007ceb })
         );
         body.position.y = 0.05;
-
         group.add(head, body);
 
-        // --- MANEJO DE INTERACCIÓN ---
         let isDragging = false;
         let startX = 0;
         let hasMoved = false;
@@ -220,7 +225,6 @@
 
         window.addEventListener('mouseup', () => {
             if (isDragging && !hasMoved) {
-                // Si hizo clic sin arrastrar, va al perfil
                 location.href = 'perfil.html';
             }
             isDragging = false;
@@ -228,7 +232,7 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            if (!isDragging) group.rotation.y += 0.01; // Rotación automática
+            if (!isDragging) group.rotation.y += 0.01;
             renderer.render(scene, camera);
         }
         animate();
