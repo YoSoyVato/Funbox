@@ -17,14 +17,30 @@
         
         /* Contenedor del Personaje 3D */
         #char-3d-container { 
-            width: 400px; 
-            height: 400px; 
+            width: 450px; 
+            height: 450px; 
             cursor: grab; 
-            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.8));
+            filter: drop-shadow(0 10px 40px rgba(0,0,0,0.9));
         }
         #char-3d-container:active { cursor: grabbing; }
 
         .char-name { margin-top: 10px; font-size: 28px; color: #4db8ff; font-weight: bold; text-shadow: 0 0 15px rgba(77, 184, 255, 0.4); }
+
+        /* Botón Jugar dinámico */
+        .btn-play-now {
+            margin-top: 20px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
+        }
+        .btn-play-now:hover { transform: scale(1.05); background: #66bb6a; }
 
         /* Lado Derecho: Tienda e Inventario */
         .shop-container { width: 400px; background: #111; border-left: 1px solid #333; padding: 20px; overflow-y: auto; }
@@ -33,7 +49,7 @@
         .item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
         .item-card { background: #1a1a1a; border: 1px solid #333; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; }
         .item-card:hover { border-color: #4db8ff; background: #222; transform: translateY(-2px); }
-        .item-card.selected { border-color: #4caf50; background: rgba(76, 175, 80, 0.1); }
+        .item-card.selected { border-color: #4caf50; background: rgba(76, 175, 80, 0.1); border-width: 2px; }
         
         .item-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
         .custom-head-svg { width: 50px; height: 50px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
@@ -57,7 +73,9 @@
         <div id="char-3d-container"></div>
         
         <div id="user-display-name" class="char-name">Usuario</div>
-        <p style="color: #555; font-size: 13px; margin-top: 5px; letter-spacing: 1px;">PERSONAJE ACTUAL</p>
+        <p style="color: #4db8ff; font-size: 13px; margin-top: 5px; letter-spacing: 1px; font-weight: bold;">PERSONAJE SELECCIONADO</p>
+        
+        <button class="btn-play-now" onclick="location.href='play.html'">🎮 JUGAR AHORA</button>
     </div>
 
     <div class="shop-container">
@@ -90,7 +108,7 @@
         { name: "Científico", emoji: "👨‍🔬", price: 300 }
     ];
 
-    // SVG Cabeza Cute para el Inventario
+    // SVG Cabeza Cute ACTUALIZADO
     const cuteHeadIcon = `
         <svg class="custom-head-svg" viewBox="0 0 100 100">
             <rect x="5" y="40" width="12" height="25" rx="4" fill="#007ceb" /> 
@@ -173,75 +191,73 @@
         }
     }
 
-    // --- LÓGICA DEL PERSONAJE 3D (AVATAR CUTE) ---
+    // --- LÓGICA 3D ACTUALIZADA (COINCIDE CON LA IMAGEN) ---
     let charGroup;
     function init3D() {
         const container = document.getElementById('char-3d-container');
-        // Limpiar contenedor si ya hay algo
         container.innerHTML = "";
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
-        camera.position.set(0, 0.5, 2.8);
+        camera.position.set(0, 0.7, 2.8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(400, 400);
+        renderer.setSize(450, 450);
         container.appendChild(renderer.domElement);
 
-        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 2.5);
+        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 3);
         scene.add(light);
 
         charGroup = new THREE.Group();
         scene.add(charGroup);
 
-        // Cabeza
+        // CABEZA CÚBICA
         const head = new THREE.Mesh(
-            new THREE.BoxGeometry(0.65, 0.65, 0.65),
+            new THREE.BoxGeometry(0.7, 0.7, 0.7),
             new THREE.MeshStandardMaterial({ color: 0xc4a484 })
         );
-        head.position.y = 0.65;
+        head.position.y = 0.8;
 
-        // Pelo
+        // PELO CAFÉ (COMO LA CAPTURA)
         const hair = new THREE.Mesh(
-            new THREE.BoxGeometry(0.67, 0.22, 0.67),
+            new THREE.BoxGeometry(0.72, 0.25, 0.72),
             new THREE.MeshStandardMaterial({ color: 0x3d2b1f })
         );
-        hair.position.y = 0.26;
+        hair.position.y = 0.25;
         head.add(hair);
 
-        // Ojos Grandes (Cute)
-        const eyeGeo = new THREE.CircleGeometry(0.14, 32);
+        // OJOS GRANDES CON BRILLO
+        const eyeGeo = new THREE.CircleGeometry(0.15, 32);
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const eL = new THREE.Mesh(eyeGeo, eyeMat);
-        eL.position.set(-0.2, -0.05, 0.33);
-        const eR = eL.clone(); eR.position.x = 0.2;
+        eL.position.set(-0.22, -0.05, 0.36);
+        const eR = eL.clone(); eR.position.x = 0.22;
         head.add(eL, eR);
 
-        // Brillos de ojos
-        const shineGeo = new THREE.CircleGeometry(0.045, 16);
+        const shineGeo = new THREE.CircleGeometry(0.05, 16);
         const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const sL = new THREE.Mesh(shineGeo, shineMat);
-        sL.position.set(0.04, 0.04, 0.01);
+        sL.position.set(0.06, 0.06, 0.01);
         eL.add(sL); eR.add(sL.clone());
 
-        // Auriculares Azules
-        const phoneGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.12, 32);
+        // AURICULARES AZULES (CILINDROS)
+        const phoneGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.12, 32);
         const phoneMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
         const pL = new THREE.Mesh(phoneGeo, phoneMat);
-        pL.rotation.z = Math.PI/2; pL.position.x = -0.38;
-        const pR = pL.clone(); pR.position.x = 0.38;
+        pL.rotation.z = Math.PI/2; pL.position.x = -0.42;
+        const pR = pL.clone(); pR.position.x = 0.42;
         head.add(pL, pR);
 
-        // Cuerpo (Estilo Capsule como en la captura)
+        // CUERPO ESTILO CÁPSULA (COMO LA CAPTURA)
         const body = new THREE.Mesh(
-            new THREE.CapsuleGeometry(0.25, 0.6, 4, 12),
-            new THREE.MeshStandardMaterial({ color: 0x005a9e }) // Azul oscuro del cuerpo
+            new THREE.CapsuleGeometry(0.3, 0.7, 4, 16),
+            new THREE.MeshStandardMaterial({ color: 0x005a9e })
         );
-        body.position.y = 0.05;
+        body.position.y = 0.1;
 
         charGroup.add(head, body);
 
-        // Rotación manual
+        // Animación y Rotación
         let isDragging = false;
         let startX = 0;
         container.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX; });
@@ -256,13 +272,12 @@
         function animate() {
             requestAnimationFrame(animate);
             if (!isDragging) charGroup.rotation.y += 0.005;
-            charGroup.position.y = Math.sin(Date.now() * 0.002) * 0.08;
+            charGroup.position.y = Math.sin(Date.now() * 0.002) * 0.05;
             renderer.render(scene, camera);
         }
         animate();
     }
 
-    // Iniciar
     updateUI();
     window.onload = init3D;
 </script>
