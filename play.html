@@ -1,43 +1,45 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Funbox – Jugar</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #000;
-    }
+<meta charset="UTF-8">
+<title>Funbox – Jugar</title>
 
-    #ui {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      color: white;
-      font-family: Arial;
-      z-index: 10;
-      background: rgba(0,0,0,0.6);
-      padding: 10px;
-      border-radius: 8px;
-    }
-  </style>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    cursor: pointer;
+  }
+
+  #ui {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-family: Arial;
+    background: rgba(0,0,0,0.6);
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 10;
+  }
+</style>
 </head>
 <body>
 
 <div id="ui">
   🎮 Modo Jugar<br>
+  Click = activar cámara<br>
   WASD = mover<br>
-  Mouse = cámara
+  Mouse = mirar
 </div>
 
-<!-- THREE -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
-/* =========================
-   ESCENA
-========================= */
+// ======================
+// ESCENA
+// ======================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
@@ -52,63 +54,76 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* =========================
-   LUCES
-========================= */
+// ======================
+// LUCES
+// ======================
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
 const sun = new THREE.DirectionalLight(0xffffff, 0.8);
 sun.position.set(10, 20, 10);
 scene.add(sun);
 
-/* =========================
-   SUELO
-========================= */
+// ======================
+// SUELO (FINITO)
+// ======================
+const floorSize = 100;
+
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({ color: 0x444444 })
+  new THREE.PlaneGeometry(floorSize, floorSize),
+  new THREE.MeshStandardMaterial({ color: 0x555555 })
 );
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
-/* =========================
-   JUGADOR
-========================= */
+// ======================
+// JUGADOR
+// ======================
 const player = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.5, 1.2, 4, 8),
   new THREE.MeshStandardMaterial({ color: 0x00ffcc })
 );
-player.position.y = 1.5;
+player.position.set(0, 5, 0);
 scene.add(player);
 
-/* =========================
-   CÁMARA 3RA PERSONA
-========================= */
+// ======================
+// VARIABLES
+// ======================
+let velocityY = 0;
+const gravity = -0.02;
+const groundY = 1.5;
+
 let yaw = 0;
 let pitch = 0;
 const camDistance = 5;
 
-/* =========================
-   INPUT
-========================= */
+// ======================
+// INPUT
+// ======================
 const keys = {};
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-window.addEventListener("mousemove", e => {
+// POINTER LOCK (CÁMARA REAL)
+document.body.addEventListener("click", () => {
+  document.body.requestPointerLock();
+});
+
+document.addEventListener("mousemove", e => {
+  if (document.pointerLockElement !== document.body) return;
+
   yaw -= e.movementX * 0.002;
   pitch -= e.movementY * 0.002;
   pitch = Math.max(-1.2, Math.min(0.8, pitch));
 });
 
-/* =========================
-   LOOP
-========================= */
+// ======================
+// LOOP
+// ======================
 function animate() {
   requestAnimationFrame(animate);
 
   // MOVIMIENTO
-  const speed = 0.08;
+  const speed = 0.1;
   const dir = new THREE.Vector3();
 
   if (keys["w"]) dir.z -= 1;
@@ -120,6 +135,20 @@ function animate() {
     dir.normalize();
     dir.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     player.position.addScaledVector(dir, speed);
+  }
+
+  // GRAVEDAD
+  velocityY += gravity;
+  player.position.y += velocityY;
+
+  // COLISIÓN CON EL SUELO
+  if (
+    player.position.y <= groundY &&
+    Math.abs(player.position.x) < floorSize / 2 &&
+    Math.abs(player.position.z) < floorSize / 2
+  ) {
+    player.position.y = groundY;
+    velocityY = 0;
   }
 
   // CÁMARA
@@ -137,9 +166,9 @@ function animate() {
 
 animate();
 
-/* =========================
-   RESIZE
-========================= */
+// ======================
+// RESIZE
+// ======================
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
