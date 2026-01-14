@@ -1,9 +1,8 @@
 const content = document.getElementById("content");
 
-// 1. CARGAR CONFIGURACIÓN INTEGRADA (Suelo + Iluminación)
+// 1. CARGAR CONFIGURACIÓN INTEGRADA
 let blocks = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
-// Si el mapa está vacío, creamos el Spawn por defecto en el centro
 if (blocks.length === 0) {
     blocks.push({ x: 0, y: 0, type: "spawn" });
 }
@@ -21,8 +20,28 @@ const camSpeed = 8;
 let camX = 0, camY = 0;
 const keys = {};
 
+// NUEVO: Variable para la herramienta actual
+let currentTool = "block";
+
 content.innerHTML = `
-<div style="display: flex; background: #1a1a1a; color: white; font-family: sans-serif; height: 90vh; border-radius: 10px; overflow: hidden; border: 1px solid #444;">
+<div style="display: flex; background: #1a1a1a; color: white; font-family: sans-serif; height: 90vh; border-radius: 10px; overflow: hidden; border: 1px solid #444; position: relative;">
+    
+    <div id="box-assets-bar" style="position: absolute; left: 20px; top: 65px; display: flex; gap: 8px; background: rgba(30, 30, 30, 0.9); padding: 8px; border-radius: 10px; border: 1px solid #444; z-index: 100; align-items: center;">
+        <span style="font-size: 10px; font-weight: bold; color: #888; margin-right: 5px;">📦 BOXASSETS:</span>
+        <button onclick="currentTool='block'" class="asset-btn active" title="Bloque">🟦</button>
+        <button onclick="currentTool='chair'" class="asset-btn" title="Silla">🪑</button>
+        <button onclick="currentTool='table'" class="asset-btn" title="Mesa">🧱</button>
+        <button onclick="currentTool='bed'" class="asset-btn" title="Cama">🛏️</button>
+        <button onclick="currentTool='pc'" class="asset-btn" title="Computadora">🖥️</button>
+        <button onclick="currentTool='flashlight'" class="asset-btn" title="Linterna">🔦</button>
+    </div>
+
+    <style>
+        .asset-btn { background: #333; border: 1px solid #555; cursor: pointer; padding: 5px; border-radius: 5px; font-size: 16px; transition: 0.2s; }
+        .asset-btn:hover { background: #444; transform: translateY(-2px); }
+        .asset-btn.active { border-color: #2196f3; background: #1a3a5a; }
+    </style>
+
     <div style="flex: 1; display: flex; flex-direction: column; background: #222;">
         <div style="padding: 10px; background: #2d2d2d; border-bottom: 1px solid #3d3d3d; display: flex; justify-content: space-between; align-items: center;">
             <span style="font-weight: bold; color: #ccc;">🏗️ Funbox Studio</span>
@@ -84,6 +103,14 @@ document.getElementById("skyPreset").onchange = (e) => {
     gameConfig.ambientIntensity = (e.target.value === "#1a1a2e") ? 0.3 : 0.9;
 };
 
+// Manejo visual de botones de assets
+document.querySelectorAll('.asset-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.asset-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 canvas.oncontextmenu = (e) => e.preventDefault();
@@ -94,9 +121,11 @@ canvas.onmousedown = e => {
     const y = Math.floor((e.clientY - rect.top + camY - canvas.height / 2) / gridDisplaySize);
     
     if (e.button === 0) { 
-        if (!blocks.find(b => b.x === x && b.y === y)) blocks.push({ x, y, type: "block" });
+        if (!blocks.find(b => b.x === x && b.y === y)) {
+            // USAR LA HERRAMIENTA SELECCIONADA
+            blocks.push({ x, y, type: currentTool });
+        }
     } else if (e.button === 2) { 
-        // No permitir borrar el bloque que sea tipo "spawn"
         blocks = blocks.filter(b => !(b.x === x && b.y === y && b.type !== "spawn"));
     }
 };
@@ -135,14 +164,24 @@ function loop() {
         const drawX = (b.x * gridDisplaySize) + (canvas.width / 2) - camX;
         const drawY = (b.y * gridDisplaySize) + (canvas.height / 2) - camY;
         
-        // El Spawn es blanco, los bloques normales son azules
-        ctx.fillStyle = b.type === "spawn" ? "#ffffff" : "#2196f3"; 
+        // Colores en el editor para BoxAssets
+        if(b.type === "spawn") ctx.fillStyle = "#ffffff";
+        else if(b.type === "block") ctx.fillStyle = "#2196f3";
+        else ctx.fillStyle = "#ff9800"; // Color naranja para indicar que es un Asset (Mueble)
+        
         ctx.fillRect(drawX, drawY, gridDisplaySize, gridDisplaySize);
         
-        // Borde para diferenciarlo mejor
         if(b.type === "spawn") {
             ctx.strokeStyle = "#4db8ff";
             ctx.strokeRect(drawX, drawY, gridDisplaySize, gridDisplaySize);
+        }
+        
+        // Mostrar icono miniatura en el editor si no es bloque
+        if(b.type !== "block" && b.type !== "spawn") {
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            const icons = { chair:"🪑", table:"🧱", bed:"🛏️", pc:"🖥️", flashlight:"🔦" };
+            ctx.fillText(icons[b.type] || "📦", drawX + 10, drawY + 28);
         }
     });
 
