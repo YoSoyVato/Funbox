@@ -43,18 +43,15 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
-    // Configuración de Sesión y Skins
     const userSession = JSON.parse(sessionStorage.getItem("funbox_session")) || { user: "Jugador" };
     document.getElementById("user-display-name").innerText = userSession.user;
 
-    // "👨" es el avatar clásico que pediste
-    let ownedItems = JSON.parse(localStorage.getItem("funbox_items")) || ["👨"];
+    let ownedItems = JSON.parse(localStorage.getItem("funbox_items")) || ["👨", "🥷", "🤖"];
     let currentSkin = localStorage.getItem("funbox_current_skin") || "👨";
 
     function renderInventory() {
         const container = document.getElementById("inventory-items");
         container.innerHTML = "";
-        
         ownedItems.forEach(emoji => {
             const card = document.createElement("div");
             card.className = "item-card" + (currentSkin === emoji ? " selected" : "");
@@ -62,21 +59,20 @@
                 currentSkin = emoji;
                 localStorage.setItem("funbox_current_skin", emoji);
                 renderInventory();
-                updateCharacterPreview(); // Actualiza el 3D al dar click
+                updateCharacterPreview();
             };
             card.innerHTML = `<span class="item-emoji">${emoji}</span><div style="font-size: 10px; color: #888;">${emoji === "👨" ? "CLÁSICO" : "SKIN"}</div>`;
             container.appendChild(card);
         });
     }
 
-    // --- LÓGICA 3D ---
     let scene, camera, renderer, charGroup;
 
     function init3D() {
         const container = document.getElementById('char-3d-container');
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
-        camera.position.set(0, 0.6, 2.8);
+        camera.position.set(0, 0.7, 3.2);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(500, 500);
@@ -88,9 +84,8 @@
         charGroup = new THREE.Group();
         scene.add(charGroup);
 
-        updateCharacterPreview(); // Carga inicial del personaje
+        updateCharacterPreview();
 
-        // Controles de rotación
         let isDragging = false, startX = 0;
         container.onmousedown = (e) => { isDragging = true; startX = e.clientX; };
         window.onmouseup = () => isDragging = false;
@@ -104,26 +99,22 @@
         function animate() {
             requestAnimationFrame(animate);
             if (!isDragging) charGroup.rotation.y += 0.005;
-            charGroup.position.y = -0.3 + Math.sin(Date.now() * 0.002) * 0.05;
+            charGroup.position.y = -0.4 + Math.sin(Date.now() * 0.002) * 0.05;
             renderer.render(scene, camera);
         }
         animate();
     }
 
     function updateCharacterPreview() {
-        // Limpiamos el modelo anterior
-        while(charGroup.children.length > 0){ 
-            charGroup.remove(charGroup.children[0]); 
-        }
+        while(charGroup.children.length > 0){ charGroup.remove(charGroup.children[0]); }
 
-        // Si es el emoji de Hombre "👨", cargamos el Avatar Clásico de las fotos
         if (currentSkin === "👨") {
-            // Cabeza
+            // Cabeza Cúbica
             const head = new THREE.Mesh(
                 new THREE.BoxGeometry(0.7, 0.7, 0.7),
                 new THREE.MeshStandardMaterial({ color: 0xc4a484 })
             );
-            head.position.y = 0.8;
+            head.position.y = 0.85;
 
             // Pelo
             const hair = new THREE.Mesh(
@@ -133,7 +124,7 @@
             hair.position.y = 0.25;
             head.add(hair);
 
-            // Ojos
+            // Ojos Cute Grandes
             const eyeGeo = new THREE.CircleGeometry(0.16, 32);
             const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
             const eL = new THREE.Mesh(eyeGeo, eyeMat);
@@ -153,21 +144,31 @@
             const pR = pL.clone(); pR.position.x = 0.42;
             head.add(pL, pR);
 
-            // Cuerpo Cápsula (El de la foto)
+            // Cuerpo Cápsula
             const body = new THREE.Mesh(
-                new THREE.CapsuleGeometry(0.32, 0.7, 4, 16),
+                new THREE.CapsuleGeometry(0.32, 0.6, 4, 16),
                 new THREE.MeshStandardMaterial({ color: 0x005a9e })
             );
-            body.position.y = 0.1;
+            body.position.y = 0.25;
 
-            charGroup.add(head, body);
+            // PATAS (Las que pediste)
+            const footGeo = new THREE.SphereGeometry(0.14, 16, 16);
+            const footMat = new THREE.MeshStandardMaterial({ color: 0x004070 });
+            const footL = new THREE.Mesh(footGeo, footMat);
+            footL.position.set(-0.16, -0.15, 0.05);
+            footL.scale.y = 0.6;
+            const footR = footL.clone();
+            footR.position.x = 0.16;
+
+            charGroup.add(head, body, footL, footR);
         } else {
-            // Aquí podrías poner lógica para otros emojis/personajes
-            const placeholder = new THREE.Mesh(
-                new THREE.SphereGeometry(0.5), 
-                new THREE.MeshStandardMaterial({color: 0xffffff})
+            // Placeholder para otros personajes
+            const mystery = new THREE.Mesh(
+                new THREE.TorusKnotGeometry(0.3, 0.1, 64, 8),
+                new THREE.MeshStandardMaterial({ color: 0x4db8ff })
             );
-            charGroup.add(placeholder);
+            mystery.position.y = 0.5;
+            charGroup.add(mystery);
         }
     }
 
