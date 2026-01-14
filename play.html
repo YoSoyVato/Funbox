@@ -2,52 +2,70 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox Studio</title>
+<title>Funbox Studio - Play</title>
 <style>
-  body { margin:0; overflow:hidden; background: #fdfdfd; }
+  body { margin:0; overflow:hidden; background: #000; }
   #ui {
     position: fixed; top:20px; left:20px; color:#444;
     font-family: 'Arial Rounded MT Bold', sans-serif;
     background: rgba(255, 255, 255, 0.9);
     padding:15px; border-radius:20px; z-index:10;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    pointer-events: none;
   }
 </style>
 </head>
 <body>
 
 <div id="ui">
-  📦🛠️ **Funbox Studio**<br>
-  WASD: Moverse | **Shift: CORRER** | **C: Agacharse** | **R: Cámara Frontal**
+  📦🛠️ **Funbox Launcher** (Mundo 500x500)<br>
+  WASD: Moverse | **Shift: Correr** | **C: Cabeza** | **R: Cámara**
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f2f5); 
+scene.background = new THREE.Color(0x87ceeb); // Cielo azul
 
+// 1. CÁMARA CONFIGURADA PARA VER A 1000 METROS
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+// ILUMINACIÓN
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 const light = new THREE.DirectionalLight(0xffffff, 0.6);
-light.position.set(5, 10, 5);
+light.position.set(50, 100, 50);
 light.castShadow = true;
 scene.add(light);
 
-const floorSize = 15;
+// 2. SUELO CUADRADO GIGANTE (500x500)
+const floorSize = 500; 
 const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(floorSize, 32), 
-    new THREE.MeshStandardMaterial({color: 0xeeeeee})
+    new THREE.PlaneGeometry(floorSize, floorSize), 
+    new THREE.MeshStandardMaterial({color: 0x3a7d44}) // Verde pasto
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// --- PERSONAJE ---
+// 3. CARGAR BLOQUES DEL EDITOR
+const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
+const blockGeo = new THREE.BoxGeometry(1, 1, 1);
+const blockMat = new THREE.MeshStandardMaterial({color: 0x888888});
+
+mapData.forEach(b => {
+    const block = new THREE.Mesh(blockGeo, blockMat);
+    // IMPORTANTE: b.x y b.y vienen del editor
+    block.position.set(b.x, 0.5, b.y); 
+    block.castShadow = true;
+    block.receiveShadow = true;
+    scene.add(block);
+});
+
+// --- PERSONAJE (TU DISEÑO) ---
 const player = new THREE.Group();
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
@@ -76,9 +94,7 @@ function crearOjo(x) {
     const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.07, 32), matOjoNegro);
     const b1 = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
     b1.position.set(0.025, 0.025, 0.001);
-    const b2 = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-    b2.position.set(-0.02, -0.02, 0.001);
-    ojoGroup.add(pupila, b1, b2);
+    ojoGroup.add(pupila, b1);
     ojoGroup.position.set(x, -0.02, 0.251);
     listaOjos.push(ojoGroup);
     return ojoGroup;
@@ -100,17 +116,16 @@ piernaD.position.set(0.12, 0.1, 0); player.add(piernaD);
 
 scene.add(player);
 
-// --- LÓGICA ---
+// --- LÓGICA DE JUEGO ---
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
 const gravity = -0.012, jumpForce = 0.25;
 const keys = {};
-let yaw = 0, step = 0, panicStep = 0;
-let blinkTimer = 0;
+let yaw = 0, step = 0;
 
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
-    if(e.code === "Space" && onGround && !isDead) vy = jumpForce;
-    if(e.key.toLowerCase() === "c" && onGround && !isDead) isHeadMode = !isHeadMode;
+    if(e.code === "Space" && onGround) vy = jumpForce;
+    if(e.key.toLowerCase() === "c") isHeadMode = !isHeadMode;
 });
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 document.body.onclick = () => document.body.requestPointerLock();
@@ -120,115 +135,57 @@ function animate() {
     requestAnimationFrame(animate);
     player.position.y += vy;
     
-    // FÍSICAS DE CAÍDA
-    const distDesdeCentro = Math.sqrt(player.position.x**2 + player.position.z**2);
-    const outOfBounds = distDesdeCentro > floorSize;
+    // CAÍDA FUERA DEL MAPA (500x500)
+    const half = floorSize / 2;
+    const outOfBounds = Math.abs(player.position.x) > half || Math.abs(player.position.z) > half;
 
     if (player.position.y > 0 || outOfBounds) {
         vy += gravity; onGround = false;
-    } else if (!isDead) {
+    } else {
         player.position.y = 0; vy = 0; onGround = true;
     }
 
-    // ANIMACIÓN DE MUERTE
-    if (player.position.y < -0.5) {
-        isDead = true;
-        panicStep += 0.5;
-        brazoI.position.y = 0.4 + Math.sin(panicStep) * 0.2;
-        brazoD.position.y = 0.4 + Math.cos(panicStep) * 0.2;
-        piernaI.rotation.x = Math.sin(panicStep * 1.5) * 1;
-        piernaD.rotation.x = Math.cos(panicStep * 1.5) * 1;
-        
-        if (player.position.y < -20) {
-            player.position.set(0, 5, 0);
-            isDead = false; vy = 0; panicStep = 0;
-            isHeadMode = false;
-            brazoI.position.set(-0.3, 0.4, 0);
-            brazoD.position.set(0.3, 0.4, 0);
-        }
+    // Respawn si caes al vacío
+    if (player.position.y < -20) {
+        player.position.set(0, 5, 0);
+        vy = 0;
     }
 
-    // MOVIMIENTO Y CORRER
+    // MOVIMIENTO
     let moving = false, dir = new THREE.Vector3();
-    if(!isDead) {
-        if(keys.w){ dir.z -= 1; moving = true; }
-        if(keys.s){ dir.z += 1; moving = true; }
-        if(keys.a){ dir.x -= 1; moving = true; }
-        if(keys.d){ dir.x += 1; moving = true; }
-    }
+    if(keys.w){ dir.z -= 1; moving = true; }
+    if(keys.s){ dir.z += 1; moving = true; }
+    if(keys.a){ dir.x -= 1; moving = true; }
+    if(keys.d){ dir.x += 1; moving = true; }
 
-    // Lógica de Velocidad (Normal vs Correr vs Cabeza)
-    let moveSpeed = isHeadMode ? 0.12 : 0.09;
-    let animationSpeed = 0.25;
-
-    if (keys.shift && !isHeadMode) {
-        moveSpeed = 0.18;      // Velocidad al correr
-        animationSpeed = 0.45; // Animación de piernas más rápida
-    }
-
+    let moveSpeed = keys.shift ? 0.18 : 0.1;
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
 
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
         player.position.addScaledVector(moveDir, moveSpeed);
-        
-        if (!isHeadMode && onGround) {
-            step += animationSpeed;
+        if (!isHeadMode) {
+            step += 0.2;
             piernaI.rotation.x = Math.sin(step) * 0.8;
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-            brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
-            brazoD.position.z = Math.sin(step) * 0.15;
-        } else if (isHeadMode) {
-            cabezaMesh.rotation.x -= 0.15; 
-        }
-    } else {
-        // RESET DE POSE NEUTRA
-        if (onGround && !isDead) {
-            step = THREE.MathUtils.lerp(step, 0, 0.1);
-            piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
-            piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
-            brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.15);
-            brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.15);
-            brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
-            brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
+        } else {
+            cabezaMesh.rotation.x -= 0.15;
         }
     }
 
     // TRANSFORMACIÓN CABEZA
-    const t = 0.15;
-    if (isHeadMode && !isDead) {
-        cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 0, t), 0, 0);
-        brazoI.scale.set(0,0,0); brazoD.scale.set(0,0,0);
-        piernaI.scale.set(0,0,0); piernaD.scale.set(0,0,0);
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.25, t);
-    } else if (!isDead) {
-        cuerpoRef.scale.set(1, 1, 1);
-        brazoI.scale.set(1,1,1); brazoD.scale.set(1,1,1);
-        piernaI.scale.set(1,1,1); piernaD.scale.set(1,1,1);
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.75, t);
-        if(!moving) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, t);
-    }
-
-    // Pestañeo
-    blinkTimer--;
-    if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
-    listaOjos.forEach(ojo => ojo.scale.y = THREE.MathUtils.lerp(ojo.scale.y, (blinkTimer < 10) ? 0.1 : 1, 0.3));
+    cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, isHeadMode ? 0.25 : 0.75, 0.1);
+    cuerpoRef.scale.set(isHeadMode ? 0 : 1, isHeadMode ? 0 : 1, isHeadMode ? 0 : 1);
 
     // CÁMARA
-    let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 3.5);
-    let camY = isHeadMode ? 0.8 : 1.8;
-    const camOffset = new THREE.Vector3(0, camY, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    const camDist = isHeadMode ? 2.5 : 4;
+    const camOffset = new THREE.Vector3(0, 2, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.8, 0)));
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 1, 0)));
     
     renderer.render(scene, camera);
 }
 animate();
-
-window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
 </script>
 </body>
 </html>
