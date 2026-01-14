@@ -2,6 +2,12 @@ const content = document.getElementById("content");
 
 // 1. CARGAR CONFIGURACIÓN INTEGRADA (Suelo + Iluminación)
 let blocks = JSON.parse(localStorage.getItem("funbox_map")) || [];
+
+// Si el mapa está vacío, creamos el Spawn por defecto en el centro
+if (blocks.length === 0) {
+    blocks.push({ x: 0, y: 0, type: "spawn" });
+}
+
 let gameConfig = JSON.parse(localStorage.getItem("funbox_config")) || { 
     floorColor: "#eeeeee", 
     floorSize: 500,
@@ -35,6 +41,9 @@ content.innerHTML = `
                 <span style="color: #ffd700;">📂</span> <strong>Workspace</strong>
                 <div style="margin-left: 20px; margin-top: 8px; padding: 5px 10px; background: #3d3d3d; border: 1px solid #4db8ff; border-radius: 4px; display: flex; align-items: center;">
                     <span style="margin-right: 8px;">🟦</span> Baseplate
+                </div>
+                <div style="margin-left: 20px; margin-top: 4px; padding: 5px 10px; background: #3d3d3d; border: 1px solid #ffffff; border-radius: 4px; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">⬜</span> SpawnLocation
                 </div>
             </div>
             <div style="margin-bottom: 5px;">
@@ -83,10 +92,12 @@ canvas.onmousedown = e => {
     const rect = canvas.getBoundingClientRect();
     const x = Math.floor((e.clientX - rect.left + camX - canvas.width / 2) / gridDisplaySize);
     const y = Math.floor((e.clientY - rect.top + camY - canvas.height / 2) / gridDisplaySize);
+    
     if (e.button === 0) { 
-        if (!blocks.find(b => b.x === x && b.y === y)) blocks.push({ x, y });
+        if (!blocks.find(b => b.x === x && b.y === y)) blocks.push({ x, y, type: "block" });
     } else if (e.button === 2) { 
-        blocks = blocks.filter(b => !(b.x === x && b.y === y));
+        // No permitir borrar el bloque que sea tipo "spawn"
+        blocks = blocks.filter(b => !(b.x === x && b.y === y && b.type !== "spawn"));
     }
 };
 
@@ -96,7 +107,11 @@ document.getElementById("play").onclick = () => {
     location.href = "play.html";
 };
 
-document.getElementById("clear").onclick = () => { if(confirm("¿Borrar todo?")) blocks = []; };
+document.getElementById("clear").onclick = () => { 
+    if(confirm("¿Borrar todo? (El Spawn se mantendrá)")) {
+        blocks = [{ x: 0, y: 0, type: "spawn" }]; 
+    }
+};
 
 function loop() {
     if(keys.w) camY -= camSpeed; if(keys.s) camY += camSpeed;
@@ -119,8 +134,16 @@ function loop() {
     blocks.forEach(b => {
         const drawX = (b.x * gridDisplaySize) + (canvas.width / 2) - camX;
         const drawY = (b.y * gridDisplaySize) + (canvas.height / 2) - camY;
-        ctx.fillStyle = "#2196f3"; 
+        
+        // El Spawn es blanco, los bloques normales son azules
+        ctx.fillStyle = b.type === "spawn" ? "#ffffff" : "#2196f3"; 
         ctx.fillRect(drawX, drawY, gridDisplaySize, gridDisplaySize);
+        
+        // Borde para diferenciarlo mejor
+        if(b.type === "spawn") {
+            ctx.strokeStyle = "#4db8ff";
+            ctx.strokeRect(drawX, drawY, gridDisplaySize, gridDisplaySize);
+        }
     });
 
     requestAnimationFrame(loop);
