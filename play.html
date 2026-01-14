@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox Studio</title>
+<title>Funbox Studio - Play</title>
 <style>
   body { margin:0; overflow:hidden; background: #000; }
   #ui {
@@ -31,8 +31,8 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// NUEVO: Cargar configuración del Script del Workspace
-const wsScript = JSON.parse(localStorage.getItem("funbox_script")) || { dayNightCycle: false, randomEvents: false };
+// Se cargan los datos del mapa
+const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(config.skyColor);
@@ -145,7 +145,6 @@ function createAssetMesh(type) {
 }
 
 // --- CARGA DE BLOQUES Y FÍSICA ---
-const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 const physicalBlocks = [];
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const spawnGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2); 
@@ -263,9 +262,8 @@ const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
 let yaw = 0, step = 0, rollStep = 0;
 let blinkTimer = 0;
-let dayTime = 0; // Para el ciclo de día
 
-// --- NUEVO: SISTEMA DE SCRIPTING PRO ---
+// --- SISTEMA DE SCRIPTING PRO ---
 const customScript = localStorage.getItem("funbox_custom_script");
 let userUpdateFunc = null;
 
@@ -277,8 +275,8 @@ const game = {
     sun: sunLight,
     blocks: physicalBlocks,
     THREE: THREE,
-    setFloor: (color) => floor.material.color.set(color),
-    onUpdate: (fn) => { userUpdateFunc = fn; } // Para que el PRO corra código cada frame
+    setFloor: (color) => { if(floor.material) floor.material.color.set(color); },
+    onUpdate: (fn) => { userUpdateFunc = fn; }
 };
 
 if (customScript) {
@@ -289,7 +287,6 @@ if (customScript) {
         console.error("Error en el Script del usuario:", e);
     }
 }
-// ----------------------------------------
 
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
@@ -303,21 +300,8 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 function animate() {
     requestAnimationFrame(animate);
 
-    // Ejecutar la actualización del usuario si existe (Nivel PRO)
+    // Ejecutar Script PRO
     if (userUpdateFunc) userUpdateFunc();
-
-    // --- NUEVO: SISTEMA DE SCRIPTING (DIA/NOCHE Y EVENTOS) ---
-    if(wsScript.dayNightCycle) {
-        dayTime += 0.005;
-        const sunIntensity = Math.sin(dayTime) * 0.5 + 0.5;
-        sunLight.intensity = sunIntensity;
-        scene.background.setHSL(0.5, 0.4, sunIntensity * 0.5);
-    }
-
-    if(wsScript.randomEvents && Math.random() < 0.001) {
-        floor.material.color.setHex(Math.random() * 0xffffff);
-    }
-    // --------------------------------------------------------
 
     const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
