@@ -95,7 +95,7 @@ const body = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.4,bodyHeight),
   new THREE.MeshStandardMaterial({color:0x00ffcc})
 );
-body.position.y=bodyHeight/2; // base del capsule
+body.position.y=bodyHeight/2 + 0.6; // altura inicial
 player.add(body);
 
 // PIERNAS
@@ -111,7 +111,7 @@ player.add(rightLeg);
 // BRAZOS
 function createArm(x){
   const group = new THREE.Group();
-  group.position.set(x,bodyHeight-0.1,0);
+  group.position.set(x,1.4,0);
   const arm = new THREE.Mesh(
     new THREE.CylinderGeometry(0.12,0.12,0.5),
     new THREE.MeshStandardMaterial({color:0x00ffcc})
@@ -130,8 +130,8 @@ const eyeGeo = new THREE.SphereGeometry(0.1,8,8);
 const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
 const leftEye = new THREE.Mesh(eyeGeo,eyeMat);
 const rightEye = new THREE.Mesh(eyeGeo,eyeMat);
-leftEye.position.set(-0.15,bodyHeight-0.05,-0.25);
-rightEye.position.set(0.15,bodyHeight-0.05,-0.25);
+leftEye.position.set(-0.15,1.6,-0.25);
+rightEye.position.set(0.15,1.6,-0.25);
 player.add(leftEye);
 player.add(rightEye);
 
@@ -226,11 +226,11 @@ function animate(){
   player.position.y+=velY;
 
   // ====================== COLISIONES
-  const playerBaseY = player.position.y - (bodyHeight/2) * player.scale.y;
+  const playerBaseY = player.position.y - (bodyHeight + 0.6) * player.scale.y / 2;
 
   // Suelo base
   if(playerBaseY <= 0){
-    player.position.y = (bodyHeight/2) * player.scale.y;
+    player.position.y = (bodyHeight + 0.6)/2 * player.scale.y;
     velY=0;
   }
 
@@ -240,13 +240,13 @@ function animate(){
     if(player.position.x > b.position.x - 0.5 && player.position.x < b.position.x +0.5 &&
        player.position.z > b.position.z -0.5 && player.position.z < b.position.z +0.5 &&
        playerBaseY <= top){
-      player.position.y = top + (bodyHeight/2) * player.scale.y;
+      player.position.y = top + (bodyHeight +0.6)/2 * player.scale.y;
       velY =0;
     }
   });
 
   // ====================== MUERTE POR CAIDA
-  if(playerBaseY < -1){
+  if(playerBaseY < -5){
     player.position.copy(spawnPoint);
     velY =0;
   }
@@ -257,12 +257,12 @@ function animate(){
     camOffset = new THREE.Vector3(0,2,-3);
     camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.copy(player.position).add(camOffset);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,bodyHeight/2,0)));
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
   } else {
     camOffset = new THREE.Vector3(0,2,5);
     camOffset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.copy(player.position).add(camOffset);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,bodyHeight/2,0)));
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.5,0)));
   }
 
   renderer.render(scene,camera);
@@ -277,4 +277,3 @@ window.onresize=()=>{
 </script>
 </body>
 </html>
-
