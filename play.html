@@ -59,14 +59,17 @@ sunLight.shadow.mapSize.width = 2048;
 sunLight.shadow.mapSize.height = 2048;
 scene.add(sunLight);
 
-// --- EL SUELO (BASEPLATE CON COLISIÓN) ---
-const floorGeo = new THREE.PlaneGeometry(config.floorSize, config.floorSize);
-const floorMat = new THREE.MeshStandardMaterial({
-    color: config.floorColor,
-    roughness: 0.8,
-    metalness: 0.1
-});
-const floor = new THREE.Mesh(floorGeo, floorMat);
+// --- EL SUELO (BASEPLATE REPARADA) ---
+const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(config.floorSize, config.floorSize), 
+    new THREE.MeshStandardMaterial({
+        color: config.floorColor,
+        roughness: 0.8,
+        metalness: 0.1,
+        transparent: false, // YA NO ES INVISIBLE
+        opacity: 1
+    })
+);
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 floor.position.y = 0; 
@@ -137,7 +140,7 @@ function createAssetMesh(type) {
 
 // --- CARGA DE BLOQUES Y FÍSICA ---
 const physicalBlocks = [];
-physicalBlocks.push(floor); // El suelo ahora es parte de la física
+physicalBlocks.push(floor); // AGREGADO A LA FÍSICA
 
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const spawnGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2); 
@@ -170,14 +173,12 @@ mapData.forEach(b => {
     scene.add(block);
 });
 
-// --- SISTEMA DE SUPERFICIE CORREGIDO ---
+// --- SISTEMA DE SUPERFICIE ---
 function getSurfaceY(pos) {
     let maxY = -100;
     const pR = 0.25; 
-    
     physicalBlocks.forEach(b => {
         if (b === floor) {
-            // Lógica especial para el Baseplate circular/cuadrado
             const halfSize = config.floorSize / 2;
             if (pos.x > -halfSize && pos.x < halfSize && pos.z > -halfSize && pos.z < halfSize) {
                 maxY = Math.max(maxY, 0);
@@ -208,7 +209,7 @@ function isColliding(pos) {
     return false;
 }
 
-// --- PERSONAJE ---
+// --- PERSONAJE (COMPLETO) ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
@@ -263,34 +264,11 @@ piernaD.position.set(0.12, 0.1, 0); player.add(piernaD);
 
 scene.add(player);
 
-// --- LÓGICA DE JUEGO ---
+// --- LÓGICA ---
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
 const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
-let yaw = 0, step = 0, rollStep = 0;
-let blinkTimer = 0;
-
-const customScript = localStorage.getItem("funbox_custom_script");
-let userUpdateFunc = null;
-
-const game = {
-    scene: scene,
-    player: player,
-    camera: camera,
-    floor: floor,
-    sun: sunLight,
-    blocks: physicalBlocks,
-    THREE: THREE,
-    setFloor: (color) => { if(floor.material) floor.material.color.set(color); },
-    onUpdate: (fn) => { userUpdateFunc = fn; }
-};
-
-if (customScript) {
-    try {
-        const runScript = new Function('game', customScript);
-        runScript(game);
-    } catch (e) { console.error("Script Error:", e); }
-}
+let yaw = 0, step = 0, rollStep = 0, blinkTimer = 0;
 
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
@@ -304,8 +282,6 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 function animate() {
     requestAnimationFrame(animate);
 
-    if (userUpdateFunc) { try { userUpdateFunc(); } catch(e) { userUpdateFunc = null; } }
-
     const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
     
@@ -313,9 +289,14 @@ function animate() {
         vy += gravity;
         onGround = false;
     } else {
-        player.position.y = currentSurfaceY;
-        vy = Math.max(0, vy); 
-        onGround = true;
+        if (currentSurfaceY > -50) {
+            player.position.y = currentSurfaceY;
+            vy = Math.max(0, vy); 
+            onGround = true;
+        } else {
+            onGround = false;
+            vy += gravity;
+        }
     }
 
     if (player.position.y < -15) {
@@ -332,7 +313,10 @@ function animate() {
         if(keys.d){ dir.x += 1; moving = true; }
     }
 
-    let moveSpeed = (keys.shift && !isHeadMode) ? 0.18 : (isHeadMode ? 0.12 : 0.09);
+    let moveSpeed = isHeadMode ? 0.12 : 0.09;
+    let animationSpeed = (keys.shift && !isHeadMode) ? 0.45 : 0.25;
+    if (keys.shift && !isHeadMode) moveSpeed = 0.18;
+
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
 
     if(moving && !isDead) {
@@ -343,14 +327,46 @@ function animate() {
         if (!isColliding(nextZ)) player.position.z = nextZ.z;
         
         if (!isHeadMode && onGround) {
-            step += (keys.shift ? 0.45 : 0.25);
+            step += animationSpeed;
             piernaI.rotation.x = Math.sin(step) * 0.8;
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
+            brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
+            brazoD.position.z = Math.sin(step) * 0.15;
         } else if (isHeadMode) {
             rollStep += 0.1;
             cabezaMesh.rotation.x = -rollStep; 
         }
+    } else {
+        step = THREE.MathUtils.lerp(step, 0, 0.1);
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
+        brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.1);
+        brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.1);
+        if(!isHeadMode) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
     }
+
+    if (!onGround && !isHeadMode) {
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.5, 0.2);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.5, 0.2);
+    } else {
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
+    }
+
+    const t = 0.15;
+    if (isHeadMode && !isDead) {
+        cuerpoRef.scale.set(0,0,0); brazoI.scale.set(0,0,0); brazoD.scale.set(0,0,0);
+        piernaI.scale.set(0,0,0); piernaD.scale.set(0,0,0);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.25, t);
+    } else {
+        cuerpoRef.scale.set(1, 1, 1); brazoI.scale.set(1,1,1); brazoD.scale.set(1,1,1);
+        piernaI.scale.set(1,1,1); piernaD.scale.set(1,1,1);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.75, t);
+    }
+
+    blinkTimer--;
+    if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
+    listaOjos.forEach(ojo => { ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; });
 
     let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 3.5);
     const camOffset = new THREE.Vector3(0, isHeadMode ? 0.8 : 1.8, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
