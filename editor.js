@@ -1,8 +1,13 @@
 const content = document.getElementById("content");
 
+// 1. CARGAR CONFIGURACIÓN INTEGRADA (Suelo + Iluminación)
 let blocks = JSON.parse(localStorage.getItem("funbox_map")) || [];
-// Cargamos la configuración o valores por defecto
-let floorConfig = JSON.parse(localStorage.getItem("funbox_floor_config")) || { color: "#eeeeee", size: 500 };
+let gameConfig = JSON.parse(localStorage.getItem("funbox_config")) || { 
+    floorColor: "#eeeeee", 
+    floorSize: 500,
+    skyColor: "#87ceeb", 
+    ambientIntensity: 0.9 
+};
 
 let canvas, ctx;
 const gridDisplaySize = 40; 
@@ -26,21 +31,30 @@ content.innerHTML = `
     <div style="width: 280px; background: #252525; border-left: 1px solid #444; display: flex; flex-direction: column;">
         <div style="padding: 10px; background: #333; font-weight: bold; color: #888; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #444;">Explorador</div>
         <div style="flex: 1; padding: 10px; overflow-y: auto;">
-            <div style="margin-bottom: 5px;">
+            <div style="margin-bottom: 10px;">
                 <span style="color: #ffd700;">📂</span> <strong>Workspace</strong>
                 <div style="margin-left: 20px; margin-top: 8px; padding: 5px 10px; background: #3d3d3d; border: 1px solid #4db8ff; border-radius: 4px; display: flex; align-items: center;">
                     <span style="margin-right: 8px;">🟦</span> Baseplate
                 </div>
             </div>
+            <div style="margin-bottom: 5px;">
+                <span style="color: #ffcc00;">💡</span> <strong>Lighting</strong>
+            </div>
         </div>
 
         <div style="background: #1e1e1e; border-top: 2px solid #333; padding-bottom: 20px;">
-            <div style="padding: 8px; background: #2d2d2d; font-size: 10px; color: #888; text-transform: uppercase;">Propiedades - Baseplate</div>
+            <div style="padding: 8px; background: #2d2d2d; font-size: 10px; color: #888; text-transform: uppercase;">Propiedades Globales</div>
             <div style="padding: 15px;">
-                <label style="display: block; font-size: 12px; color: #bbb; margin-bottom: 5px;">Color</label>
-                <input type="color" id="floorColor" value="${floorConfig.color}" style="width: 100%; height: 30px; border: none; background: #333; cursor: pointer; margin-bottom: 15px;">
-                <label style="display: block; font-size: 12px; color: #bbb; margin-bottom: 5px;">Tamaño (Máx 3.500)</label>
-                <input type="number" id="floorSize" value="${floorConfig.size}" min="10" max="3500" style="width: 100%; background: #333; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px;">
+                <label style="display: block; font-size: 11px; color: #888; margin-bottom: 5px;">BASEPLATE</label>
+                <input type="color" id="floorColor" value="${gameConfig.floorColor}" style="width: 100%; height: 25px; border: none; background: #333; cursor: pointer; margin-bottom: 10px;">
+                <input type="number" id="floorSize" value="${gameConfig.floorSize}" min="10" max="3500" style="width: 100%; background: #333; border: 1px solid #444; color: white; padding: 4px; border-radius: 4px; margin-bottom: 15px;">
+                
+                <label style="display: block; font-size: 11px; color: #888; margin-bottom: 5px;">AMBIENTE (CIELO)</label>
+                <select id="skyPreset" style="width: 100%; background: #333; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px;">
+                    <option value="#87ceeb" ${gameConfig.skyColor === "#87ceeb" ? "selected" : ""}>☀️ Día</option>
+                    <option value="#ffb347" ${gameConfig.skyColor === "#ffb347" ? "selected" : ""}>🌅 Atardecer</option>
+                    <option value="#1a1a2e" ${gameConfig.skyColor === "#1a1a2e" ? "selected" : ""}>🌙 Noche</option>
+                </select>
             </div>
         </div>
     </div>
@@ -50,10 +64,15 @@ content.innerHTML = `
 canvas = document.getElementById("canvas");
 ctx = canvas.getContext("2d");
 
-document.getElementById("floorColor").oninput = (e) => floorConfig.color = e.target.value;
+// LÓGICA DE INPUTS
+document.getElementById("floorColor").oninput = (e) => gameConfig.floorColor = e.target.value;
 document.getElementById("floorSize").oninput = (e) => {
     let val = parseInt(e.target.value);
-    floorConfig.size = val > 3500 ? 3500 : (val || 10);
+    gameConfig.floorSize = val > 3500 ? 3500 : (val || 10);
+};
+document.getElementById("skyPreset").onchange = (e) => {
+    gameConfig.skyColor = e.target.value;
+    gameConfig.ambientIntensity = (e.target.value === "#1a1a2e") ? 0.3 : 0.9;
 };
 
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
@@ -73,7 +92,7 @@ canvas.onmousedown = e => {
 
 document.getElementById("play").onclick = () => {
     localStorage.setItem("funbox_map", JSON.stringify(blocks));
-    localStorage.setItem("funbox_floor_config", JSON.stringify(floorConfig));
+    localStorage.setItem("funbox_config", JSON.stringify(gameConfig));
     location.href = "play.html";
 };
 
@@ -87,20 +106,16 @@ function loop() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // --- DIBUJAR EL BASEPLATE EN EL EDITOR ---
-    // Esto hace que veas el color rojo (o el que elijas) en el fondo del editor
-    const visualSize = floorConfig.size * (gridDisplaySize / 1); // Escala visual simple
-    ctx.fillStyle = floorConfig.color;
+    const visualSize = gameConfig.floorSize * (gridDisplaySize / 1);
+    ctx.fillStyle = gameConfig.floorColor;
     ctx.fillRect((canvas.width/2 - camX) - visualSize/2, (canvas.height/2 - camY) - visualSize/2, visualSize, visualSize);
 
-    // Rejilla
     ctx.strokeStyle = "rgba(255,255,255,0.1)";
     let offsetX = (canvas.width / 2 - camX) % gridDisplaySize;
     let offsetY = (canvas.height / 2 - camY) % gridDisplaySize;
     for (let i = offsetX; i < canvas.width; i += gridDisplaySize) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
     for (let j = offsetY; j < canvas.height; j += gridDisplaySize) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke(); }
 
-    // Bloques
     blocks.forEach(b => {
         const drawX = (b.x * gridDisplaySize) + (canvas.width / 2) - camX;
         const drawY = (b.y * gridDisplaySize) + (canvas.height / 2) - camY;
