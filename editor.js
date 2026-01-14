@@ -14,13 +14,18 @@ let gameConfig = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
+// NUEVO: Configuración del Script de Workspace
+let workspaceScript = JSON.parse(localStorage.getItem("funbox_script")) || {
+    dayNightCycle: true,
+    randomEvents: true
+};
+
 let canvas, ctx;
 const gridDisplaySize = 40; 
 const camSpeed = 8; 
 let camX = 0, camY = 0;
 const keys = {};
 
-// NUEVO: Variable para la herramienta actual
 let currentTool = "block";
 
 content.innerHTML = `
@@ -40,6 +45,8 @@ content.innerHTML = `
         .asset-btn { background: #333; border: 1px solid #555; cursor: pointer; padding: 5px; border-radius: 5px; font-size: 16px; transition: 0.2s; }
         .asset-btn:hover { background: #444; transform: translateY(-2px); }
         .asset-btn.active { border-color: #2196f3; background: #1a3a5a; }
+        .workspace-item { cursor: pointer; transition: 0.2s; }
+        .workspace-item:hover { background: #444 !important; }
     </style>
 
     <div style="flex: 1; display: flex; flex-direction: column; background: #222;">
@@ -58,15 +65,15 @@ content.innerHTML = `
         <div style="flex: 1; padding: 10px; overflow-y: auto;">
             <div style="margin-bottom: 10px;">
                 <span style="color: #ffd700;">📂</span> <strong>Workspace</strong>
-                <div style="margin-left: 20px; margin-top: 8px; padding: 5px 10px; background: #3d3d3d; border: 1px solid #4db8ff; border-radius: 4px; display: flex; align-items: center;">
+                <div class="workspace-item" style="margin-left: 20px; margin-top: 8px; padding: 5px 10px; background: #3d3d3d; border: 1px solid #4db8ff; border-radius: 4px; display: flex; align-items: center;">
                     <span style="margin-right: 8px;">🟦</span> Baseplate
                 </div>
-                <div style="margin-left: 20px; margin-top: 4px; padding: 5px 10px; background: #3d3d3d; border: 1px solid #ffffff; border-radius: 4px; display: flex; align-items: center;">
+                <div class="workspace-item" style="margin-left: 20px; margin-top: 4px; padding: 5px 10px; background: #3d3d3d; border: 1px solid #ffffff; border-radius: 4px; display: flex; align-items: center;">
                     <span style="margin-right: 8px;">⬜</span> SpawnLocation
                 </div>
-            </div>
-            <div style="margin-bottom: 5px;">
-                <span style="color: #ffcc00;">💡</span> <strong>Lighting</strong>
+                <div id="open-script" class="workspace-item" style="margin-left: 20px; margin-top: 4px; padding: 5px 10px; background: #2d4a3e; border: 1px solid #4caf50; border-radius: 4px; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">📜</span> Script
+                </div>
             </div>
         </div>
 
@@ -103,7 +110,15 @@ document.getElementById("skyPreset").onchange = (e) => {
     gameConfig.ambientIntensity = (e.target.value === "#1a1a2e") ? 0.3 : 0.9;
 };
 
-// Manejo visual de botones de assets
+// NUEVO: Abrir configuración de Script al hacer clic en 📜 Script
+document.getElementById("open-script").onclick = () => {
+    const dn = confirm("📜 SCRIPT CONFIG:\n¿Activar Ciclo Día/Noche automático?");
+    const re = confirm("📜 SCRIPT CONFIG:\n¿Activar Eventos Random (Cambio de color del suelo)?");
+    workspaceScript.dayNightCycle = dn;
+    workspaceScript.randomEvents = re;
+    alert("Script actualizado en Workspace.");
+};
+
 document.querySelectorAll('.asset-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.asset-btn').forEach(b => b.classList.remove('active'));
@@ -122,7 +137,6 @@ canvas.onmousedown = e => {
     
     if (e.button === 0) { 
         if (!blocks.find(b => b.x === x && b.y === y)) {
-            // USAR LA HERRAMIENTA SELECCIONADA
             blocks.push({ x, y, type: currentTool });
         }
     } else if (e.button === 2) { 
@@ -133,6 +147,7 @@ canvas.onmousedown = e => {
 document.getElementById("play").onclick = () => {
     localStorage.setItem("funbox_map", JSON.stringify(blocks));
     localStorage.setItem("funbox_config", JSON.stringify(gameConfig));
+    localStorage.setItem("funbox_script", JSON.stringify(workspaceScript)); // GUARDAR SCRIPT
     location.href = "play.html";
 };
 
@@ -147,9 +162,7 @@ function loop() {
     if(keys.a) camX -= camSpeed; if(keys.d) camX += camSpeed;
 
     if (canvas.width !== canvas.clientWidth) { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     const visualSize = gameConfig.floorSize * (gridDisplaySize / 1);
     ctx.fillStyle = gameConfig.floorColor;
     ctx.fillRect((canvas.width/2 - camX) - visualSize/2, (canvas.height/2 - camY) - visualSize/2, visualSize, visualSize);
@@ -163,28 +176,20 @@ function loop() {
     blocks.forEach(b => {
         const drawX = (b.x * gridDisplaySize) + (canvas.width / 2) - camX;
         const drawY = (b.y * gridDisplaySize) + (canvas.height / 2) - camY;
-        
-        // Colores en el editor para BoxAssets
         if(b.type === "spawn") ctx.fillStyle = "#ffffff";
         else if(b.type === "block") ctx.fillStyle = "#2196f3";
-        else ctx.fillStyle = "#ff9800"; // Color naranja para indicar que es un Asset (Mueble)
-        
+        else ctx.fillStyle = "#ff9800"; 
         ctx.fillRect(drawX, drawY, gridDisplaySize, gridDisplaySize);
-        
         if(b.type === "spawn") {
             ctx.strokeStyle = "#4db8ff";
             ctx.strokeRect(drawX, drawY, gridDisplaySize, gridDisplaySize);
         }
-        
-        // Mostrar icono miniatura en el editor si no es bloque
         if(b.type !== "block" && b.type !== "spawn") {
-            ctx.fillStyle = "white";
-            ctx.font = "20px Arial";
+            ctx.fillStyle = "white"; ctx.font = "20px Arial";
             const icons = { chair:"🪑", table:"🧱", bed:"🛏️", pc:"🖥️", flashlight:"🔦" };
             ctx.fillText(icons[b.type] || "📦", drawX + 10, drawY + 28);
         }
     });
-
     requestAnimationFrame(loop);
 }
 loop();
