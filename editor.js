@@ -1,70 +1,12 @@
-// --- SISTEMA DE FLUJO: REGISTRO -> MENÚ -> EDITOR ---
-
-const userSession = JSON.parse(sessionStorage.getItem("funbox_session"));
-
-if (!userSession) {
-    // 1. PANTALLA DE REGISTRO
-    document.body.innerHTML = `
-    <div style="height: 100vh; background: #0f0f0f; display: flex; align-items: center; justify-content: center; font-family: sans-serif;">
-        <div style="background: #1e1e1e; padding: 40px; border-radius: 15px; border: 1px solid #333; width: 350px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <h1 style="color: #2196f3; margin-bottom: 10px;">🏗️ Funbox Studio</h1>
-            <p style="color: #888; margin-bottom: 25px;">Regístrate para empezar a construir</p>
-            
-            <input type="text" id="reg-user" placeholder="Crea tu usuario" style="width: 100%; padding: 12px; margin-bottom: 15px; background: #111; border: 1px solid #444; border-radius: 6px; color: white; outline: none;">
-            <input type="password" id="reg-pass" placeholder="Crea tu contraseña" style="width: 100%; padding: 12px; margin-bottom: 25px; background: #111; border: 1px solid #444; border-radius: 6px; color: white; outline: none;">
-            
-            <button id="btn-registrar" style="width: 100%; padding: 12px; background: #4caf50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s;">REGISTRARSE Y ENTRAR</button>
-        </div>
-    </div>`;
-
-    document.getElementById("btn-registrar").onclick = () => {
-        const u = document.getElementById("reg-user").value;
-        const p = document.getElementById("reg-pass").value;
-        if (u.length > 2 && p.length > 2) {
-            sessionStorage.setItem("funbox_session", JSON.stringify({ user: u }));
-            location.reload();
-        } else {
-            alert("El usuario y la contraseña deben tener al menos 3 caracteres.");
-        }
-    };
-} else if (!sessionStorage.getItem("funbox_view")) {
-    // 2. MENÚ PRINCIPAL (BOTONES CREAR / JUEGOS)
-    document.body.innerHTML = `
-    <div style="height: 100vh; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; color: white;">
-        <h2 style="margin-bottom: 5px;">Hola, <span style="color: #4db8ff;">${userSession.user}</span></h2>
-        <p style="color: #666; margin-bottom: 40px;">Selecciona una opción para continuar</p>
-        
-        <div style="display: flex; gap: 20px;">
-            <button id="btn-crear" style="width: 220px; height: 150px; background: #2196f3; border: none; border-radius: 12px; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);">
-                <span style="font-size: 40px;">🏗️</span> CREAR
-                <span style="font-size: 10px; font-weight: normal; opacity: 0.8;">Crea mundos para la comunidad</span>
-            </button>
-            
-            <button id="btn-juegos" style="width: 220px; height: 150px; background: #4caf50; border: none; border-radius: 12px; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);">
-                <span style="font-size: 40px;">🎮</span> JUEGOS
-                <span style="font-size: 10px; font-weight: normal; opacity: 0.8;">Explora niveles creados</span>
-            </button>
-        </div>
-        
-        <button onclick="sessionStorage.clear(); location.reload();" style="margin-top: 50px; background: none; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; border-radius: 5px; font-size: 12px;">Cerrar Sesión</button>
-    </div>`;
-
-    document.getElementById("btn-crear").onclick = () => {
-        sessionStorage.setItem("funbox_view", "editor");
-        location.reload();
-    };
-    
-    document.getElementById("btn-juegos").onclick = () => {
-        alert("El Navegador de Juegos estará disponible pronto.");
-    };
-} else {
-    // 3. INICIAR EL EDITOR SI SE ELIGIÓ "CREAR"
-    iniciarEditor();
+// Validamos que exista una sesión antes de iniciar, si no, redirigimos al launcher
+if (!sessionStorage.getItem("funbox_session")) {
+    window.location.href = "index.html";
 }
 
+// Ejecutar el editor directamente
+iniciarEditor();
 
 function iniciarEditor() {
-    // --- TODO TU CÓDIGO ORIGINAL DESDE AQUÍ ---
     const content = document.getElementById("content");
 
     // 1. CARGAR CONFIGURACIÓN INTEGRADA
@@ -92,7 +34,7 @@ function iniciarEditor() {
     let currentTool = "block";
 
     content.innerHTML = `
-    <button onclick="sessionStorage.removeItem('funbox_view'); location.reload();" style="position: absolute; right: 20px; top: 10px; z-index: 1000; background: #333; color: white; border: 1px solid #555; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-family: sans-serif; font-size: 12px;">🏠 SALIR AL MENÚ</button>
+    <button onclick="window.location.href='index.html'" style="position: absolute; right: 20px; top: 10px; z-index: 1000; background: #333; color: white; border: 1px solid #555; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-family: sans-serif; font-size: 12px;">🏠 SALIR AL MENÚ</button>
 
     <div style="display: flex; background: #1a1a1a; color: white; font-family: sans-serif; height: 90vh; border-radius: 10px; overflow: hidden; border: 1px solid #444; position: relative;">
         
@@ -112,7 +54,6 @@ function iniciarEditor() {
             .asset-btn.active { border-color: #2196f3; background: #1a3a5a; }
             .workspace-item { cursor: pointer; transition: 0.2s; }
             .workspace-item:hover { background: #444 !important; }
-            /* Scrollbar para la consola */
             #editor-console::-webkit-scrollbar { width: 8px; }
             #editor-console::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
         </style>
@@ -172,7 +113,6 @@ function iniciarEditor() {
     ctx = canvas.getContext("2d");
     const editorConsole = document.getElementById("editor-console");
 
-    // Función para imprimir mensajes en la consola visual
     function printToConsole(msg, color = "#00ff00") {
         const line = document.createElement("div");
         line.style.color = color;
@@ -181,7 +121,6 @@ function iniciarEditor() {
         editorConsole.scrollTop = editorConsole.scrollHeight;
     }
 
-    // LÓGICA DE INPUTS
     document.getElementById("floorColor").oninput = (e) => gameConfig.floorColor = e.target.value;
     document.getElementById("floorSize").oninput = (e) => {
         let val = parseInt(e.target.value);
@@ -192,12 +131,10 @@ function iniciarEditor() {
         gameConfig.ambientIntensity = (e.target.value === "#1a1a2e") ? 0.3 : 0.9;
     };
 
-    // MODIFICADO: Sistema de Scripting con SEGURIDAD y CONSOLA
     document.getElementById("open-script").onclick = () => {
         const inputCode = prompt("📜 SCRIPT EDITOR (PRO):\nEscribe tu código JavaScript. Usa 'game' para interactuar.", customScriptCode);
         
         if (inputCode !== null) {
-            // 1. SEGURIDAD (ANTI-MALWARE)
             const forbiddenWords = ["while", "setInterval", "localStorage", "location", "document", "window", "fetch", "XMLHttpRequest"];
             let isMalicious = false;
             let detectedWord = "";
@@ -216,9 +153,8 @@ function iniciarEditor() {
                 printToConsole("❌ ERROR DE SEGURIDAD: Uso prohibido de: " + detectedWord, "#ff4444");
                 alert("Error de seguridad detectado. Revisa la consola.");
             } else {
-                // 2. VALIDACIÓN DE SINTAXIS (CONSOLA)
                 try {
-                    new Function('game', inputCode); // Prueba de compilación
+                    new Function('game', inputCode);
                     customScriptCode = inputCode;
                     localStorage.setItem("funbox_custom_script", customScriptCode); 
                     printToConsole("✅ Script verificado y guardado con éxito.", "#4caf50");
