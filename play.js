@@ -1,159 +1,169 @@
-// --- CONFIGURACIÓN ESCENA ---
+// --- CONFIGURACIÓN DE ESCENA ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f2f5); // Color gris suave profesional
+scene.background = new THREE.Color(0xa0b0c0); // Color cielo
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true; // Activar sombras
+renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// --- ILUMINACIÓN ---
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-const light = new THREE.DirectionalLight(0xffffff, 0.6);
-light.position.set(10, 20, 10);
-light.castShadow = true;
-scene.add(light);
+// --- LUCES ---
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+sun.position.set(10, 20, 10);
+sun.castShadow = true;
+scene.add(sun);
 
 // --- SUELO ---
-const floorSize = 50;
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(floorSize, floorSize),
-    new THREE.MeshStandardMaterial({ color: 0xeeeeee })
+    new THREE.PlaneGeometry(100, 100),
+    new THREE.MeshStandardMaterial({ color: 0x444444 })
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// --- CARGA DE MAPA (Desde el Editor) ---
+// --- CARGA DEL MAPA Y COLISIONES ---
+const blocks = [];
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-const boxMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+const boxMat = new THREE.MeshStandardMaterial({ color: 0x777777 });
 
 mapData.forEach(b => {
     const block = new THREE.Mesh(boxGeo, boxMat);
-    block.position.set(b.x, 0.5, b.y); // Usamos b.y como Z
+    block.position.set(b.x, 0.5, b.y);
     block.castShadow = true;
     block.receiveShadow = true;
     scene.add(block);
+    blocks.push(block); // Guardamos para detectar colisiones
 });
 
-// --- PERSONAJE FUNBOX PRO (Integrado) ---
+// --- CONSTRUCCIÓN DEL PERSONAJE (Basado en tus imágenes) ---
 const player = new THREE.Group();
-const cuerpoVisual = new THREE.Group();
-player.add(cuerpoVisual);
+const visual = new THREE.Group();
+player.add(visual);
 
-// Materiales
-const matPiel = new THREE.MeshStandardMaterial({color: 0xffdbac});
-const matPelo = new THREE.MeshStandardMaterial({color: 0x4e342e}); 
-const matRopa = new THREE.MeshStandardMaterial({color: 0x2196f3});
-const matOjoNegro = new THREE.MeshBasicMaterial({color: 0x111111});
+const matPiel = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+const matPelo = new THREE.MeshStandardMaterial({ color: 0x3d2b1f });
+const matRopa = new THREE.MeshStandardMaterial({ color: 0x0077be });
 
-// Cabeza y Cuerpo (Misma estructura que perfeccionamos)
+// Cabeza Cuadrada
 const cabezaGroup = new THREE.Group();
-cabezaGroup.position.y = 0.75;
-cuerpoVisual.add(cabezaGroup);
+cabezaGroup.position.y = 0.8;
+visual.add(cabezaGroup);
 
-const cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.5, 0.5), matPiel);
+const cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), matPiel);
 cabezaMesh.castShadow = true;
 cabezaGroup.add(cabezaMesh);
 
-// ... (Pelo, Ojos, Brazos, Piernas - Versión simplificada para play.js)
-const cuerpoRef = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.2, 4, 12), matRopa);
-cuerpoRef.position.y = 0.35; cuerpoVisual.add(cuerpoRef);
+// Pelo y Barba (Como en tu captura)
+const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.25, 0.62), matPelo);
+pelo.position.y = 0.2; cabezaMesh.add(pelo);
+const barba = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.62), matPelo);
+barba.position.y = -0.22; cabezaMesh.add(barba);
 
-const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), matPiel);
-brazoI.position.set(-0.3, 0.4, 0); cuerpoVisual.add(brazoI);
-const brazoD = brazoI.clone();
-brazoD.position.set(0.3, 0.4, 0); cuerpoVisual.add(brazoD);
+// Ojos brillantes
+function crearOjo(x) {
+    const ojo = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), new THREE.MeshBasicMaterial({color:0x111111}));
+    const brillo = new THREE.Mesh(new THREE.CircleGeometry(0.025, 8), new THREE.MeshBasicMaterial({color:0xffffff}));
+    brillo.position.set(0.03, 0.03, 0.01);
+    ojo.add(brillo);
+    ojo.position.set(x, 0, 0.301);
+    return ojo;
+}
+cabezaMesh.add(crearOjo(-0.18), crearOjo(0.18));
 
-const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.1, 4, 8), new THREE.MeshStandardMaterial({color:0x333333}));
-piernaI.position.set(-0.12, 0.1, 0); player.add(piernaI);
-const piernaD = piernaI.clone();
-piernaD.position.set(0.12, 0.1, 0); player.add(piernaD);
+// Cuerpo Capsule
+const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.4, 4, 8), matRopa);
+cuerpo.position.y = 0.3; visual.add(cuerpo);
+
+// Manos esféricas
+const manoGeo = new THREE.SphereGeometry(0.08, 8, 8);
+const manoI = new THREE.Mesh(manoGeo, matPiel);
+manoI.position.set(-0.35, 0.35, 0); visual.add(manoI);
+const manoD = manoI.clone();
+manoD.position.set(0.35, 0.35, 0); visual.add(manoD);
 
 scene.add(player);
 
-// --- LÓGICA DE JUEGO ---
-let vy = 0, onGround = true, isDead = false, isHeadMode = false;
-const gravity = -0.012, jumpForce = 0.25;
+// --- LÓGICA DE CONTROL ---
+let vy = 0, onGround = false, isHeadMode = false;
 const keys = {};
 let yaw = 0, step = 0;
 
-window.addEventListener("keydown", e => {
-    keys[e.key.toLowerCase()] = true;
-    if(e.code === "Space" && onGround) vy = jumpForce;
-    if(e.key.toLowerCase() === "c") isHeadMode = !isHeadMode;
+window.addEventListener("keydown", e => { 
+    keys[e.key.toLowerCase()] = true; 
+    if(e.code === "Space" && onGround) vy = 0.25;
+    if(e.key === "c") isHeadMode = !isHeadMode;
 });
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 document.addEventListener("mousemove", e => { if(document.pointerLockElement) yaw -= e.movementX * 0.003; });
 renderer.domElement.onclick = () => renderer.domElement.requestPointerLock();
 
+// Raycaster para el suelo y bloques
+const raycaster = new THREE.Raycaster();
+
 function animate() {
     requestAnimationFrame(animate);
 
-    // Físicas básicas
+    // Gravedad y Colisión con bloques
     player.position.y += vy;
-    if (player.position.y > 0) { vy += gravity; onGround = false; } 
-    else { player.position.y = 0; vy = 0; onGround = true; }
+    vy -= 0.012; // Gravedad constante
+
+    raycaster.set(new THREE.Vector3(player.position.x, player.position.y + 0.5, player.position.z), new THREE.Vector3(0, -1, 0));
+    const intersects = raycaster.intersectObjects([floor, ...blocks]);
+
+    if (intersects.length > 0 && intersects[0].distance < 0.55) {
+        player.position.y = intersects[0].point.y;
+        vy = 0;
+        onGround = true;
+    } else {
+        onGround = false;
+    }
 
     // Movimiento
-    let moving = false, dir = new THREE.Vector3();
-    if(keys.w) { dir.z -= 1; moving = true; }
-    if(keys.s) { dir.z += 1; moving = true; }
-    if(keys.a) { dir.x -= 1; moving = true; }
-    if(keys.d) { dir.x += 1; moving = true; }
+    let moving = false;
+    const moveDir = new THREE.Vector3();
+    if(keys.w) { moveDir.z -= 1; moving = true; }
+    if(keys.s) { moveDir.z += 1; moving = true; }
+    if(keys.a) { moveDir.x -= 1; moving = true; }
+    if(keys.d) { moveDir.x += 1; moving = true; }
 
-    let speed = keys.shift ? 0.18 : 0.09;
-    if(isHeadMode) speed = 0.12;
-
+    const speed = keys.shift ? 0.18 : 0.09;
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
 
     if(moving) {
-        const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        player.position.addScaledVector(moveDir, speed);
+        const finalDir = moveDir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+        player.position.addScaledVector(finalDir, speed);
         
         if(!isHeadMode) {
             step += (keys.shift ? 0.4 : 0.25);
-            piernaI.rotation.x = Math.sin(step) * 0.8;
-            piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-            brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
-            brazoD.position.z = Math.sin(step) * 0.15;
+            manoI.position.z = Math.sin(step) * 0.2;
+            manoD.position.z = Math.sin(step + Math.PI) * 0.2;
         } else {
             cabezaMesh.rotation.x -= 0.15;
         }
-    } else {
-        // Pose Neutra
-        brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.1);
-        brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.1);
-        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
-        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
     }
 
-    // Transformación Cabeza (Visual)
+    // Modo Cabeza (Transformación)
     const t = 0.15;
     if(isHeadMode) {
-        cuerpoRef.scale.set(0, 0, 0);
-        brazoI.scale.set(0,0,0); brazoD.scale.set(0,0,0);
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.25, t);
+        cuerpo.scale.set(0,0,0);
+        manoI.scale.set(0,0,0); manoD.scale.set(0,0,0);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.3, t);
     } else {
-        cuerpoRef.scale.set(1, 1, 1);
-        brazoI.scale.set(1,1,1); brazoD.scale.set(1,1,1);
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.75, t);
+        cuerpo.scale.set(1,1,1);
+        manoI.scale.set(1,1,1); manoD.scale.set(1,1,1);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.8, t);
+        if(!moving) cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, t);
     }
 
     // Cámara Follow
-    let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 4);
-    const camOffset = new THREE.Vector3(0, 2, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    const camOffset = new THREE.Vector3(0, 2, keys.r ? -3 : 4).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 1, 0)));
 
     renderer.render(scene, camera);
 }
 animate();
-
-window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
