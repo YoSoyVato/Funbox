@@ -2,6 +2,7 @@
 // ELEMENTOS
 // ======================
 const content = document.getElementById("content");
+
 const playBtn = document.getElementById("playBtn");
 const createBtn = document.getElementById("createBtn");
 const loginBtn = document.getElementById("loginBtn");
@@ -11,7 +12,6 @@ const loginBtn = document.getElementById("loginBtn");
 // ======================
 const getUser = () => localStorage.getItem("funbox_user");
 const getGames = () => JSON.parse(localStorage.getItem("funbox_games")) || [];
-const saveGames = g => localStorage.setItem("funbox_games", JSON.stringify(g));
 
 // ======================
 // LOGIN
@@ -34,72 +34,48 @@ loginBtn.onclick = () => {
 };
 
 // ======================
-// EDITOR ENGINE
+// EDITOR 2D
 // ======================
 let canvas, ctx;
 let blocks = [];
 let cam = { x: 0, y: 0 };
-let mode = "edit"; // edit | play
-let tool = "place"; // place | delete
-let dragging = false;
-let lastMouse = { x: 0, y: 0 };
-
+let mode = "place";
 const SIZE = 40;
 
-// ======================
-// INICIAR EDITOR
-// ======================
 function startEditor(map = []) {
   blocks = JSON.parse(JSON.stringify(map));
   cam = { x: 0, y: 0 };
-  mode = "edit";
-  tool = "place";
 
   content.innerHTML = `
     <div class="editor-ui">
       <b>🧱 Funbox Engine</b><br><br>
-
-      <button id="editMode">✏️ Editar</button>
+      <button id="mPlace">🧱 Colocar</button>
+      <button id="mDelete">❌ Borrar</button><br><br>
       <button id="playMode">🎮 Jugar</button>
-      <hr>
-
-      <button id="place">🧱 Colocar</button>
-      <button id="delete">❌ Borrar</button>
-      <hr>
-
       <button id="save">💾 Guardar</button>
       <button id="exit">🚪 Salir</button>
     </div>
-
-    <canvas id="canvas" width="1000" height="550"></canvas>
+    <canvas id="canvas" width="900" height="500"></canvas>
   `;
 
   canvas = document.getElementById("canvas");
   ctx = canvas.getContext("2d");
 
-  // Eventos
   canvas.oncontextmenu = e => e.preventDefault();
-  canvas.onmousedown = mouseDown;
-  canvas.onmouseup = () => dragging = false;
-  canvas.onmousemove = mouseMove;
-
+  canvas.addEventListener("mousedown", onMouse);
   window.onkeydown = moveCam;
 
-  // Botones
-  document.getElementById("editMode").onclick = () => mode = "edit";
-  document.getElementById("playMode").onclick = () => mode = "play";
-
-  document.getElementById("place").onclick = () => tool = "place";
-  document.getElementById("delete").onclick = () => tool = "delete";
-
+  document.getElementById("mPlace").onclick = () => mode = "place";
+  document.getElementById("mDelete").onclick = () => mode = "delete";
   document.getElementById("save").onclick = saveGame;
   document.getElementById("exit").onclick = () => location.reload();
+  document.getElementById("playMode").onclick = () => startPlayMode(blocks);
 
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop2D);
 }
 
 // ======================
-// INPUT
+// INPUT EDITOR
 // ======================
 function gridPos(e) {
   return {
@@ -108,57 +84,44 @@ function gridPos(e) {
   };
 }
 
-function mouseDown(e) {
-  if (e.button === 1 || e.button === 2) {
-    dragging = true;
-    lastMouse = { x: e.clientX, y: e.clientY };
-    return;
-  }
-
-  if (mode !== "edit") return;
-
+function onMouse(e) {
   const { x, y } = gridPos(e);
 
-  if (tool === "place" && e.button === 0) {
+  if (mode === "place" && e.button === 0) {
     let z = 0;
     while (blocks.find(b => b.x === x && b.y === y && b.z === z)) z++;
     blocks.push({ x, y, z });
   }
 
-  if (tool === "delete" && e.button === 0) {
+  if (mode === "delete" && e.button === 0) {
     const stack = blocks.filter(b => b.x === x && b.y === y);
     const top = Math.max(-1, ...stack.map(b => b.z));
     blocks = blocks.filter(b => !(b.x === x && b.y === y && b.z === top));
   }
 }
 
-function mouseMove(e) {
-  if (!dragging) return;
-  cam.x -= e.clientX - lastMouse.x;
-  cam.y -= e.clientY - lastMouse.y;
-  lastMouse = { x: e.clientX, y: e.clientY };
-}
-
 // ======================
-// CÁMARA (WASD)
+// CÁMARA EDITOR
 // ======================
 function moveCam(e) {
-  if (e.key === "w") cam.y -= 30;
-  if (e.key === "s") cam.y += 30;
-  if (e.key === "a") cam.x -= 30;
-  if (e.key === "d") cam.x += 30;
+  if (e.key === "w") cam.y -= 20;
+  if (e.key === "s") cam.y += 20;
+  if (e.key === "a") cam.x -= 20;
+  if (e.key === "d") cam.x += 20;
 }
 
 // ======================
-// RENDER
+// RENDER EDITOR 2D
 // ======================
-function loop() {
+function loop2D() {
+  if (!ctx) return;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   blocks
     .sort((a, b) => a.z - b.z)
     .forEach(b => {
-      ctx.fillStyle = `hsl(${200 - b.z * 12},70%,55%)`;
+      ctx.fillStyle = `hsl(${180 - b.z * 10},80%,60%)`;
       ctx.fillRect(
         b.x * SIZE - cam.x,
         b.y * SIZE - cam.y - b.z * 12,
@@ -167,15 +130,7 @@ function loop() {
       );
     });
 
-  if (mode === "play") {
-    ctx.fillStyle = "white";
-    ctx.fillText("🎮 MODO JUGAR", 20, 20);
-  } else {
-    ctx.fillStyle = "white";
-    ctx.fillText("✏️ MODO EDITAR", 20, 20);
-  }
-
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop2D);
 }
 
 // ======================
@@ -186,14 +141,85 @@ function saveGame() {
   if (!name) return;
 
   const games = getGames();
-  games.push({
-    name,
-    author: getUser(),
-    map: blocks
+  games.push({ name, author: getUser(), map: blocks });
+  localStorage.setItem("funbox_games", JSON.stringify(games));
+  alert("Juego guardado 🚀");
+}
+
+// ======================
+// MODO JUGAR 3D (THREE.JS)
+// ======================
+function startPlayMode(map) {
+  content.innerHTML = "";
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87ceeb);
+
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  content.appendChild(renderer.domElement);
+
+  // Luces
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const sun = new THREE.DirectionalLight(0xffffff, 1);
+  sun.position.set(10, 20, 10);
+  scene.add(sun);
+
+  // Suelo
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200),
+    new THREE.MeshStandardMaterial({ color: 0x3a7d44 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  // Bloques
+  map.forEach(b => {
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({ color: 0x888888 })
+    );
+    cube.position.set(b.x, b.z + 0.5, b.y);
+    scene.add(cube);
   });
 
-  saveGames(games);
-  alert("Juego guardado 🚀");
+  // Personaje
+  const player = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.4, 1.2, 4, 8),
+    new THREE.MeshStandardMaterial({ color: 0x2196f3 })
+  );
+  player.position.set(0, 2, 0);
+  scene.add(player);
+
+  camera.position.set(0, 4, 6);
+
+  const keys = {};
+  window.onkeydown = e => keys[e.key] = true;
+  window.onkeyup = e => keys[e.key] = false;
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    if (keys["w"]) player.position.z -= 0.1;
+    if (keys["s"]) player.position.z += 0.1;
+    if (keys["a"]) player.position.x -= 0.1;
+    if (keys["d"]) player.position.x += 0.1;
+
+    camera.position.x = player.position.x;
+    camera.position.z = player.position.z + 6;
+    camera.lookAt(player.position);
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
 }
 
 // ======================
@@ -215,7 +241,7 @@ playBtn.onclick = () => {
   games.forEach(g => {
     const b = document.createElement("button");
     b.textContent = `${g.name} - ${g.author}`;
-    b.onclick = () => startEditor(g.map);
+    b.onclick = () => startPlayMode(g.map);
     content.appendChild(b);
     content.appendChild(document.createElement("br"));
   });
