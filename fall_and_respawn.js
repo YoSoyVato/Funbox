@@ -1,31 +1,40 @@
-// ======================
-// CAÍDA Y REAPARICIÓN
-// ======================
-const deathY = -10; // altura donde muere
+const deathY = -5; // altura de muerte real
 function checkFall() {
-  // Aplicar gravedad
+  // gravedad
   velY += gravity;
   player.position.y += velY;
 
-  // Colisión con suelo base
-  if(player.position.y <= 0.6){
+  // base del jugador
+  const playerBaseY = player.position.y - 0.6; // mitad del cuerpo
+
+  let onGround = false;
+
+  // suelo
+  if(playerBaseY <= 0){
     player.position.y = 0.6;
     velY = 0;
+    onGround = true;
   }
 
-  // Colisión con bloques
-  blockMeshes.forEach(b=>{
-    if(Math.abs(player.position.x - b.position.x) < 0.5 + 0.25 &&
-       Math.abs(player.position.z - b.position.z) < 0.5 + 0.25 &&
-       player.position.y <= b.position.y + 0.6){
-      player.position.y = b.position.y + 0.6;
+  // bloques
+  blockMeshes.forEach(b => {
+    const top = b.position.y + 0.5;
+    if(player.position.x > b.position.x - 0.5 &&
+       player.position.x < b.position.x + 0.5 &&
+       player.position.z > b.position.z - 0.5 &&
+       player.position.z < b.position.z + 0.5 &&
+       playerBaseY <= top){
+      player.position.y = top + 0.6;
       velY = 0;
+      onGround = true;
     }
   });
 
-  // Caída por debajo de deathY
-  if(player.position.y < deathY){
+  // caída
+  if(playerBaseY < deathY){
     player.position.copy(spawn);
     velY = 0;
   }
+
+  return onGround;
 }
