@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Mini Cápsula con Piernas</title>
+<title>Funbox - Mini Cápsula Pro</title>
 <style>
   body { margin:0; overflow:hidden; background: #e0e0e0; }
   #ui {
@@ -17,9 +17,9 @@
 <body>
 
 <div id="ui">
-  🎮 **Funbox: Mini Cápsula**<br>
-  WASD: Caminar | **Mantén R: Vista Frontal**<br>
-  <small>Diseño: Mini con piernas y brazos</small>
+  🎮 **Funbox: Mini-Bot Fixed**<br>
+  WASD: Caminar | **R: Vista Frontal**<br>
+  <small>¡Parpadeo y pose corregida!</small>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -49,23 +49,21 @@ floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// 2. PERSONAJE (MINI CÁPSULA CON PIERNAS)
+// 2. PERSONAJE
 const player = new THREE.Group();
 player.position.y = 0.4; 
 
-// MATERIALES
-const matCuerpo = new THREE.MeshStandardMaterial({color: 0xff6b6b, roughness: 0.4}); // Rojo coral
-const matExt = new THREE.MeshStandardMaterial({color: 0xff6b6b}); // Color extremidades
+const matCuerpo = new THREE.MeshStandardMaterial({color: 0xff6b6b, roughness: 0.4});
 const matOjo = new THREE.MeshStandardMaterial({color: 0x222222});
 const matBlanco = new THREE.MeshStandardMaterial({color: 0xffffff});
 
-// CUERPO (Mini Cápsula)
 const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.4, 4, 16), matCuerpo);
 cuerpo.position.y = 0.5;
 cuerpo.castShadow = true;
 player.add(cuerpo);
 
-// OJOS DETALLADOS
+// OJOS (Guardamos referencia para el parpadeo)
+const ojosEscala = { y: 1 };
 function crearOjo(x) {
     const grupo = new THREE.Group();
     const blanco = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matBlanco);
@@ -77,30 +75,28 @@ function crearOjo(x) {
     grupo.position.set(x, 0.6, 0.25);
     return grupo;
 }
-player.add(crearOjo(-0.12), crearOjo(0.12));
+const ojoI = crearOjo(-0.12);
+const ojoD = crearOjo(0.12);
+player.add(ojoI, ojoD);
 
-// BRAZITOS (Bolas pequeñas)
-const brazoGeo = new THREE.SphereGeometry(0.08, 16, 16);
-const brazoIzq = new THREE.Mesh(brazoGeo, matExt);
-brazoIzq.position.set(-0.4, 0.45, 0);
-const brazoDer = new THREE.Mesh(brazoGeo, matExt);
-brazoDer.position.set(0.4, 0.45, 0);
-player.add(brazoIzq, brazoDer);
+// BRAZOS Y PIERNAS
+const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCuerpo);
+brazoI.position.set(-0.4, 0.45, 0);
+const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCuerpo);
+brazoD.position.set(0.4, 0.45, 0);
+player.add(brazoI, brazoD);
 
-// PIERNITAS VISIBLES
-const piernaGeo = new THREE.CapsuleGeometry(0.07, 0.15, 4, 8);
-const piernaIzq = new THREE.Mesh(piernaGeo, matExt);
-piernaIzq.position.set(-0.15, 0.1, 0);
-const piernaDer = new THREE.Mesh(piernaGeo, matExt);
-piernaDer.position.set(0.15, 0.1, 0);
-player.add(piernaIzq, piernaDer);
+const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.15, 4, 8), matCuerpo);
+piernaI.position.set(-0.15, 0.1, 0);
+const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.15, 4, 8), matCuerpo);
+piernaD.position.set(0.15, 0.1, 0);
+player.add(piernaI, piernaD);
 
 scene.add(player);
 
 // 3. CONTROLES
 const keys = {};
-let yaw = 0;
-let step = 0;
+let yaw = 0, step = 0;
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 document.body.onclick = () => document.body.requestPointerLock();
@@ -108,7 +104,7 @@ document.addEventListener("mousemove", e => {
     if(document.pointerLockElement) yaw -= e.movementX * 0.003;
 });
 
-// 4. ANIMACIÓN
+// 4. LOOP ANIMACIÓN
 function animate() {
     requestAnimationFrame(animate);
 
@@ -125,19 +121,32 @@ function animate() {
         player.rotation.y = yaw + Math.PI;
 
         step += 0.2;
-        piernaIzq.rotation.x = Math.sin(step) * 0.8;
-        piernaDer.rotation.x = Math.sin(step + Math.PI) * 0.8;
-        brazoIzq.position.y = 0.45 + Math.sin(step + Math.PI) * 0.1;
-        brazoDer.position.y = 0.45 + Math.sin(step) * 0.1;
+        // Animación activa
+        piernaI.rotation.x = Math.sin(step) * 0.8;
+        piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
+        brazoI.position.y = 0.45 + Math.sin(step + Math.PI) * 0.1;
+        brazoD.position.y = 0.45 + Math.sin(step) * 0.1;
         player.position.y = 0.15 + Math.abs(Math.sin(step)) * 0.05; 
     } else {
+        // RESET DE POSE (Vuelve a 0 suavemente)
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.15);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.15);
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.45, 0.15);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.45, 0.15);
+        
         step += 0.05;
         player.position.y = 0.15 + Math.sin(step) * 0.02;
-        piernaIzq.rotation.x = 0;
-        piernaDer.rotation.x = 0;
+
+        // LÓGICA DE PESTAÑEO (Solo cuando está quieto)
+        if(Math.floor(Date.now() / 200) % 20 === 0) {
+            ojosEscala.y = THREE.MathUtils.lerp(ojosEscala.y, 0.1, 0.5);
+        } else {
+            ojosEscala.y = THREE.MathUtils.lerp(ojosEscala.y, 1, 0.3);
+        }
+        ojoI.scale.y = ojoD.scale.y = ojosEscala.y;
     }
 
-    // CÁMARA R (VISTA FRONTAL)
+    // CÁMARA
     let dist = keys.r ? -2.5 : 3.5;
     let height = keys.r ? 0.8 : 1.8;
     const camOffset = new THREE.Vector3(0, height, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
