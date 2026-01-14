@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Mini Cápsula Pro</title>
+<title>Funbox - Personaje Final</title>
 <style>
   body { margin:0; overflow:hidden; background: #e0e0e0; }
   #ui {
@@ -17,14 +17,12 @@
 <body>
 
 <div id="ui">
-  🎮 **Funbox: Mini-Bot**<br>
-  WASD: Caminar | **Mantén C: Agacharse** | **R: Vista Frontal**<br>
-  <small>¡Efecto squash al agacharse!</small>
+  🎮 **Funbox: Personaje Final**<br>
+  WASD: Caminar | **C: Agacharse** | **R: Vista Frontal**
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-// 1. ESCENA
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xb2e2f2); 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -33,18 +31,13 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// ILUMINACIÓN
 scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 const light = new THREE.DirectionalLight(0xffffff, 0.6);
 light.position.set(5, 10, 5);
 light.castShadow = true;
 scene.add(light);
 
-// SUELO
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({color: 0xffffff})
-);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({color: 0xffffff}));
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
@@ -53,52 +46,60 @@ scene.add(floor);
 const player = new THREE.Group();
 player.position.y = 0.4; 
 
-const matCuerpo = new THREE.MeshStandardMaterial({color: 0xff6b6b, roughness: 0.4});
-const matOjo = new THREE.MeshStandardMaterial({color: 0x222222});
-const matBlanco = new THREE.MeshStandardMaterial({color: 0xffffff});
+// MATERIALES
+const matCuerpo = new THREE.MeshStandardMaterial({color: 0xff3333, roughness: 0.4}); // Rojo intenso
+const matPatas = new THREE.MeshStandardMaterial({color: 0x333333, metalness: 0.8, roughness: 0.2}); // Metal oscuro
+const matOjo = new THREE.MeshStandardMaterial({color: 0x000000});
+const matDetalle = new THREE.MeshStandardMaterial({color: 0x111111}); // Para la boca
 
-// El visual del cuerpo es lo que escalaremos
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
 
+// CUERPO
 const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.4, 4, 16), matCuerpo);
 cuerpo.position.y = 0.5;
 cuerpo.castShadow = true;
 cuerpoVisual.add(cuerpo);
 
-// OJOS
-const ojosEscala = { y: 1 };
+// OJOS PEQUEÑOS
 function crearOjo(x) {
-    const grupo = new THREE.Group();
-    const blanco = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matBlanco);
-    const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), matOjo);
-    const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), matBlanco);
-    pupila.position.z = 0.06;
-    brillo.position.set(0.02, 0.02, 0.08);
-    grupo.add(blanco, pupila, brillo);
-    grupo.position.set(x, 0.6, 0.25);
-    return grupo;
+    const ojo = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), matOjo);
+    ojo.position.set(x, 0.65, 0.28);
+    // Brillo pequeño
+    const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    brillo.position.set(0.015, 0.015, 0.035);
+    ojo.add(brillo);
+    return ojo;
 }
-const ojoI = crearOjo(-0.12);
-const ojoD = crearOjo(0.12);
+const ojoI = crearOjo(-0.1);
+const ojoD = crearOjo(0.1);
 cuerpoVisual.add(ojoI, ojoD);
 
-// BRAZOS Y PIERNAS
-const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCuerpo);
+// BOCA (Línea simple tipo repo)
+const boca = new THREE.Mesh(
+    new THREE.BoxGeometry(0.15, 0.02, 0.01),
+    matDetalle
+);
+boca.position.set(0, 0.5, 0.3);
+cuerpoVisual.add(boca);
+
+// BRAZITOS
+const brazoI = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), matCuerpo);
 brazoI.position.set(-0.4, 0.45, 0);
-const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matCuerpo);
+const brazoD = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), matCuerpo);
 brazoD.position.set(0.4, 0.45, 0);
 cuerpoVisual.add(brazoI, brazoD);
 
-const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.15, 4, 8), matCuerpo);
+// PIERNITAS (Material Diferente)
+const piernaI = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.12, 4, 8), matPatas);
 piernaI.position.set(-0.15, 0.1, 0);
-const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.15, 4, 8), matCuerpo);
+const piernaD = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.12, 4, 8), matPatas);
 piernaD.position.set(0.15, 0.1, 0);
-player.add(piernaI, piernaD); // Las piernas van fuera de cuerpoVisual para que no se aplasten raro
+player.add(piernaI, piernaD);
 
 scene.add(player);
 
-// 3. CONTROLES
+// 3. LOGICA
 const keys = {};
 let yaw = 0, step = 0;
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
@@ -108,7 +109,6 @@ document.addEventListener("mousemove", e => {
     if(document.pointerLockElement) yaw -= e.movementX * 0.003;
 });
 
-// 4. LOOP ANIMACIÓN
 function animate() {
     requestAnimationFrame(animate);
 
@@ -119,54 +119,36 @@ function animate() {
     if(keys.a){ dir.x -= 1; moving = true; }
     if(keys.d){ dir.x += 1; moving = true; }
 
-    // LÓGICA DE AGACHARSE (C)
     const isCrouching = keys.c;
-    const targetScaleY = isCrouching ? 0.5 : 1.0;
-    const targetScaleXZ = isCrouching ? 1.2 : 1.0;
-    const targetY = isCrouching ? 0.05 : 0.15; // Bajar un poco la altura base
-
-    // Aplicar suavizado a la transformación
-    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, targetScaleY, 0.2);
-    cuerpoVisual.scale.x = THREE.MathUtils.lerp(cuerpoVisual.scale.x, targetScaleXZ, 0.2);
-    cuerpoVisual.scale.z = THREE.MathUtils.lerp(cuerpoVisual.scale.z, targetScaleXZ, 0.2);
+    cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, isCrouching ? 0.6 : 1.0, 0.2);
+    cuerpoVisual.scale.x = cuerpoVisual.scale.z = THREE.MathUtils.lerp(cuerpoVisual.scale.x, isCrouching ? 1.1 : 1.0, 0.2);
 
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-        const speed = isCrouching ? 0.04 : 0.08; // Más lento al estar agachado
-        player.position.addScaledVector(moveDir, speed);
+        player.position.addScaledVector(moveDir, isCrouching ? 0.04 : 0.09);
         player.rotation.y = yaw + Math.PI;
-
-        step += isCrouching ? 0.1 : 0.2;
+        step += 0.2;
         piernaI.rotation.x = Math.sin(step) * 0.8;
         piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
-        brazoI.position.y = 0.45 + Math.sin(step + Math.PI) * 0.1;
-        brazoD.position.y = 0.45 + Math.sin(step) * 0.1;
-        player.position.y = THREE.MathUtils.lerp(player.position.y, targetY + Math.abs(Math.sin(step)) * 0.05, 0.2);
+        brazoI.position.y = 0.45 + Math.sin(step + Math.PI) * 0.05;
+        brazoD.position.y = 0.45 + Math.sin(step) * 0.05;
     } else {
-        // Reset de pose
-        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.15);
-        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.15);
-        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.45, 0.15);
-        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.45, 0.15);
-        
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.2);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.2);
         step += 0.05;
-        player.position.y = THREE.MathUtils.lerp(player.position.y, targetY + Math.sin(step) * 0.02, 0.2);
-
-        // Pestañeo
-        if(Math.floor(Date.now() / 200) % 20 === 0) {
-            ojosEscala.y = THREE.MathUtils.lerp(ojosEscala.y, 0.1, 0.5);
+        // Parpadeo
+        if(Math.floor(Date.now() / 250) % 15 === 0) {
+            ojoI.scale.y = ojoD.scale.y = 0.1;
         } else {
-            ojosEscala.y = THREE.MathUtils.lerp(ojosEscala.y, 1, 0.3);
+            ojoI.scale.y = ojoD.scale.y = 1;
         }
-        ojoI.scale.y = ojoD.scale.y = ojosEscala.y;
     }
+    player.position.y = 0.15 + (moving ? Math.abs(Math.sin(step)) * 0.05 : Math.sin(step) * 0.02);
 
-    // CÁMARA (Se ajusta si está agachado)
     let dist = keys.r ? -2.5 : 3.5;
-    let height = (keys.r ? 0.8 : 1.8) * (isCrouching ? 0.7 : 1.0);
-    const camOffset = new THREE.Vector3(0, height, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    const camOffset = new THREE.Vector3(0, 1.5, dist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.4 * targetScaleY, 0)));
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0.4, 0)));
 
     renderer.render(scene, camera);
 }
