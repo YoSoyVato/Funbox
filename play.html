@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Funbox - Head Roller Fixed</title>
+<title>Funbox - Fixed Hands & Camera R</title>
 <style>
   body { margin:0; overflow:hidden; background: #fdfdfd; }
   #ui {
@@ -17,8 +17,8 @@
 <body>
 
 <div id="ui">
-  🤯 **Modo Cabeza Rodante (Fixed)**<br>
-  WASD: Moverse | **C: Transformarse** | Espacio: Salto
+  🤯 **Funbox Pro Fixed**<br>
+  WASD: Moverse | **C: Cabeza Rodante** | **R: Cámara Frontal** | Espacio: Salto
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -120,7 +120,7 @@ function animate() {
     requestAnimationFrame(animate);
     player.position.y += vy;
     
-    // RESTAURADO: Físicas de caída y bordes
+    // FÍSICAS DE CAÍDA
     const distDesdeCentro = Math.sqrt(player.position.x**2 + player.position.z**2);
     const outOfBounds = distDesdeCentro > floorSize;
 
@@ -143,6 +143,9 @@ function animate() {
             player.position.set(0, 5, 0);
             isDead = false; vy = 0; panicStep = 0;
             isHeadMode = false;
+            // Reset de manos tras muerte
+            brazoI.position.set(-0.3, 0.4, 0);
+            brazoD.position.set(0.3, 0.4, 0);
         }
     }
 
@@ -156,10 +159,11 @@ function animate() {
     }
 
     const moveSpeed = isHeadMode ? 0.12 : 0.09;
+    player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
+
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
         player.position.addScaledVector(moveDir, moveSpeed);
-        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
         
         if (!isHeadMode && onGround) {
             step += 0.25;
@@ -168,29 +172,29 @@ function animate() {
             brazoI.position.z = Math.sin(step + Math.PI) * 0.15;
             brazoD.position.z = Math.sin(step) * 0.15;
         } else if (isHeadMode) {
-            // Velocidad de rodado corregida (más lenta y natural)
             cabezaMesh.rotation.x -= 0.15; 
         }
     } else {
-        // CORREGIDO: Vuelve a posición neutra mirando al frente
-        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.1);
+        // RESET DE MANOS Y PIERNAS (Fix del bug visual)
         if (onGround && !isDead) {
             step = THREE.MathUtils.lerp(step, 0, 0.1);
             piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
             piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
-            brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.1);
-            brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.1);
+            brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.15);
+            brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.15);
+            brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
+            brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
         }
     }
 
-    // TRANSFORMACIÓN SUAVE
+    // TRANSFORMACIÓN
     const t = 0.15;
     if (isHeadMode && !isDead) {
         cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 0, t), 0, 0);
         brazoI.scale.set(0,0,0); brazoD.scale.set(0,0,0);
         piernaI.scale.set(0,0,0); piernaD.scale.set(0,0,0);
         cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.25, t);
-    } else {
+    } else if (!isDead) {
         cuerpoRef.scale.set(1, 1, 1);
         brazoI.scale.set(1,1,1); brazoD.scale.set(1,1,1);
         piernaI.scale.set(1,1,1); piernaD.scale.set(1,1,1);
@@ -203,9 +207,10 @@ function animate() {
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
     listaOjos.forEach(ojo => ojo.scale.y = THREE.MathUtils.lerp(ojo.scale.y, (blinkTimer < 10) ? 0.1 : 1, 0.3));
 
-    // Cámara
+    // CÁMARA DINÁMICA CON "R"
+    let camDist = keys.r ? -2.5 : (isHeadMode ? 2.5 : 3.5);
     let camY = isHeadMode ? 0.8 : 1.8;
-    const camOffset = new THREE.Vector3(0, camY, isHeadMode ? 2.5 : 3.5).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    const camOffset = new THREE.Vector3(0, camY, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.8, 0)));
     
