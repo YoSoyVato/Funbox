@@ -78,46 +78,66 @@ floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// --- FUNCIÓN PARA CREAR MUEBLES (BOXASSETS) ---
+// --- FUNCIÓN PARA CREAR MUEBLES PULIDOS (BOXASSETS) ---
 function createAssetMesh(type) {
     const group = new THREE.Group();
-    const woodMat = new THREE.MeshStandardMaterial({color: 0x5d4037});
-    const ironMat = new THREE.MeshStandardMaterial({color: 0x333333});
-    
+    const woodMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.7});
+    const ironMat = new THREE.MeshStandardMaterial({color: 0x222222, metalness: 0.5, roughness: 0.3});
+    const fabricMat = new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 1});
+
     if (type === 'chair') {
-        const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.6), woodMat);
-        base.position.y = 0.4;
-        const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.1), woodMat);
-        back.position.set(0, 0.75, -0.25);
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), woodMat);
-        leg.position.y = 0.2;
-        group.add(base, back, leg);
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.5), woodMat);
+        seat.position.y = 0.4;
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.08), woodMat);
+        back.position.set(0, 0.65, -0.21);
+        group.add(seat, back);
+        // 4 Patas
+        const legGeo = new THREE.BoxGeometry(0.06, 0.4, 0.06);
+        for(let x of [-0.2, 0.2]) for(let z of [-0.2, 0.2]) {
+            const leg = new THREE.Mesh(legGeo, woodMat);
+            leg.position.set(x, 0.2, z);
+            group.add(leg);
+        }
     } else if (type === 'table') {
-        const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 1.2), woodMat);
-        top.position.y = 0.8;
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), woodMat);
-        leg.position.y = 0.4;
-        group.add(top, leg);
+        const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 1.2), woodMat);
+        top.position.y = 0.75;
+        group.add(top);
+        // 4 Patas largas
+        const legGeo = new THREE.BoxGeometry(0.1, 0.75, 0.1);
+        for(let x of [-0.5, 0.5]) for(let z of [-0.5, 0.5]) {
+            const leg = new THREE.Mesh(legGeo, woodMat);
+            leg.position.set(x, 0.375, z);
+            group.add(leg);
+        }
     } else if (type === 'pc') {
-        const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.05), ironMat);
-        monitor.position.y = 0.3;
-        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.01), new THREE.MeshBasicMaterial({color: 0x00ffff}));
-        screen.position.set(0, 0.3, 0.03);
-        const base = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.2), ironMat);
-        group.add(monitor, screen, base);
+        const stand = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.2), ironMat);
+        const neck = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.05), ironMat);
+        neck.position.y = 0.1;
+        const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.05), ironMat);
+        monitor.position.y = 0.35;
+        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.39, 0.01), new THREE.MeshBasicMaterial({color: 0x111111}));
+        screen.position.set(0, 0.35, 0.026);
+        group.add(stand, neck, monitor, screen);
+        group.position.y = 0.79; // Colocar sobre la mesa por defecto si se desea
     } else if (type === 'bed') {
-        const mattress = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 1.8), new THREE.MeshStandardMaterial({color: 0xffffff}));
-        mattress.position.y = 0.2;
-        const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.4), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
-        pillow.position.set(0, 0.45, -0.6);
-        group.add(mattress, pillow);
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.2, 2.1), woodMat);
+        frame.position.y = 0.15;
+        const mattress = new THREE.Mesh(new THREE.BoxGeometry(1, 0.25, 2), fabricMat);
+        mattress.position.y = 0.3;
+        const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.12, 0.4), fabricMat);
+        pillow.position.set(0, 0.45, -0.7);
+        const headboard = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.8, 0.1), woodMat);
+        headboard.position.set(0, 0.4, -1.05);
+        group.add(frame, mattress, pillow, headboard);
     } else if (type === 'flashlight') {
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4), ironMat);
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3), ironMat);
         body.rotation.x = Math.PI/2;
-        body.position.y = 0.2;
-        const lens = new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), new THREE.MeshBasicMaterial({color: 0xffff00}));
-        lens.position.set(0, 0.2, 0.21);
-        group.add(body, lens);
+        const head = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.1), ironMat);
+        head.rotation.x = Math.PI/2; head.position.z = 0.15;
+        const light = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({color: 0xffffaa}));
+        light.position.z = 0.2;
+        group.add(body, head, light);
+        group.position.y = 0.1;
     }
     
     group.traverse(child => { if(child.isMesh) { child.castShadow = true; child.receiveShadow = true; }});
@@ -131,9 +151,7 @@ const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const spawnGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2); 
 const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3});
 const spawnMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, 
-    emissive: 0xffffff, 
-    emissiveIntensity: 0.4 
+    color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.4 
 });
 
 let spawnPoint = new THREE.Vector3(0, 0, 0);
@@ -151,17 +169,18 @@ mapData.forEach(b => {
         block.position.set(b.x + 0.5, 0.5, b.y + 0.5);
         physicalBlocks.push(block);
     } else {
-        // ES UN ASSET
         block = createAssetMesh(b.type);
         block.position.set(b.x + 0.5, 0, b.y + 0.5);
-        // Creamos un hitbox invisible para el mueble
-        const hitbox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1, 0.9), new THREE.MeshBasicMaterial({visible: false}));
-        hitbox.position.set(b.x + 0.5, 0.5, b.y + 0.5);
+        // Hitbox de colisión personalizada
+        let hW = 0.9, hH = 1, hD = 0.9;
+        if(b.type === 'table') { hW = 1.2; hD = 1.2; }
+        if(b.type === 'bed') { hW = 1.1; hD = 2.1; }
+        if(b.type === 'flashlight') { hW = 0.2; hD = 0.2; hH = 0.2; }
+        
+        const hitbox = new THREE.Mesh(new THREE.BoxGeometry(hW, hH, hD), new THREE.MeshBasicMaterial({visible: false}));
+        hitbox.position.set(b.x + 0.5, hH/2, b.y + 0.5);
         physicalBlocks.push(hitbox);
     }
-    
-    block.castShadow = true;
-    block.receiveShadow = true;
     scene.add(block);
 });
 
@@ -170,18 +189,22 @@ function getSurfaceY(pos) {
     let maxY = 0; 
     const pR = 0.3; 
     physicalBlocks.forEach(b => {
-        if (Math.abs(pos.x - b.position.x) < 0.5 + pR && Math.abs(pos.z - b.position.z) < 0.5 + pR) {
-            if (pos.y >= b.position.y + 0.4) maxY = Math.max(maxY, 1.0);
+        const bounds = new THREE.Box3().setFromObject(b);
+        if (pos.x > bounds.min.x - pR && pos.x < bounds.max.x + pR &&
+            pos.z > bounds.min.z - pR && pos.z < bounds.max.z + pR) {
+            if (pos.y >= bounds.max.y - 0.2) maxY = Math.max(maxY, bounds.max.y);
         }
     });
     return maxY;
 }
 
 function isColliding(pos) {
-    const pR = 0.35;
+    const pR = 0.3;
     for (let b of physicalBlocks) {
-        if (Math.abs(pos.y - b.position.y) < 0.5) {
-            if (Math.abs(pos.x - b.position.x) < 0.5 + pR && Math.abs(pos.z - b.position.z) < 0.5 + pR) return true;
+        const bounds = new THREE.Box3().setFromObject(b);
+        if (pos.y < bounds.max.y && pos.y + 1.5 > bounds.min.y) {
+            if (pos.x > bounds.min.x - pR && pos.x < bounds.max.x + pR &&
+                pos.z > bounds.min.z - pR && pos.z < bounds.max.z + pR) return true;
         }
     }
     return false;
@@ -217,9 +240,7 @@ function crearOjo(x) {
     const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.07, 32), matOjoNegro);
     const b1 = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
     b1.position.set(0.025, 0.025, 0.001);
-    const b2 = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-    b2.position.set(-0.02, -0.02, 0.001);
-    ojoGroup.add(pupila, b1, b2);
+    ojoGroup.add(pupila, b1);
     ojoGroup.position.set(x, -0.02, 0.251);
     listaOjos.push(ojoGroup);
     return ojoGroup;
@@ -272,21 +293,15 @@ function animate() {
         player.position.y = currentSurfaceY; vy = 0; onGround = true;
     }
 
-    if (player.position.y < -1) {
+    if (player.position.y < -5) {
         isDead = true;
         panicStep += 0.5;
         brazoI.position.y = 0.4 + Math.sin(panicStep) * 0.2;
         brazoD.position.y = 0.4 + Math.cos(panicStep) * 0.2;
-        piernaI.rotation.x = Math.sin(panicStep * 1.5) * 1;
-        piernaD.rotation.x = Math.cos(panicStep * 1.5) * 1;
-        
         if (player.position.y < -15) {
-            player.position.copy(spawnPoint);
-            player.position.y = 5;
-            isDead = false; vy = 0; panicStep = 0;
-            isHeadMode = false;
-            brazoI.position.set(-0.3, 0.4, 0);
-            brazoD.position.set(0.3, 0.4, 0);
+            player.position.copy(spawnPoint); player.position.y = 5;
+            isDead = false; vy = 0; panicStep = 0; isHeadMode = false;
+            brazoI.position.set(-0.3, 0.4, 0); brazoD.position.set(0.3, 0.4, 0);
         }
     }
 
@@ -324,10 +339,6 @@ function animate() {
         step = THREE.MathUtils.lerp(step, 0, 0.1);
         piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
         piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
-        brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.15);
-        brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.15);
-        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
-        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
     }
 
     const t = 0.15;
