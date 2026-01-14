@@ -14,8 +14,17 @@
 
         /* Lado Izquierdo: Visualizador de Personaje */
         .character-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a1a 0%, #050505 100%); position: relative; }
-        .char-preview { font-size: 120px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); transition: 0.3s; }
-        .char-name { margin-top: 20px; font-size: 24px; color: #4db8ff; font-weight: bold; }
+        
+        /* Contenedor del Personaje 3D */
+        #char-3d-container { 
+            width: 400px; 
+            height: 400px; 
+            cursor: grab; 
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.8));
+        }
+        #char-3d-container:active { cursor: grabbing; }
+
+        .char-name { margin-top: 10px; font-size: 28px; color: #4db8ff; font-weight: bold; text-shadow: 0 0 15px rgba(77, 184, 255, 0.4); }
 
         /* Lado Derecho: Tienda e Inventario */
         .shop-container { width: 400px; background: #111; border-left: 1px solid #333; padding: 20px; overflow-y: auto; }
@@ -28,35 +37,37 @@
         .item-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
         .item-price { color: #ffca28; font-weight: bold; font-size: 14px; }
         
-        .btn-back { position: absolute; top: 20px; left: 20px; background: none; border: 1px solid #444; color: #888; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        .btn-back:hover { color: white; border-color: white; }
+        .btn-back { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.05); border: 1px solid #444; color: #888; padding: 8px 20px; border-radius: 5px; cursor: pointer; z-index: 10; transition: 0.3s; }
+        .btn-back:hover { color: white; border-color: white; background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div style="font-weight: bold; font-size: 20px;">👤 PERFIL DE USUARIO</div>
+    <div style="font-weight: bold; font-size: 20px; letter-spacing: 1px;">👤 PERFIL DE USUARIO</div>
     <div class="coins">🪙 <span id="coin-count">500</span></div>
 </div>
 
 <div class="main-container">
     <div class="character-view">
         <button class="btn-back" onclick="location.href='index.html'">⬅ VOLVER</button>
-        <div id="char-display" class="char-preview">👤</div>
+        
+        <div id="char-3d-container"></div>
+        
         <div id="user-display-name" class="char-name">Usuario</div>
-        <p style="color: #444; font-size: 12px;">Tu personaje actual</p>
+        <p style="color: #555; font-size: 13px; margin-top: 5px; letter-spacing: 1px;">PERSONAJE ACTUAL</p>
     </div>
 
     <div class="shop-container">
         <div class="section-title">Personajes Disponibles</div>
-        <div class="item-grid" id="shop-items">
-            </div>
+        <div class="item-grid" id="shop-items"></div>
 
         <div class="section-title">Mi Inventario</div>
-        <div class="item-grid" id="inventory-items">
-            </div>
+        <div class="item-grid" id="inventory-items"></div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
     // 1. Datos iniciales
@@ -65,7 +76,6 @@
 
     document.getElementById("user-display-name").innerText = userSession.user;
 
-    // Sistema de Economía
     let coins = parseInt(localStorage.getItem("funbox_coins")) || 500;
     let ownedItems = JSON.parse(localStorage.getItem("funbox_items")) || ["👤"];
     let currentSkin = localStorage.getItem("funbox_current_skin") || "👤";
@@ -81,7 +91,6 @@
 
     function updateUI() {
         document.getElementById("coin-count").innerText = coins;
-        document.getElementById("char-display").innerText = currentSkin;
         localStorage.setItem("funbox_coins", coins);
         localStorage.setItem("funbox_items", JSON.stringify(ownedItems));
         localStorage.setItem("funbox_current_skin", currentSkin);
@@ -93,7 +102,6 @@
     function renderShop() {
         const container = document.getElementById("shop-items");
         container.innerHTML = "";
-        
         shopData.forEach(item => {
             if (!ownedItems.includes(item.emoji)) {
                 const card = document.createElement("div");
@@ -112,14 +120,13 @@
     function renderInventory() {
         const container = document.getElementById("inventory-items");
         container.innerHTML = "";
-        
         ownedItems.forEach(emoji => {
             const card = document.createElement("div");
             card.className = "item-card owned";
             card.onclick = () => { currentSkin = emoji; updateUI(); };
             card.innerHTML = `
                 <span class="item-emoji">${emoji}</span>
-                <div style="font-size: 10px; color: #4caf50;">EQUIPAR</div>
+                <div style="font-size: 10px; color: #4caf50; font-weight: bold;">EQUIPAR</div>
             `;
             container.appendChild(card);
         });
@@ -136,8 +143,95 @@
         }
     }
 
-    // Iniciar
+    // --- LÓGICA DEL PERSONAJE 3D ---
+    let charGroup;
+    function init3D() {
+        const container = document.getElementById('char-3d-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
+        camera.position.set(0, 0.5, 2.5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(400, 400);
+        container.appendChild(renderer.domElement);
+
+        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
+        scene.add(light);
+
+        charGroup = new THREE.Group();
+        scene.add(charGroup);
+
+        // Cabeza
+        const head = new THREE.Mesh(
+            new THREE.BoxGeometry(0.6, 0.6, 0.6),
+            new THREE.MeshStandardMaterial({ color: 0xc4a484 })
+        );
+        head.position.y = 0.6;
+
+        // Pelo
+        const hair = new THREE.Mesh(
+            new THREE.BoxGeometry(0.65, 0.2, 0.65),
+            new THREE.MeshStandardMaterial({ color: 0x3d2b1f })
+        );
+        hair.position.y = 0.25;
+        head.add(hair);
+
+        // Ojos Kawaii con brillo
+        const eyeGeo = new THREE.CircleGeometry(0.1, 32);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const eL = new THREE.Mesh(eyeGeo, eyeMat);
+        eL.position.set(-0.18, -0.05, 0.31);
+        const eR = eL.clone(); eR.position.x = 0.18;
+        head.add(eL, eR);
+
+        const shineGeo = new THREE.CircleGeometry(0.03, 16);
+        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const sL = new THREE.Mesh(shineGeo, shineMat);
+        sL.position.set(0.04, 0.04, 0.01);
+        eL.add(sL); eR.add(sL.clone());
+
+        // Auriculares Azules
+        const phoneGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 32);
+        const phoneMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
+        const pL = new THREE.Mesh(phoneGeo, phoneMat);
+        pL.rotation.z = Math.PI/2; pL.position.x = -0.35;
+        const pR = pL.clone(); pR.position.x = 0.35;
+        head.add(pL, pR);
+
+        // Cuerpo
+        const body = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.25, 0.5, 4, 12),
+            new THREE.MeshStandardMaterial({ color: 0x007ceb })
+        );
+        body.position.y = 0.05;
+
+        charGroup.add(head, body);
+
+        // Rotación por arrastre
+        let isDragging = false;
+        let startX = 0;
+        container.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX; });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                charGroup.rotation.y += (e.clientX - startX) * 0.01;
+                startX = e.clientX;
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!isDragging) charGroup.rotation.y += 0.005;
+            // Movimiento de flotación
+            charGroup.position.y = Math.sin(Date.now() * 0.002) * 0.05;
+            renderer.render(scene, camera);
+        }
+        animate();
+    }
+
+    // Iniciar todo
     updateUI();
+    window.onload = init3D;
 </script>
 
 </body>
