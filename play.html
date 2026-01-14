@@ -78,15 +78,15 @@ floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// --- CARGA DE BLOQUES Y SISTEMA DE COLISIÓN ---
+// --- CARGA DE BLOQUES Y FÍSICA ---
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
-const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3}); // Usamos el azul de tu editor
 const physicalBlocks = [];
+const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3});
 
 mapData.forEach(b => {
     const block = new THREE.Mesh(boxGeo, boxMat);
-    // IMPORTANTE: Ajuste de +0.5 para alinear el bloque con el centro de la rejilla del editor
+    // Ajuste de posición: +0.5 para alinear con la rejilla del editor
     block.position.set(b.x + 0.5, 0.5, b.y + 0.5); 
     block.castShadow = true;
     block.receiveShadow = true;
@@ -94,13 +94,25 @@ mapData.forEach(b => {
     physicalBlocks.push(block);
 });
 
-function checkCollision(targetPos) {
-    const pRadius = 0.35; // Radio de colisión del personaje
-    for (let block of physicalBlocks) {
-        const dx = Math.abs(targetPos.x - block.position.x);
-        const dz = Math.abs(targetPos.z - block.position.z);
-        // Si el personaje intenta entrar en el área del bloque 1x1
-        if (dx < 0.5 + pRadius && dz < 0.5 + pRadius) return true;
+// FUNCIONES DE COLISIÓN
+function getSurfaceY(pos) {
+    let maxY = 0; // Baseplate por defecto
+    const pR = 0.3; // Radio del jugador
+    physicalBlocks.forEach(b => {
+        if (Math.abs(pos.x - b.position.x) < 0.5 + pR && Math.abs(pos.z - b.position.z) < 0.5 + pR) {
+            if (pos.y >= b.position.y + 0.4) maxY = Math.max(maxY, 1.0);
+        }
+    });
+    return maxY;
+}
+
+function isColliding(pos) {
+    const pR = 0.35;
+    for (let b of physicalBlocks) {
+        // Solo colisiona lateralmente si no estamos sobre el bloque
+        if (Math.abs(pos.y - b.position.y) < 0.5) {
+            if (Math.abs(pos.x - b.position.x) < 0.5 + pR && Math.abs(pos.z - b.position.z) < 0.5 + pR) return true;
+        }
     }
     return false;
 }
@@ -160,7 +172,7 @@ scene.add(player);
 
 // --- LÓGICA ---
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
-const gravity = -0.012, jumpForce = 0.25;
+const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
 let yaw = 0, step = 0, panicStep = 0;
 let blinkTimer = 0;
@@ -176,18 +188,21 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // FÍSICA DE SUELO Y CAÍDA
+    const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
     
     const half = floorSize / 2;
     const outOfBounds = Math.abs(player.position.x) > half || Math.abs(player.position.z) > half;
 
-    if (player.position.y > 0 || outOfBounds) {
+    if (player.position.y > currentSurfaceY || outOfBounds) {
         vy += gravity; onGround = false;
     } else if (!isDead) {
-        player.position.y = 0; vy = 0; onGround = true;
+        player.position.y = currentSurfaceY; vy = 0; onGround = true;
     }
 
-    if (player.position.y < -0.5) {
+    if (player.position.y < -1) {
         isDead = true;
         panicStep += 0.5;
         brazoI.position.y = 0.4 + Math.sin(panicStep) * 0.2;
@@ -195,7 +210,7 @@ function animate() {
         piernaI.rotation.x = Math.sin(panicStep * 1.5) * 1;
         piernaD.rotation.x = Math.cos(panicStep * 1.5) * 1;
         
-        if (player.position.y < -20) {
+        if (player.position.y < -15) {
             player.position.set(0, 5, 0);
             isDead = false; vy = 0; panicStep = 0;
             isHeadMode = false;
@@ -204,6 +219,7 @@ function animate() {
         }
     }
 
+    // MOVIMIENTO CON DESLIZAMIENTO
     let moving = false, dir = new THREE.Vector3();
     if(!isDead) {
         if(keys.w){ dir.z -= 1; moving = true; }
@@ -221,12 +237,12 @@ function animate() {
     if(moving && !isDead) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
         
-        // --- ARREGLO DE COLISIÓN (Deslizamiento en ejes) ---
-        const nextPosX = player.position.clone().add(new THREE.Vector3(moveDir.x * moveSpeed, 0, 0));
-        if(!checkCollision(nextPosX)) player.position.x = nextPosX.x;
-
-        const nextPosZ = player.position.clone().add(new THREE.Vector3(0, 0, moveDir.z * moveSpeed));
-        if(!checkCollision(nextPosZ)) player.position.z = nextPosZ.z;
+        // Eje X
+        const nextX = player.position.clone(); nextX.x += moveDir.x * moveSpeed;
+        if (!isColliding(nextX)) player.position.x = nextX.x;
+        // Eje Z
+        const nextZ = player.position.clone(); nextZ.z += moveDir.z * moveSpeed;
+        if (!isColliding(nextZ)) player.position.z = nextZ.z;
         
         if (!isHeadMode && onGround) {
             step += animationSpeed;
@@ -237,18 +253,17 @@ function animate() {
         } else if (isHeadMode) {
             cabezaMesh.rotation.x -= 0.15; 
         }
-    } else {
-        if (onGround && !isDead) {
-            step = THREE.MathUtils.lerp(step, 0, 0.1);
-            piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
-            piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
-            brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.15);
-            brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.15);
-            brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
-            brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
-        }
+    } else if (onGround && !isDead) {
+        step = THREE.MathUtils.lerp(step, 0, 0.1);
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
+        brazoI.position.z = THREE.MathUtils.lerp(brazoI.position.z, 0, 0.15);
+        brazoD.position.z = THREE.MathUtils.lerp(brazoD.position.z, 0, 0.15);
+        brazoI.position.y = THREE.MathUtils.lerp(brazoI.position.y, 0.4, 0.1);
+        brazoD.position.y = THREE.MathUtils.lerp(brazoD.position.y, 0.4, 0.1);
     }
 
+    // TRANSICIÓN CABEZA / CUERPO
     const t = 0.15;
     if (isHeadMode && !isDead) {
         cuerpoRef.scale.set(THREE.MathUtils.lerp(cuerpoRef.scale.x, 0, t), 0, 0);
