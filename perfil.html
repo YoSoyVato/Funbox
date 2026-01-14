@@ -6,13 +6,11 @@
     <style>
         body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Header con Monedas */
         .header { background: #151515; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
         .coins { background: #ffca28; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 18px; box-shadow: 0 0 10px rgba(255, 202, 40, 0.3); }
 
         .main-container { display: flex; flex: 1; overflow: hidden; }
 
-        /* Lado Izquierdo: Visualizador de Personaje */
         .character-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a1a 0%, #050505 100%); position: relative; }
         
         #char-3d-container { 
@@ -25,7 +23,6 @@
 
         .char-name { margin-top: 10px; font-size: 28px; color: #4db8ff; font-weight: bold; text-shadow: 0 0 15px rgba(77, 184, 255, 0.4); }
 
-        /* Botón Jugar */
         .btn-play-now {
             margin-top: 20px;
             background: #4caf50;
@@ -41,7 +38,6 @@
         }
         .btn-play-now:hover { transform: scale(1.05); background: #66bb6a; }
 
-        /* Lado Derecho: Tienda e Inventario */
         .shop-container { width: 400px; background: #111; border-left: 1px solid #333; padding: 20px; overflow-y: auto; }
         .section-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
         
@@ -52,7 +48,6 @@
         
         .item-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
         .custom-head-svg { width: 50px; height: 50px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
-        .item-price { color: #ffca28; font-weight: bold; font-size: 14px; }
         
         .btn-back { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.05); border: 1px solid #444; color: #888; padding: 8px 20px; border-radius: 5px; cursor: pointer; z-index: 10; transition: 0.3s; }
         .btn-back:hover { color: white; border-color: white; background: rgba(255,255,255,0.1); }
@@ -68,19 +63,15 @@
 <div class="main-container">
     <div class="character-view">
         <button class="btn-back" onclick="location.href='index.html'">⬅ VOLVER</button>
-        
         <div id="char-3d-container"></div>
-        
         <div id="user-display-name" class="char-name">Usuario</div>
         <p style="color: #4db8ff; font-size: 13px; margin-top: 5px; letter-spacing: 1px; font-weight: bold;">PERSONAJE SELECCIONADO</p>
-        
         <button class="btn-play-now" onclick="location.href='play.html'">🎮 JUGAR AHORA</button>
     </div>
 
     <div class="shop-container">
         <div class="section-title">Personajes Disponibles</div>
         <div class="item-grid" id="shop-items"></div>
-
         <div class="section-title">Mi Inventario</div>
         <div class="item-grid" id="inventory-items"></div>
     </div>
@@ -95,13 +86,6 @@
     let coins = parseInt(localStorage.getItem("funbox_coins")) || 500;
     let ownedItems = JSON.parse(localStorage.getItem("funbox_items")) || ["👤"];
     let currentSkin = localStorage.getItem("funbox_current_skin") || "👤";
-
-    const shopData = [
-        { name: "Ninja", emoji: "🥷", price: 200 },
-        { name: "Robot", emoji: "🤖", price: 400 },
-        { name: "Astronauta", emoji: "👨‍🚀", price: 600 },
-        { name: "Gato Pro", emoji: "🐱", price: 150 }
-    ];
 
     const cuteHeadIcon = `
         <svg class="custom-head-svg" viewBox="0 0 100 100">
@@ -121,22 +105,7 @@
         localStorage.setItem("funbox_coins", coins);
         localStorage.setItem("funbox_items", JSON.stringify(ownedItems));
         localStorage.setItem("funbox_current_skin", currentSkin);
-        renderShop();
         renderInventory();
-    }
-
-    function renderShop() {
-        const container = document.getElementById("shop-items");
-        container.innerHTML = "";
-        shopData.forEach(item => {
-            if (!ownedItems.includes(item.emoji)) {
-                const card = document.createElement("div");
-                card.className = "item-card";
-                card.onclick = () => comprar(item);
-                card.innerHTML = `<span class="item-emoji">${item.emoji}</span><div class="item-price">🪙 ${item.price}</div>`;
-                container.appendChild(card);
-            }
-        });
     }
 
     function renderInventory() {
@@ -151,20 +120,12 @@
         });
     }
 
-    function comprar(item) {
-        if (coins >= item.price) {
-            coins -= item.price;
-            ownedItems.push(item.emoji);
-            updateUI();
-        } else alert("Sin monedas");
-    }
-
-    // --- RENDERIZADO 3D (CUTE CON PIERNAS) ---
+    // --- RENDERIZADO 3D CORREGIDO ---
     function init3D() {
         const container = document.getElementById('char-3d-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
-        camera.position.set(0, 0.4, 3);
+        camera.position.set(0, 0.5, 3.2); // Cámara un poco más atrás para ver las piernas
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(500, 500);
@@ -173,22 +134,27 @@
         const light = new THREE.HemisphereLight(0xffffff, 0x444444, 4);
         scene.add(light);
 
+        // Grupo principal para centrar al personaje
         const charGroup = new THREE.Group();
         scene.add(charGroup);
 
-        // Cabeza
+        // Cabeza Cúbica
         const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshStandardMaterial({ color: 0xc4a484 }));
-        head.position.y = 0.8;
+        head.position.y = 0.85; 
+
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.25, 0.72), new THREE.MeshStandardMaterial({ color: 0x3d2b1f }));
         hair.position.y = 0.25; head.add(hair);
 
-        // Ojos Proporcionales
+        // Ojos Cute con Brillo
         const eyeGeo = new THREE.CircleGeometry(0.14, 32);
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const eL = new THREE.Mesh(eyeGeo, eyeMat); eL.position.set(-0.2, -0.05, 0.36);
         const eR = eL.clone(); eR.position.x = 0.2;
-        const sL = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        sL.position.set(0.05, 0.05, 0.01); eL.add(sL); eR.add(sL.clone());
+        
+        const shineGeo = new THREE.CircleGeometry(0.045, 16);
+        const sL = new THREE.Mesh(shineGeo, new THREE.MeshBasicMaterial({color: 0xffffff}));
+        sL.position.set(0.05, 0.05, 0.01); 
+        eL.add(sL); eR.add(sL.clone());
         head.add(eL, eR);
 
         // Auriculares
@@ -198,17 +164,18 @@
         const pR = pL.clone(); pR.position.x = 0.4;
         head.add(pL, pR);
 
-        // Cuerpo Cápsula
+        // Cuerpo Cápsula Azul
         const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.5, 4, 16), new THREE.MeshStandardMaterial({ color: 0x005a9e }));
-        body.position.y = 0.25;
+        body.position.y = 0.35;
 
-        // Piernas (NUEVAS)
+        // Piernas
         const legMat = new THREE.MeshStandardMaterial({ color: 0x004070 });
-        const legI = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.15, 4, 8), legMat);
-        legI.position.set(-0.12, -0.1, 0);
+        const legI = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.2, 4, 8), legMat);
+        legI.position.set(-0.12, 0, 0);
         const legD = legI.clone(); legD.position.x = 0.12;
 
         charGroup.add(head, body, legI, legD);
+        charGroup.position.y = -0.4; // Bajamos el grupo completo para centrarlo en el visor
 
         let isDragging = false, startX = 0;
         container.onmousedown = (e) => { isDragging = true; startX = e.clientX; };
@@ -223,7 +190,7 @@
         function animate() {
             requestAnimationFrame(animate);
             if (!isDragging) charGroup.rotation.y += 0.01;
-            charGroup.position.y = Math.sin(Date.now() * 0.002) * 0.05;
+            charGroup.position.y = -0.4 + Math.sin(Date.now() * 0.002) * 0.05;
             renderer.render(scene, camera);
         }
         animate();
