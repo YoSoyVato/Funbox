@@ -78,36 +78,91 @@ floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
 scene.add(floor);
 
+// --- FUNCIÓN PARA CREAR MUEBLES (BOXASSETS) ---
+function createAssetMesh(type) {
+    const group = new THREE.Group();
+    const woodMat = new THREE.MeshStandardMaterial({color: 0x5d4037});
+    const ironMat = new THREE.MeshStandardMaterial({color: 0x333333});
+    
+    if (type === 'chair') {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.6), woodMat);
+        base.position.y = 0.4;
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.1), woodMat);
+        back.position.set(0, 0.75, -0.25);
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), woodMat);
+        leg.position.y = 0.2;
+        group.add(base, back, leg);
+    } else if (type === 'table') {
+        const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 1.2), woodMat);
+        top.position.y = 0.8;
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), woodMat);
+        leg.position.y = 0.4;
+        group.add(top, leg);
+    } else if (type === 'pc') {
+        const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.05), ironMat);
+        monitor.position.y = 0.3;
+        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.01), new THREE.MeshBasicMaterial({color: 0x00ffff}));
+        screen.position.set(0, 0.3, 0.03);
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.2), ironMat);
+        group.add(monitor, screen, base);
+    } else if (type === 'bed') {
+        const mattress = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 1.8), new THREE.MeshStandardMaterial({color: 0xffffff}));
+        mattress.position.y = 0.2;
+        const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.4), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
+        pillow.position.set(0, 0.45, -0.6);
+        group.add(mattress, pillow);
+    } else if (type === 'flashlight') {
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4), ironMat);
+        body.rotation.x = Math.PI/2;
+        body.position.y = 0.2;
+        const lens = new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), new THREE.MeshBasicMaterial({color: 0xffff00}));
+        lens.position.set(0, 0.2, 0.21);
+        group.add(body, lens);
+    }
+    
+    group.traverse(child => { if(child.isMesh) { child.castShadow = true; child.receiveShadow = true; }});
+    return group;
+}
+
 // --- CARGA DE BLOQUES Y FÍSICA ---
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 const physicalBlocks = [];
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-const spawnGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2); // Geometría aplastada y un poco más ancha
+const spawnGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2); 
 const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3});
 const spawnMat = new THREE.MeshStandardMaterial({
     color: 0xffffff, 
     emissive: 0xffffff, 
-    emissiveIntensity: 0.4 // Brillo sutil
+    emissiveIntensity: 0.4 
 });
 
 let spawnPoint = new THREE.Vector3(0, 0, 0);
 
 mapData.forEach(b => {
     const isSpawn = b.type === "spawn";
-    const block = new THREE.Mesh(isSpawn ? spawnGeo : boxGeo, isSpawn ? spawnMat : boxMat);
+    let block;
+
+    if (isSpawn) {
+        block = new THREE.Mesh(spawnGeo, spawnMat);
+        block.position.set(b.x + 0.5, 0.05, b.y + 0.5);
+        spawnPoint.set(block.position.x, 0, block.position.z);
+    } else if (b.type === "block") {
+        block = new THREE.Mesh(boxGeo, boxMat);
+        block.position.set(b.x + 0.5, 0.5, b.y + 0.5);
+        physicalBlocks.push(block);
+    } else {
+        // ES UN ASSET
+        block = createAssetMesh(b.type);
+        block.position.set(b.x + 0.5, 0, b.y + 0.5);
+        // Creamos un hitbox invisible para el mueble
+        const hitbox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1, 0.9), new THREE.MeshBasicMaterial({visible: false}));
+        hitbox.position.set(b.x + 0.5, 0.5, b.y + 0.5);
+        physicalBlocks.push(hitbox);
+    }
     
-    // Si es spawn, lo ponemos casi pegado al suelo (y = 0.05), si es bloque a y = 0.5
-    block.position.set(b.x + 0.5, isSpawn ? 0.05 : 0.5, b.y + 0.5); 
     block.castShadow = true;
     block.receiveShadow = true;
     scene.add(block);
-    
-    // Solo los bloques normales tienen colisión física lateral
-    if (!isSpawn) physicalBlocks.push(block);
-
-    if (isSpawn) {
-        spawnPoint.set(block.position.x, 0, block.position.z);
-    }
 });
 
 // FUNCIONES DE COLISIÓN
