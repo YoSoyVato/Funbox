@@ -263,7 +263,7 @@ const keys = {};
 let yaw = 0, step = 0, rollStep = 0;
 let blinkTimer = 0;
 
-// --- SISTEMA DE SCRIPTING PRO ---
+// --- SISTEMA DE SCRIPTING PRO (PROTEGIDO) ---
 const customScript = localStorage.getItem("funbox_custom_script");
 let userUpdateFunc = null;
 
@@ -281,10 +281,17 @@ const game = {
 
 if (customScript) {
     try {
-        const runScript = new Function('game', customScript);
+        // Envolvemos el script en un bloque try/catch secundario para seguridad en tiempo de ejecución
+        const runScript = new Function('game', `
+            try {
+                ${customScript}
+            } catch(e) {
+                console.error("Error en ejecución de script:", e);
+            }
+        `);
         runScript(game);
     } catch (e) {
-        console.error("Error en el Script del usuario:", e);
+        console.error("Error al cargar el Script:", e);
     }
 }
 
@@ -300,8 +307,15 @@ document.addEventListener("mousemove", e => { if(document.pointerLockElement) ya
 function animate() {
     requestAnimationFrame(animate);
 
-    // Ejecutar Script PRO
-    if (userUpdateFunc) userUpdateFunc();
+    // Ejecutar Script PRO de forma segura
+    if (userUpdateFunc) {
+        try {
+            userUpdateFunc();
+        } catch(e) {
+            userUpdateFunc = null; // Desactiva el update si da error para no tumbar la página
+            console.error("Script onUpdate detenido por error:", e);
+        }
+    }
 
     const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
