@@ -1,4 +1,11 @@
+// ======================
+// ELEMENTOS
+// ======================
 const content = document.getElementById("content");
+
+const playBtn = document.getElementById("playBtn");
+const createBtn = document.getElementById("createBtn");
+const loginBtn = document.getElementById("loginBtn");
 
 // ======================
 // STORAGE
@@ -13,110 +20,70 @@ loginBtn.onclick = () => {
   content.innerHTML = `
     <h2>👤 Login</h2>
     <input id="u" placeholder="Usuario"><br><br>
+    <input id="p" type="password" placeholder="Contraseña"><br><br>
     <button id="go">Entrar</button>
   `;
-  go.onclick = () => {
-    if (!u.value) return;
-    localStorage.setItem("funbox_user", u.value);
-    alert("Bienvenido " + u.value);
+
+  document.getElementById("go").onclick = () => {
+    const u = document.getElementById("u").value;
+    const p = document.getElementById("p").value;
+
+    if (!u || !p) return alert("Completa todo");
+    localStorage.setItem("funbox_user", u);
+    alert("Bienvenido " + u);
   };
 };
 
 // ======================
-// ENGINE STATE
+// EDITOR
 // ======================
 let canvas, ctx;
 let blocks = [];
-let history = [];
-let future = [];
-
 let cam = { x: 0, y: 0 };
 let mode = "place";
-let engineMode = "edit";
-
 const SIZE = 40;
 
-// ======================
-// EDITOR
-// ======================
-function startEditor(game = null) {
-  blocks = game?.map ? JSON.parse(JSON.stringify(game.map)) : [];
-  history = [];
+function startEditor(map = []) {
+  blocks = JSON.parse(JSON.stringify(map));
 
   content.innerHTML = `
     <div class="editor-ui">
-      <h3>🧱 Funbox</h3>
-
-      <b>Herramientas</b>
-      <button id="toolPlace">🧱 Colocar</button>
-      <button id="toolDelete">❌ Borrar</button>
-      <button id="toolMove">✋ Cámara</button>
-
-      <hr>
-
-      <b>Modo</b>
-      <button id="modeEdit">✏️ Editar</button>
-      <button id="modePlay">🎮 Jugar</button>
-
-      <hr>
-
+      <b>🧱 Funbox Engine</b><br><br>
+      <button id="mPlace">🧱 Colocar</button>
+      <button id="mDelete">❌ Borrar</button>
       <button id="save">💾 Guardar</button>
       <button id="exit">🚪 Salir</button>
     </div>
-
-    <canvas id="canvas" width="1000" height="520"></canvas>
+    <canvas id="canvas" width="900" height="500"></canvas>
   `;
 
   canvas = document.getElementById("canvas");
   ctx = canvas.getContext("2d");
 
   canvas.oncontextmenu = e => e.preventDefault();
-  canvas.addEventListener("mousedown", mouseDown);
-  window.onkeydown = keyControl;
+  canvas.addEventListener("mousedown", onMouse);
+  window.onkeydown = moveCam;
 
-  bindUI();
+  document.getElementById("mPlace").onclick = () => mode = "place";
+  document.getElementById("mDelete").onclick = () => mode = "delete";
+  document.getElementById("save").onclick = saveGame;
+  document.getElementById("exit").onclick = () => location.reload();
+
   requestAnimationFrame(loop);
-}
-
-// ======================
-// UI
-// ======================
-function bindUI() {
-  toolPlace.onclick = () => setMode("place");
-  toolDelete.onclick = () => setMode("delete");
-  toolMove.onclick = () => setMode("move");
-
-  modeEdit.onclick = () => engineMode = "edit";
-  modePlay.onclick = () => engineMode = "play";
-
-  save.onclick = saveGame;
-  exit.onclick = () => location.reload();
-
-  setMode("place");
-}
-
-function setMode(m) {
-  mode = m;
-  document.querySelectorAll(".editor-ui button")
-    .forEach(b => b.classList.remove("active"));
-  document.getElementById("tool" + m.charAt(0).toUpperCase() + m.slice(1))?.classList.add("active");
 }
 
 // ======================
 // INPUT
 // ======================
-function grid(e) {
+function gridPos(e) {
   return {
     x: Math.floor((e.offsetX + cam.x) / SIZE),
     y: Math.floor((e.offsetY + cam.y) / SIZE)
   };
 }
 
-function mouseDown(e) {
-  if (engineMode !== "edit") return;
-
-  const { x, y } = grid(e);
-  saveState();
+function onMouse(e) {
+  const { x, y } = gridPos(e);
 
   if (mode === "place" && e.button === 0) {
     let z = 0;
@@ -131,34 +98,14 @@ function mouseDown(e) {
   }
 }
 
-function keyControl(e) {
-  if (e.ctrlKey && e.key === "z") undo();
-  if (e.ctrlKey && e.key === "y") redo();
-
+// ======================
+// CÁMARA
+// ======================
+function moveCam(e) {
   if (e.key === "w") cam.y -= 20;
   if (e.key === "s") cam.y += 20;
   if (e.key === "a") cam.x -= 20;
   if (e.key === "d") cam.x += 20;
-}
-
-// ======================
-// UNDO / REDO
-// ======================
-function saveState() {
-  history.push(JSON.stringify(blocks));
-  future = [];
-}
-
-function undo() {
-  if (!history.length) return;
-  future.push(JSON.stringify(blocks));
-  blocks = JSON.parse(history.pop());
-}
-
-function redo() {
-  if (!future.length) return;
-  history.push(JSON.stringify(blocks));
-  blocks = JSON.parse(future.pop());
 }
 
 // ======================
@@ -167,59 +114,54 @@ function redo() {
 function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // GRID
-  ctx.strokeStyle = "#222";
-  for (let x = -cam.x % SIZE; x < canvas.width; x += SIZE) {
-    for (let y = -cam.y % SIZE; y < canvas.height; y += SIZE) {
-      ctx.strokeRect(x, y, SIZE, SIZE);
-    }
-  }
-
-  blocks.sort((a, b) => a.z - b.z).forEach(b => {
-    ctx.fillStyle = `hsl(${200 - b.z * 8},80%,55%)`;
-    ctx.fillRect(
-      b.x * SIZE - cam.x,
-      b.y * SIZE - cam.y - b.z * 10,
-      SIZE - 2,
-      SIZE - 2
-    );
-  });
+  blocks
+    .sort((a, b) => a.z - b.z)
+    .forEach(b => {
+      ctx.fillStyle = `hsl(${180 - b.z * 10},80%,60%)`;
+      ctx.fillRect(
+        b.x * SIZE - cam.x,
+        b.y * SIZE - cam.y - b.z * 12,
+        SIZE - 2,
+        SIZE - 2
+      );
+    });
 
   requestAnimationFrame(loop);
 }
 
 // ======================
-// SAVE / PLAY
+// GUARDAR
 // ======================
 function saveGame() {
   const name = prompt("Nombre del juego:");
   if (!name) return;
 
-  let games = getGames();
-  games = games.filter(g => g.name !== name);
+  const games = getGames();
   games.push({ name, author: getUser(), map: blocks });
-
   localStorage.setItem("funbox_games", JSON.stringify(games));
   alert("Juego guardado 🚀");
 }
 
 // ======================
-// BUTTONS
+// BOTONES PRINCIPALES
 // ======================
 createBtn.onclick = () => {
-  if (!getUser()) return alert("Inicia sesión");
+  if (!getUser()) return alert("Inicia sesión primero");
   startEditor();
 };
 
 playBtn.onclick = () => {
   const games = getGames();
-  if (!games.length) return content.innerHTML = "<h2>No hay juegos</h2>";
+  if (!games.length) {
+    content.innerHTML = "<h2>🎮 No hay juegos todavía</h2>";
+    return;
+  }
 
   content.innerHTML = "<h2>🎮 Juegos</h2>";
   games.forEach(g => {
     const b = document.createElement("button");
     b.textContent = `${g.name} - ${g.author}`;
-    b.onclick = () => startEditor(g);
+    b.onclick = () => startEditor(g.map);
     content.appendChild(b);
     content.appendChild(document.createElement("br"));
   });
