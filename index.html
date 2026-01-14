@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Funbox Launcher - Login</title>
     <style>
-        /* Estilos Base Estilo Cyberpunk/Dark */
         body { 
             background: #050505; 
             color: white; 
@@ -17,139 +16,53 @@
             overflow: hidden;
         }
 
-        /* Contenedor Principal */
-        .launcher { 
-            text-align: center; 
-            z-index: 10;
-        }
+        .launcher { z-index: 10; text-align: center; }
 
         .launcher h1 { 
-            font-size: 56px; 
-            margin-bottom: 0; 
-            font-weight: 800;
+            font-size: 56px; margin-bottom: 0; font-weight: 800;
             background: linear-gradient(to bottom, #fff, #888);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 15px rgba(255,255,255,0.2));
         }
 
         .launcher p#launcher-status { 
-            color: #4db8ff; 
-            margin-top: 5px; 
-            margin-bottom: 30px; 
-            letter-spacing: 4px; 
-            text-transform: uppercase;
-            font-size: 14px;
-            font-weight: bold;
+            color: #4db8ff; margin-top: 5px; margin-bottom: 30px; 
+            letter-spacing: 4px; text-transform: uppercase;
+            font-size: 14px; font-weight: bold;
         }
 
-        /* Caja de Formulario Mejorada */
         .form-container { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            width: 320px; 
-            margin: 0 auto; 
-            background: rgba(20, 20, 20, 0.8); 
-            padding: 35px; 
-            border-radius: 15px; 
-            border: 1px solid #333; 
+            display: flex; flex-direction: column; gap: 15px; 
+            width: 320px; margin: 0 auto; background: rgba(20, 20, 20, 0.8); 
+            padding: 35px; border-radius: 15px; border: 1px solid #333; 
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             backdrop-filter: blur(10px);
-            transition: 0.4s ease;
         }
 
-        /* Inputs Modernos */
         input { 
-            padding: 14px; 
-            background: #0f0f0f; 
-            border: 1px solid #333; 
-            color: white; 
-            border-radius: 8px; 
-            outline: none; 
-            font-size: 15px;
-            transition: 0.3s;
+            padding: 14px; background: #0f0f0f; border: 1px solid #333; 
+            color: white; border-radius: 8px; outline: none; font-size: 15px;
         }
 
-        input:focus { 
-            border-color: #4db8ff; 
-            box-shadow: 0 0 10px rgba(77, 184, 255, 0.2);
-            background: #151515;
-        }
-
-        /* Botones Estilo Premium */
         .btn-main { 
-            width: 100%; 
-            padding: 15px; 
-            background: #ffffff; 
-            color: #000; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: 800; 
-            cursor: pointer; 
-            margin-top: 5px; 
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; 
-            text-transform: uppercase;
+            width: 100%; padding: 15px; background: #ffffff; color: #000; 
+            border: none; border-radius: 8px; font-size: 16px; font-weight: 800; 
+            cursor: pointer; transition: 0.3s; text-transform: uppercase;
         }
 
-        .btn-main:hover { 
-            background: #4db8ff; 
-            color: #fff;
-            transform: translateY(-3px); 
-            box-shadow: 0 10px 20px rgba(77, 184, 255, 0.3);
-        }
-
-        .btn-secondary {
-            background: #1a1a1a;
-            color: #888;
-            border: 1px solid #333;
-        }
-
-        .btn-secondary:hover {
-            background: #252525;
-            color: #fff;
-            border-color: #444;
-        }
-
-        /* Utilidades */
+        .btn-main:hover { background: #4db8ff; color: #fff; transform: translateY(-3px); }
+        .btn-secondary { background: #1a1a1a; color: #888; border: 1px solid #333; }
         .hidden { display: none; }
-        
-        .logout-link {
-            font-size: 12px; 
-            color: #444; 
-            cursor: pointer; 
-            margin-top: 25px;
-            transition: 0.3s;
-            text-decoration: underline;
-        }
-        .logout-link:hover { color: #f44336; }
+        .logout-link { font-size: 12px; color: #444; cursor: pointer; margin-top: 25px; text-decoration: underline; }
 
-        .bg-glow {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: #2196f3;
-            filter: blur(150px);
-            border-radius: 50%;
-            opacity: 0.1;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1;
-        }
-
-        /* --- NUEVO: CONTENEDOR DE AVATAR 3D --- */
+        /* --- AVATAR 3D --- */
         .profile-avatar-btn {
-            cursor: grab;
+            cursor: pointer;
             margin-bottom: 20px;
             position: relative;
+            transition: transform 0.2s;
         }
-        .profile-avatar-btn:active { cursor: grabbing; }
+        .profile-avatar-btn:hover { transform: scale(1.05); }
 
         #avatar-container {
             width: 120px;
@@ -160,12 +73,11 @@
             margin: 0 auto;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(77, 184, 255, 0.3);
+            pointer-events: auto; /* Permite clics */
         }
     </style>
 </head>
 <body>
-
-<div class="bg-glow"></div>
 
 <div class="launcher">
     <h1>🎮 FUNBOX</h1>
@@ -178,18 +90,14 @@
     </div>
 
     <div id="view-menu" class="form-container hidden">
-        <div class="profile-avatar-btn" title="Arrastra para rotar">
+        <div class="profile-avatar-btn" id="avatar-click-zone">
             <div id="avatar-container"></div>
-            <p style="margin: 8px 0 0 0; font-size: 10px; color: #4db8ff; font-weight: bold; letter-spacing: 1px;">PERSONAJE ACTIVO</p>
+            <p style="margin: 8px 0 0 0; font-size: 10px; color: #4db8ff; font-weight: bold; letter-spacing: 1px;">VER PERFIL</p>
         </div>
 
-        <button class="btn-main" onclick="location.href='editor.html'">
-            🏗️ Entrar al Editor
-        </button>
-        <button class="btn-main btn-secondary" onclick="alert('Próximamente...')">
-            🌐 Explorar Mundos
-        </button>
-        <span class="logout-link" onclick="cerrarSesion()">Cerrar sesión de la cuenta</span>
+        <button class="btn-main" onclick="location.href='editor.html'">🏗️ Entrar al Editor</button>
+        <button class="btn-main btn-secondary" onclick="alert('Próximamente...')">🌐 Explorar Mundos</button>
+        <span class="logout-link" onclick="cerrarSesion()">Cerrar sesión</span>
     </div>
 </div>
 
@@ -197,19 +105,14 @@
 
 <script>
     const session = sessionStorage.getItem("funbox_session");
-
-    if (session) {
-        showMenu(JSON.parse(session).user);
-    }
+    if (session) showMenu(JSON.parse(session).user);
 
     function registrar() {
         const u = document.getElementById("reg-user").value;
         const p = document.getElementById("reg-pass").value;
-        if (u.length > 2 && p.length > 2) {
+        if (u.length > 2) {
             sessionStorage.setItem("funbox_session", JSON.stringify({ user: u }));
             showMenu(u);
-        } else {
-            alert("Error: El usuario y la contraseña deben tener más de 2 caracteres.");
         }
     }
 
@@ -217,20 +120,15 @@
         document.getElementById("view-register").classList.add("hidden");
         document.getElementById("view-menu").classList.remove("hidden");
         document.getElementById("launcher-status").innerText = `BIENVENIDO, ${name}`;
-        document.getElementById("launcher-status").style.color = "#4caf50";
-        
-        // Iniciar el personaje 3D al mostrar el menú
         setTimeout(initCharacterPreview, 100);
     }
 
     function cerrarSesion() {
-        if(confirm("¿Estás seguro de que quieres cerrar sesión?")) {
-            sessionStorage.clear();
-            location.reload();
-        }
+        sessionStorage.clear();
+        location.reload();
     }
 
-    // --- LÓGICA DEL PERSONAJE 3D INTERACTIVO ---
+    // --- LÓGICA DEL PERSONAJE 3D ---
     function initCharacterPreview() {
         const container = document.getElementById("avatar-container");
         if (!container || container.children.length > 0) return;
@@ -246,54 +144,58 @@
         const light = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
         scene.add(light);
 
-        // Crear Personaje (Mini versión de tu diseño)
         const group = new THREE.Group();
         scene.add(group);
 
-        // Cabeza
-        const head = new THREE.Mesh(
-            new THREE.BoxGeometry(0.5, 0.5, 0.5),
-            new THREE.MeshStandardMaterial({ color: 0xffdbac })
-        );
+        // Personaje
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
         head.position.y = 0.6;
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.55), new THREE.MeshStandardMaterial({ color: 0x4e342e }));
+        hair.position.y = 0.2; head.add(hair);
         
-        // Pelo
-        const hair = new THREE.Mesh(
-            new THREE.BoxGeometry(0.55, 0.2, 0.55),
-            new THREE.MeshStandardMaterial({ color: 0x4e342e })
-        );
-        hair.position.y = 0.2;
-        head.add(hair);
+        // Auriculares (Como en tu captura)
+        const phoneGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 32);
+        const phoneMat = new THREE.MeshStandardMaterial({ color: 0x2196f3 });
+        const phoneL = new THREE.Mesh(phoneGeo, phoneMat);
+        phoneL.rotation.z = Math.PI/2; phoneL.position.x = -0.28;
+        const phoneR = phoneL.clone(); phoneR.position.x = 0.28;
+        head.add(phoneL, phoneR);
 
-        // Ojos
-        const eyeGeo = new THREE.CircleGeometry(0.08, 16);
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-        const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-        eyeL.position.set(-0.15, -0.05, 0.26);
-        const eyeR = eyeL.clone();
-        eyeR.position.x = 0.15;
-        head.add(eyeL, eyeR);
-
-        // Cuerpo
-        const body = new THREE.Mesh(
-            new THREE.CapsuleGeometry(0.2, 0.4, 4, 8),
-            new THREE.MeshStandardMaterial({ color: 0x2196f3 })
-        );
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.4, 4, 8), new THREE.MeshStandardMaterial({ color: 0x2196f3 }));
         body.position.y = 0.1;
-
         group.add(head, body);
 
-        // Rotación por Mouse
+        // --- MANEJO DE CLIC VS ARRASTRE ---
         let isDragging = false;
-        container.addEventListener('mousedown', () => isDragging = true);
-        window.addEventListener('mouseup', () => isDragging = false);
+        let startX = 0;
+        let moved = false;
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            moved = false;
+        });
+
         window.addEventListener('mousemove', (e) => {
-            if (isDragging) group.rotation.y += e.movementX * 0.01;
+            if (isDragging) {
+                const deltaX = e.clientX - startX;
+                group.rotation.y += deltaX * 0.01;
+                startX = e.clientX;
+                if (Math.abs(deltaX) > 2) moved = true;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging && !moved) {
+                // Si no se movió casi nada, es un clic
+                location.href = 'perfil.html';
+            }
+            isDragging = false;
         });
 
         function animate() {
             requestAnimationFrame(animate);
-            if (!isDragging) group.rotation.y += 0.01; // Rotación automática suave
+            if (!isDragging) group.rotation.y += 0.01;
             renderer.render(scene, camera);
         }
         animate();
