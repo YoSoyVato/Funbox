@@ -31,9 +31,7 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// DETECTAR AVATAR SELECCIONADO
 const currentSkin = localStorage.getItem("funbox_current_skin") || "juan";
-
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
 const scene = new THREE.Scene();
@@ -200,16 +198,17 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
-    // Definir materiales basados en tu pedido
-    let skinCol = 0xc4a484;    // Color Piel
-    let shirtCol = 0x5d4037;   // MARRÓN (Camisa)
-    let pantsCol = 0x808080;   // GRIS (Pantalones)
-    let hairCol = 0x3d2b1f;    // Pelo Oscuro
+    let skinCol = 0xc4a484;    
+    let shirtCol = 0x3d2b1f;   // Marrón oscuro (como la imagen)
+    let pantsCol = 0x4d4d4d;   // Gris oscuro
+    let hairCol = 0x1a1a1a;    // Pelo negro/oscuro
+    let hatCol = 0x2b1d16;     // Color del gorro
 
     const skinMat = new THREE.MeshStandardMaterial({color: skinCol, roughness: 0.4});
     const shirtMat = new THREE.MeshStandardMaterial({color: shirtCol, roughness: 0.7});
     const pantsMat = new THREE.MeshStandardMaterial({color: pantsCol, roughness: 0.6});
     const hairMat = new THREE.MeshStandardMaterial({color: hairCol, roughness: 0.9});
+    const hatMat = new THREE.MeshStandardMaterial({color: hatCol, roughness: 0.8});
 
     cabezaGroup = new THREE.Group();
     cabezaGroup.position.y = 0.78;
@@ -220,37 +219,37 @@ function buildPlayerModel() {
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // --- NUEVO PELO DE JUAN ---
-    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.2, 0.44), hairMat);
-    hair.position.y = 0.15;
+    // --- PELO ASOMÁNDOSE ---
+    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.15, 0.42), hairMat);
+    hair.position.y = 0.1;
     cabezaMesh.add(hair);
-    // Flequillo delantero
-    const hairFront = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.1, 0.1), hairMat);
-    hairFront.position.set(0, 0.1, 0.2);
-    cabezaMesh.add(hairFront);
 
-    // Ojos
+    // --- GORRO PROFESIONAL (BEANIE) ---
+    const hatBase = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.15, 20), hatMat);
+    hatBase.position.y = 0.2;
+    const hatTop = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 20, 0, Math.PI*2, 0, Math.PI/2), hatMat);
+    hatTop.position.y = 0.27;
+    cabezaMesh.add(hatBase, hatTop);
+
+    // --- OJOS AJUSTADOS (MÁS ABAJO) ---
     function crearOjo(x) {
         const ojoGroup = new THREE.Group();
-        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
-        pupila.scale.y = 1.2; 
-        const brillo1 = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        brillo1.position.set(0.03, 0.03, 0.05); 
-        const brillo2 = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        brillo2.position.set(-0.02, -0.03, 0.05); 
-        ojoGroup.add(pupila, brillo1, brillo2);
-        ojoGroup.position.set(x, 0.02, 0.2);
+        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        brillo.position.set(0.02, 0.02, 0.04);
+        ojoGroup.add(pupila, brillo);
+        ojoGroup.position.set(x, -0.05, 0.2); // Posición Y bajada a -0.05
         listaOjos.push(ojoGroup); 
         return ojoGroup;
     }
-    cabezaMesh.add(crearOjo(-0.12), crearOjo(0.12));
+    cabezaMesh.add(crearOjo(-0.11), crearOjo(0.11));
 
-    // Torso (CAMISA MARRÓN)
+    // Torso
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), shirtMat);
     torso.position.y = 0.35;
     cuerpoVisual.add(torso);
 
-    // Brazos (CAMISA MARRÓN)
+    // Brazos
     const armGeo = new THREE.CapsuleGeometry(0.06, 0.2, 8, 12);
     brazoI = new THREE.Mesh(armGeo, shirtMat);
     brazoI.position.set(-0.25, 0.45, 0);
@@ -258,7 +257,7 @@ function buildPlayerModel() {
     brazoD.position.x = 0.25;
     cuerpoVisual.add(brazoI, brazoD);
 
-    // Piernas (PANTALONES GRIS)
+    // Piernas
     const legGeo = new THREE.CapsuleGeometry(0.08, 0.25, 8, 12);
     legGeo.translate(0, -0.12, 0); 
     piernaI = new THREE.Mesh(legGeo, pantsMat);
@@ -270,7 +269,7 @@ function buildPlayerModel() {
 buildPlayerModel();
 scene.add(player);
 
-// --- LÓGICA DE JUEGO ---
+// --- LÓGICA DE ANIMACIÓN Y CÁMARA (Sin cambios) ---
 let vy = 0, onGround = true, isHeadMode = false;
 const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
@@ -293,26 +292,14 @@ document.addEventListener("mousemove", e => {
 
 function animate() {
     requestAnimationFrame(animate);
-
     const currentSurfaceY = getSurfaceY(player.position);
     player.position.y += vy;
-    
-    if (player.position.y > currentSurfaceY) {
-        vy += gravity;
-        onGround = false;
-    } else {
-        if (currentSurfaceY > -50) {
-            player.position.y = currentSurfaceY;
-            vy = Math.max(0, vy); 
-            onGround = true;
-        } else {
-            onGround = false; vy += gravity;
-        }
+    if (player.position.y > currentSurfaceY) { vy += gravity; onGround = false; }
+    else { 
+        if (currentSurfaceY > -50) { player.position.y = currentSurfaceY; vy = Math.max(0, vy); onGround = true; }
+        else { onGround = false; vy += gravity; }
     }
-
-    if (player.position.y < -15) {
-        player.position.copy(spawnPoint); player.position.y = 5; vy = 0;
-    }
+    if (player.position.y < -15) { player.position.copy(spawnPoint); player.position.y = 5; vy = 0; }
 
     let moving = false, dir = new THREE.Vector3();
     if(keys.w){ dir.z -= 1; moving = true; }
@@ -322,17 +309,12 @@ function animate() {
 
     let moveSpeed = isHeadMode ? 0.12 : (keys.shift ? 0.18 : 0.09);
     let animationSpeed = keys.shift ? 0.4 : 0.2;
-
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
 
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
         const nextPos = player.position.clone().add(moveDir.multiplyScalar(moveSpeed));
-        if (!isColliding(nextPos)) {
-            player.position.x = nextPos.x;
-            player.position.z = nextPos.z;
-        }
-        
+        if (!isColliding(nextPos)) { player.position.x = nextPos.x; player.position.z = nextPos.z; }
         if (!isHeadMode && onGround) {
             step += animationSpeed;
             piernaI.rotation.x = Math.sin(step) * 0.6;
@@ -345,10 +327,7 @@ function animate() {
         }
     } else {
         cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
-        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0, 0.1);
-        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0, 0.1);
-        brazoI.rotation.x = THREE.MathUtils.lerp(brazoI.rotation.x, 0, 0.1);
-        brazoD.rotation.x = THREE.MathUtils.lerp(brazoD.rotation.x, 0, 0.1);
+        [piernaI, piernaD, brazoI, brazoD].forEach(p => p.rotation.x = THREE.MathUtils.lerp(p.rotation.x, 0, 0.1));
     }
 
     if (isHeadMode) {
@@ -367,11 +346,9 @@ function animate() {
     const camOffset = new THREE.Vector3(0, isHeadMode ? 0.6 : 1.4, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
     camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.7, 0)));
-    
     renderer.render(scene, camera);
 }
 animate();
-
 window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
