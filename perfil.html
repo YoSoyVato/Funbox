@@ -57,22 +57,6 @@
         .card span { font-size: 45px; display: block; margin-bottom: 5px; }
         .card p { margin: 0; font-size: 14px; font-weight: bold; color: #bbb; }
 
-        .btn-play { 
-            margin-top: auto; 
-            background: var(--p-green); 
-            color: black; 
-            border: none; 
-            padding: 20px; 
-            border-radius: 12px; 
-            font-weight: 900; 
-            cursor: pointer; 
-            font-size: 20px; 
-            text-transform: uppercase;
-            transition: 0.3s;
-            box-shadow: 0 4px 0 #00a85a;
-        }
-        .btn-play:hover { background: #00ffaa; transform: translateY(-2px); box-shadow: 0 6px 0 #00a85a; }
-        .btn-play:active { transform: translateY(2px); box-shadow: 0 0px 0 #00a85a; }
     </style>
 </head>
 <body>
@@ -85,8 +69,7 @@
 <div class="inventory-zone">
     <h2 style="margin: 0; font-size: 24px; letter-spacing: 1px;">📦 MI ARMARIO</h2>
     <div class="grid" id="inventory-grid"></div>
-    <button class="btn-play" onclick="tryStartGame()">ENTRAR AL STUDIO</button>
-</div>
+    </div>
 
 <script>
     // Lista de avatares disponibles
@@ -96,7 +79,6 @@
     ];
 
     // Lógica de Persistencia y Selección por Defecto
-    // Si no hay skin guardada, forzamos a 'juan' para que nunca empiece vacío
     let currentSkin = localStorage.getItem("funbox_current_skin");
     if (!currentSkin) {
         currentSkin = "juan";
@@ -136,11 +118,6 @@
             card.innerHTML = `<span>${av.emoji}</span><p>${av.name}</p>`;
             grid.appendChild(card);
         });
-    }
-
-    function tryStartGame() {
-        // Redirección definitiva a play.html para que cargue el avatar en el Studio
-        window.location.href = 'play.html'; 
     }
 
     // Ejecución inicial
