@@ -187,7 +187,7 @@ function isColliding(pos) {
     return false;
 }
 
-// --- PERSONAJE (MODELO MEJORADO Y PULIDO) ---
+// --- PERSONAJE (PEQUEÑO Y TIERNO) ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
@@ -203,68 +203,63 @@ function buildPlayerModel() {
     const colAuriculares = 0x007ceb;
 
     cabezaGroup = new THREE.Group();
-    cabezaGroup.position.y = 0.75; // Un poco más alto para elegancia
+    cabezaGroup.position.y = 0.6; // Más bajo = más pequeño
     cuerpoVisual.add(cabezaGroup);
 
-    // Cabeza un poco más pequeña y estilizada
-    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.55), new THREE.MeshStandardMaterial({color: colPiel, roughness: 0.8}));
+    // Cabeza Proporcionada
+    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), new THREE.MeshStandardMaterial({color: colPiel, roughness: 0.8}));
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // Pelo con mejor forma
-    const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.22, 0.58), new THREE.MeshStandardMaterial({color: colPelo, roughness: 0.9}));
-    pelo.position.y = 0.22; cabezaMesh.add(pelo);
+    const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), new THREE.MeshStandardMaterial({color: colPelo}));
+    pelo.position.y = 0.18; cabezaMesh.add(pelo);
 
-    // Ojos Pulidos: Ovalados y con profundidad
+    // Ojos con Pupilas Brillantes
     function crearOjo(x) {
         const ojoContenedor = new THREE.Group();
-        const fondoBlanco = new THREE.Mesh(
-            new THREE.CapsuleGeometry(0.08, 0.05, 8, 16), 
-            new THREE.MeshBasicMaterial({color: 0xffffff})
-        );
-        const pupila = new THREE.Mesh(
-            new THREE.CircleGeometry(0.05, 16), 
-            new THREE.MeshBasicMaterial({color: 0x000000})
-        );
-        pupila.position.z = 0.011; 
+        const blanco = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        blanco.scale.z = 0.4;
 
-        ojoContenedor.add(fondoBlanco, pupila);
-        ojoContenedor.position.set(x, 0, 0.28);
+        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        pupila.position.z = 0.04;
+
+        const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        brillo.position.set(0.02, 0.02, 0.06); // Brillo superior derecho
+
+        ojoContenedor.add(blanco, pupila, brillo);
+        ojoContenedor.position.set(x, 0, 0.22);
         listaOjos.push(ojoContenedor);
         return ojoContenedor;
     }
-    cabezaMesh.add(crearOjo(-0.14), crearOjo(0.14));
+    cabezaMesh.add(crearOjo(-0.12), crearOjo(0.12));
 
-    // Auriculares estilizados
-    const audioGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 32);
+    // Sonrisa Pequeña
+    const boca = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.01, 8, 16, Math.PI), new THREE.MeshBasicMaterial({color: 0x000000}));
+    boca.position.set(0, -0.12, 0.23);
+    boca.rotation.x = Math.PI;
+    cabezaMesh.add(boca);
+
+    const audioGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.08, 32);
     const aL = new THREE.Mesh(audioGeo, new THREE.MeshStandardMaterial({color: colAuriculares}));
-    aL.rotation.z = Math.PI/2; aL.position.x = -0.3;
-    const aR = aL.clone(); aR.position.x = 0.3;
+    aL.rotation.z = Math.PI/2; aL.position.x = -0.26;
+    const aR = aL.clone(); aR.position.x = 0.26;
     cabezaMesh.add(aL, aR);
 
-    // Torso tipo Cápsula (Mucho más lindo que un cubo)
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.3, 8, 16), new THREE.MeshStandardMaterial({color: colCuerpo, roughness: 0.7}));
-    torso.position.y = 0.38; 
+    // Torso Mini
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.18, 8, 16), new THREE.MeshStandardMaterial({color: colCuerpo}));
+    torso.position.y = 0.28; 
     cuerpoVisual.add(torso);
 
-    // Brazos con forma de cápsula
-    const armGeo = new THREE.CapsuleGeometry(0.06, 0.18, 8, 12);
-    const crearBrazo = (x) => {
-        const b = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({color: colCuerpo}));
-        b.position.set(x, 0.45, 0);
-        return b;
-    };
-    brazoI = crearBrazo(-0.28); brazoD = crearBrazo(0.28);
+    const limbGeo = new THREE.CapsuleGeometry(0.05, 0.12, 8, 12);
+    brazoI = new THREE.Mesh(limbGeo, new THREE.MeshStandardMaterial({color: colCuerpo}));
+    brazoI.position.set(-0.24, 0.32, 0);
+    brazoD = brazoI.clone(); brazoD.position.x = 0.24;
     cuerpoVisual.add(brazoI, brazoD);
 
-    // Piernas con pies integrados
-    const legGeo = new THREE.CapsuleGeometry(0.08, 0.2, 8, 12);
-    const crearPierna = (x) => {
-        const p = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({color: 0x003a6e}));
-        p.position.set(x, 0.18, 0);
-        return p;
-    };
-    piernaI = crearPierna(-0.12); piernaD = crearPierna(0.12);
+    const legMat = new THREE.MeshStandardMaterial({color: 0x003a6e});
+    piernaI = new THREE.Mesh(limbGeo, legMat);
+    piernaI.position.set(-0.09, 0.12, 0);
+    piernaD = piernaI.clone(); piernaD.position.x = 0.09;
     player.add(piernaI, piernaD);
 }
 buildPlayerModel();
@@ -272,14 +267,14 @@ scene.add(player);
 
 // --- LÓGICA DE JUEGO ---
 let vy = 0, onGround = true, isDead = false, isHeadMode = false;
-const gravity = -0.015, jumpForce = 0.3;
+const gravity = -0.015, jumpForce = 0.28;
 const keys = {};
 let yaw = 0, step = 0, rollStep = 0, blinkTimer = 0;
 
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
     if(e.code === "Space" && onGround) vy = jumpForce;
-    if(e.key.toLowerCase() === "c" && onGround) isHeadMode = !isHeadMode;
+    if(e.key.toLowerCase() === "c") isHeadMode = !isHeadMode;
 });
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 document.body.onclick = () => document.body.requestPointerLock();
@@ -314,7 +309,7 @@ function animate() {
     if(keys.a){ dir.x -= 1; moving = true; }
     if(keys.d){ dir.x += 1; moving = true; }
 
-    let moveSpeed = isHeadMode ? 0.12 : (keys.shift ? 0.18 : 0.09);
+    let moveSpeed = isHeadMode ? 0.1 : (keys.shift ? 0.16 : 0.08);
     let animationSpeed = keys.shift ? 0.4 : 0.2;
 
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
@@ -347,20 +342,20 @@ function animate() {
 
     if (isHeadMode) {
         cuerpoVisual.children.forEach(c => { if(c !== cabezaGroup) c.scale.set(0.001,0.001,0.001); });
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.3, 0.15);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.25, 0.15);
     } else {
         cuerpoVisual.children.forEach(c => c.scale.set(1,1,1));
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.75, 0.15);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.6, 0.15);
     }
 
     blinkTimer--;
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
     listaOjos.forEach(ojo => { ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; });
 
-    let camDist = keys.r ? -2.5 : (isHeadMode ? 2.2 : 3.0);
-    const camOffset = new THREE.Vector3(0, isHeadMode ? 0.6 : 1.4, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    let camDist = keys.r ? -2 : (isHeadMode ? 2 : 2.6);
+    const camOffset = new THREE.Vector3(0, isHeadMode ? 0.5 : 1.2, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
     camera.position.lerp(player.position.clone().add(camOffset), 0.1);
-    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.7, 0)));
+    camera.lookAt(player.position.clone().add(new THREE.Vector3(0, isHeadMode ? 0.2 : 0.5, 0)));
     
     renderer.render(scene, camera);
 }
