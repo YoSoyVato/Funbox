@@ -18,7 +18,7 @@
         }
 
         .avatar-display {
-            font-size: 150px; /* Tamaño del emoji 👤 */
+            font-size: 150px; 
             margin-bottom: 20px;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
         }
@@ -87,13 +87,12 @@
 </div>
 
 <script>
+    // Lista actualizada: Solo Juan y la Mujer (Avatar por defecto)
     const avatars = [
         { id: "juan", emoji: "👤", name: "JUAN" },
-        { id: "ninja", emoji: "🥷", name: "NINJA" },
-        { id: "robot", emoji: "🤖", name: "ROBOT" }
+        { id: "mujer", emoji: "👩", name: "MUJER" }
     ];
 
-    // Cargar selección previa si existe
     let currentSkin = localStorage.getItem("funbox_current_skin") || null;
 
     function selectAvatar(id) {
@@ -105,7 +104,6 @@
             document.getElementById("skin-name-display").innerText = found.name;
             document.getElementById("avatar-emoji").innerText = found.emoji;
         }
-        
         renderUI();
     }
 
@@ -126,12 +124,12 @@
         if (!currentSkin) {
             alert("⚠️ Selecciona un personaje antes de jugar");
         } else {
-            // Aquí pones la página de tu mapa
+            // Cambia 'mapa.html' por el nombre real de tu archivo de mapa
             window.location.href = 'mapa.html'; 
         }
     }
 
-    // Inicialización al cargar la página
+    // Cargar datos al iniciar
     if (currentSkin) {
         const initial = avatars.find(a => a.id === currentSkin);
         if(initial) {
