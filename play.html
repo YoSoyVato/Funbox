@@ -43,7 +43,6 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHei
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-// Cambio a ACESFilmic para un acabado visual más profesional y realista
 renderer.toneMapping = THREE.ACESFilmicToneMapping; 
 document.body.appendChild(renderer.domElement);
 
@@ -188,7 +187,7 @@ function isColliding(pos) {
     return false;
 }
 
-// --- PERSONAJE PROFESIONAL (NUEVO MODELO) ---
+// --- PERSONAJE PERSONALIZADO ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
@@ -198,65 +197,50 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
-    // Materiales con propiedades físicas mejoradas
+    // Materiales solicitados
     const skinMat = new THREE.MeshStandardMaterial({color: 0xffdbac, roughness: 0.4});
-    const suitMat = new THREE.MeshStandardMaterial({color: 0x222222, metalness: 0.2, roughness: 0.5});
-    const detailMat = new THREE.MeshStandardMaterial({color: 0x007ceb, emissive: 0x007ceb, emissiveIntensity: 0.3});
+    const brownShirtMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.7}); // Marrón para el torso
+    const grayPantsMat = new THREE.MeshStandardMaterial({color: 0x808080, roughness: 0.6}); // Gris para pantalones
 
     cabezaGroup = new THREE.Group();
     cabezaGroup.position.y = 0.78;
     cuerpoVisual.add(cabezaGroup);
 
-    // Cabeza estilizada
-    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.45), skinMat);
+    // Cabeza un poco más pequeña (0.4 en lugar de 0.5)
+    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skinMat);
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // Pelo / Gorra
-    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.47), suitMat);
-    hair.position.y = 0.22;
-    cabezaMesh.add(hair);
-
-    // Ojos con brillo realista
+    // Ojos
     function crearOjo(x) {
         const eyeGroup = new THREE.Group();
-        const eyeBase = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        const eyeBase = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
         eyeBase.scale.z = 0.3;
-        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
         pupila.position.z = 0.04;
-        const reflejo = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        reflejo.position.set(0.03, 0.03, 0.05);
-
-        eyeGroup.add(eyeBase, pupila, reflejo);
-        eyeGroup.position.set(x, 0.05, 0.2);
+        eyeGroup.add(eyeBase, pupila);
+        eyeGroup.position.set(x, 0.05, 0.18);
         listaOjos.push(eyeGroup);
         return eyeGroup;
     }
-    cabezaMesh.add(crearOjo(-0.13), crearOjo(0.13));
+    cabezaMesh.add(crearOjo(-0.1), crearOjo(0.1));
 
-    // Auriculares profesionales con luz
-    const auricGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 32);
-    const auricL = new THREE.Mesh(auricGeo, detailMat);
-    auricL.rotation.z = Math.PI/2; auricL.position.x = -0.28;
-    const auricR = auricL.clone(); auricR.position.x = 0.28;
-    cabezaMesh.add(auricL, auricR);
-
-    // Torso en cápsula (estilo Fall Guys/Moderno)
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), suitMat);
+    // Torso Marrón (Camisa)
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), brownShirtMat);
     torso.position.y = 0.35;
     cuerpoVisual.add(torso);
 
-    // Brazos estilizados
+    // Brazos Marrones (Manga de camisa)
     const armGeo = new THREE.CapsuleGeometry(0.06, 0.2, 8, 12);
-    brazoI = new THREE.Mesh(armGeo, suitMat);
+    brazoI = new THREE.Mesh(armGeo, brownShirtMat);
     brazoI.position.set(-0.25, 0.45, 0);
     brazoD = brazoI.clone();
     brazoD.position.x = 0.25;
     cuerpoVisual.add(brazoI, brazoD);
 
-    // Piernas
+    // Piernas Grises (Pantalones)
     const legGeo = new THREE.CapsuleGeometry(0.08, 0.25, 8, 12);
-    piernaI = new THREE.Mesh(legGeo, suitMat);
+    piernaI = new THREE.Mesh(legGeo, grayPantsMat);
     piernaI.position.set(-0.1, 0.15, 0);
     piernaD = piernaI.clone();
     piernaD.position.x = 0.1;
@@ -266,7 +250,7 @@ buildPlayerModel();
 scene.add(player);
 
 // --- LÓGICA DE JUEGO ---
-let vy = 0, onGround = true, isDead = false, isHeadMode = false;
+let vy = 0, onGround = true, isHeadMode = false;
 const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
 let yaw = 0, step = 0, rollStep = 0, blinkTimer = 0;
