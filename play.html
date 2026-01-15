@@ -245,7 +245,6 @@ function buildPlayerModel() {
             hairGroup.add(bang);
         }
     } else {
-        // PELO MEJORADO CARLA: Más limpio y sin tapar la cara
         const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.48), hairMat);
         topHair.position.set(0, 0.18, 0);
         hairGroup.add(topHair);
@@ -254,25 +253,42 @@ function buildPlayerModel() {
         backHair.position.set(0, -0.05, -0.12);
         hairGroup.add(backHair);
 
-        // Flequillo lateral limpio
         const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.15, 0.05), hairMat);
         fringe.position.set(0, 0.18, 0.22);
         fringe.rotation.z = -0.05;
         hairGroup.add(fringe);
 
-        // COLETA / MOÑO TRASERO (Detalle Pro)
         const bun = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), hairMat);
         bun.position.set(0, 0.15, -0.28);
         hairGroup.add(bun);
     }
     cabezaMesh.add(hairGroup);
 
+    // --- FUNCIÓN DE OJOS MEJORADA (BRILLO CUTE) ---
     function createEye(x) {
         const eyeGroup = new THREE.Group();
-        const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
-        const shine = new THREE.Mesh(new THREE.CircleGeometry(0.03, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        shine.position.set(0.03, 0.03, 0.01); 
-        eyeGroup.add(orb, shine);
+        
+        // Base negra del ojo
+        const orb = new THREE.Mesh(
+            new THREE.CircleGeometry(0.08, 32), 
+            new THREE.MeshBasicMaterial({color: 0x000000})
+        );
+        
+        // Brillo Principal (Grande arriba)
+        const shine1 = new THREE.Mesh(
+            new THREE.CircleGeometry(0.03, 16), 
+            new THREE.MeshBasicMaterial({color: 0xffffff})
+        );
+        shine1.position.set(0.025, 0.025, 0.01); 
+
+        // Brillo Secundario (Pequeño abajo para efecto cute)
+        const shine2 = new THREE.Mesh(
+            new THREE.CircleGeometry(0.012, 16), 
+            new THREE.MeshBasicMaterial({color: 0xffffff})
+        );
+        shine2.position.set(-0.02, -0.03, 0.01); 
+        
+        eyeGroup.add(orb, shine1, shine2);
         eyeGroup.position.set(x, -0.04, 0.221);
         listaOjos.push(eyeGroup);
         return eyeGroup;
