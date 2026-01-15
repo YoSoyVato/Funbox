@@ -199,58 +199,69 @@ let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
     let skinCol = 0xc4a484;    
-    let shirtCol = 0x3d2b1f;   // Marrón oscuro (como la imagen)
-    let pantsCol = 0x4d4d4d;   // Gris oscuro
-    let hairCol = 0x1a1a1a;    // Pelo negro/oscuro
-    let hatCol = 0x2b1d16;     // Color del gorro
+    let shirtCol = 0x2b1d16;   // Marrón oscuro exacto
+    let pantsCol = 0x4d4d4d;   // Gris
+    let hairCol = 0x1a1a1a;    // Pelo oscuro
+    let hatCol = 0x1a110d;     // Color del gorro
 
-    const skinMat = new THREE.MeshStandardMaterial({color: skinCol, roughness: 0.4});
-    const shirtMat = new THREE.MeshStandardMaterial({color: shirtCol, roughness: 0.7});
-    const pantsMat = new THREE.MeshStandardMaterial({color: pantsCol, roughness: 0.6});
+    const skinMat = new THREE.MeshStandardMaterial({color: skinCol, roughness: 0.5});
+    const shirtMat = new THREE.MeshStandardMaterial({color: shirtCol, roughness: 0.8});
+    const pantsMat = new THREE.MeshStandardMaterial({color: pantsCol, roughness: 0.8});
     const hairMat = new THREE.MeshStandardMaterial({color: hairCol, roughness: 0.9});
-    const hatMat = new THREE.MeshStandardMaterial({color: hatCol, roughness: 0.8});
+    const hatMat = new THREE.MeshStandardMaterial({color: hatCol, roughness: 0.7});
 
     cabezaGroup = new THREE.Group();
     cabezaGroup.position.y = 0.78;
     cuerpoVisual.add(cabezaGroup);
 
-    // Cabeza
-    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skinMat);
+    // Cabeza base
+    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.42), skinMat);
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // --- PELO ASOMÁNDOSE ---
-    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.15, 0.42), hairMat);
-    hair.position.y = 0.1;
-    cabezaMesh.add(hair);
+    // --- PELO DETALLADO ---
+    const hairSideL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.43), hairMat);
+    hairSideL.position.set(-0.18, 0, 0);
+    const hairSideR = hairSideL.clone();
+    hairSideR.position.x = 0.18;
+    const hairFront = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 0.1), hairMat);
+    hairFront.position.set(0, 0.12, 0.18);
+    cabezaMesh.add(hairSideL, hairSideR, hairFront);
 
-    // --- GORRO PROFESIONAL (BEANIE) ---
-    const hatBase = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.15, 20), hatMat);
-    hatBase.position.y = 0.2;
-    const hatTop = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 20, 0, Math.PI*2, 0, Math.PI/2), hatMat);
-    hatTop.position.y = 0.27;
-    cabezaMesh.add(hatBase, hatTop);
+    // --- GORRO (BEANIE MEJORADO) ---
+    const hatFold = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.12, 0.46), hatMat);
+    hatFold.position.y = 0.16;
+    const hatDome = new THREE.Mesh(new THREE.SphereGeometry(0.23, 16, 16, 0, Math.PI*2, 0, Math.PI/2), hatMat);
+    hatDome.position.y = 0.2;
+    cabezaMesh.add(hatFold, hatDome);
 
-    // --- OJOS AJUSTADOS (MÁS ABAJO) ---
+    // --- OJOS TIERNOS (ESTILO FOTO) ---
     function crearOjo(x) {
         const ojoGroup = new THREE.Group();
-        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
-        const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        brillo.position.set(0.02, 0.02, 0.04);
-        ojoGroup.add(pupila, brillo);
-        ojoGroup.position.set(x, -0.05, 0.2); // Posición Y bajada a -0.05
+        // Pupila grande
+        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        pupila.scale.z = 0.2;
+        // Brillo principal arriba
+        const brillo1 = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        brillo1.position.set(0.03, 0.035, 0.03);
+        // Brillo secundario abajo
+        const brillo2 = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        brillo2.position.set(-0.02, -0.03, 0.03);
+        
+        ojoGroup.add(pupila, brillo1, brillo2);
+        ojoGroup.position.set(x, -0.08, 0.21); // Posición baja como pediste
         listaOjos.push(ojoGroup); 
         return ojoGroup;
     }
-    cabezaMesh.add(crearOjo(-0.11), crearOjo(0.11));
+    cabezaMesh.add(crearOjo(-0.12), crearOjo(0.12));
 
-    // Torso
+    // Torso (Camisa)
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), shirtMat);
     torso.position.y = 0.35;
     cuerpoVisual.add(torso);
 
     // Brazos
-    const armGeo = new THREE.CapsuleGeometry(0.06, 0.2, 8, 12);
+    const armGeo = new THREE.CapsuleGeometry(0.065, 0.2, 8, 12);
     brazoI = new THREE.Mesh(armGeo, shirtMat);
     brazoI.position.set(-0.25, 0.45, 0);
     brazoD = brazoI.clone();
@@ -261,15 +272,15 @@ function buildPlayerModel() {
     const legGeo = new THREE.CapsuleGeometry(0.08, 0.25, 8, 12);
     legGeo.translate(0, -0.12, 0); 
     piernaI = new THREE.Mesh(legGeo, pantsMat);
-    piernaI.position.set(-0.1, 0.25, 0); 
+    piernaI.position.set(-0.11, 0.25, 0); 
     piernaD = piernaI.clone();
-    piernaD.position.x = 0.1;
+    piernaD.position.x = 0.11;
     cuerpoVisual.add(piernaI, piernaD);
 }
 buildPlayerModel();
 scene.add(player);
 
-// --- LÓGICA DE ANIMACIÓN Y CÁMARA (Sin cambios) ---
+// --- LÓGICA DE ANIMACIÓN Y CÁMARA ---
 let vy = 0, onGround = true, isHeadMode = false;
 const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
