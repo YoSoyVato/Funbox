@@ -31,8 +31,9 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// DETECTAR SKIN SELECCIONADA
-const currentSkin = localStorage.getItem("funbox_current_skin") || "carla";
+// --- CORRECCIÓN DE DETECCIÓN DE SKIN ---
+const savedPlayerData = JSON.parse(localStorage.getItem("funbox_player"));
+const currentSkin = (savedPlayerData && savedPlayerData.current) ? savedPlayerData.current : (localStorage.getItem("funbox_current_skin") || "juan");
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
 const scene = new THREE.Scene();
@@ -199,10 +200,22 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca;
 
 function buildPlayerModel() {
-    const isJuan = currentSkin === "juan";
+    // Paleta de colores según la tienda
+    const skinPalette = {
+        "juan":   { main: 0x5d4037, hair: 0x1a1a1a, skin: 0xffdbac, isGirl: false },
+        "carla":  { main: 0xff66cc, hair: 0x2b1d12, skin: 0xffdbac, isGirl: true },
+        "robot":  { main: 0x777777, hair: 0x00d2ff, skin: 0x999999, isGirl: false },
+        "ninja":  { main: 0x111111, hair: 0x333333, skin: 0xffdbac, isGirl: false },
+        "alien":  { main: 0x33aa33, hair: 0x00ff00, skin: 0x55ff55, isGirl: false },
+        "cat":    { main: 0xffa500, hair: 0xffcc00, skin: 0xffdbac, isGirl: true }
+    };
+
+    const choice = skinPalette[currentSkin] || skinPalette["juan"];
+    const isJuan = !choice.isGirl; // Mantenemos tu lógica original para barbas o pelo corto
+
     const colors = {
-        skin: 0xffdbac,
-        main: isJuan ? 0x5d4037 : 0xff66cc,
+        skin: choice.skin,
+        main: choice.main,
         dark: isJuan ? 0x1a1a1a : 0x222222,
         shoes: 0x111111 
     };
@@ -228,10 +241,8 @@ function buildPlayerModel() {
     boca.position.set(0, -0.12, 0.222); 
     cabezaMesh.add(boca);
 
-    // --- MEJORA DE PELO ---
     const hairGroup = new THREE.Group();
-    const hairColor = isJuan ? 0x1a1a1a : 0x2b1d12; 
-    const hairMat = new THREE.MeshStandardMaterial({color: hairColor, roughness: 0.8});
+    const hairMat = new THREE.MeshStandardMaterial({color: choice.hair, roughness: 0.8});
 
     if (isJuan) {
         const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
@@ -264,30 +275,13 @@ function buildPlayerModel() {
     }
     cabezaMesh.add(hairGroup);
 
-    // --- FUNCIÓN DE OJOS MEJORADA (BRILLO CUTE) ---
     function createEye(x) {
         const eyeGroup = new THREE.Group();
-        
-        // Base negra del ojo
-        const orb = new THREE.Mesh(
-            new THREE.CircleGeometry(0.08, 32), 
-            new THREE.MeshBasicMaterial({color: 0x000000})
-        );
-        
-        // Brillo Principal (Grande arriba)
-        const shine1 = new THREE.Mesh(
-            new THREE.CircleGeometry(0.03, 16), 
-            new THREE.MeshBasicMaterial({color: 0xffffff})
-        );
+        const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), new THREE.MeshBasicMaterial({color: 0x000000}));
+        const shine1 = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
         shine1.position.set(0.025, 0.025, 0.01); 
-
-        // Brillo Secundario (Pequeño abajo para efecto cute)
-        const shine2 = new THREE.Mesh(
-            new THREE.CircleGeometry(0.012, 16), 
-            new THREE.MeshBasicMaterial({color: 0xffffff})
-        );
+        const shine2 = new THREE.Mesh(new THREE.CircleGeometry(0.012, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
         shine2.position.set(-0.02, -0.03, 0.01); 
-        
         eyeGroup.add(orb, shine1, shine2);
         eyeGroup.position.set(x, -0.04, 0.221);
         listaOjos.push(eyeGroup);
