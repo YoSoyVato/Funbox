@@ -193,7 +193,7 @@ player.position.copy(spawnPoint);
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
 
-const listaOjos = [];
+const listaPupilas = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
@@ -216,25 +216,25 @@ function buildPlayerModel() {
     hair.position.y = 0.18;
     cabezaMesh.add(hair);
 
-    // OJOS CUTE MEJORADOS + DINÁMICOS
+    // OJOS CUTE DINÁMICOS CORREGIDOS
     function crearOjo(x) {
-        const eyeGroup = new THREE.Group();
-        const pupilaGroup = new THREE.Group(); // Subgrupo para mover con el mouse
+        const ojoBase = new THREE.Group(); // El ojo fijo
+        const pupilaGroup = new THREE.Group(); // Solo lo que se mueve (negro + brillo)
 
-        // Base negra grande (pupila)
+        // Pupila negra
         const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
         pupila.scale.y = 1.2; 
         
-        // Brillo blanco (Sparkle)
+        // Brillo blanco
         const brillo = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
         brillo.position.set(0.03, 0.03, 0.05); 
         
         pupilaGroup.add(pupila, brillo);
-        eyeGroup.add(pupilaGroup);
-        eyeGroup.position.set(x, 0.02, 0.2);
+        ojoBase.add(pupilaGroup);
+        ojoBase.position.set(x, 0.02, 0.2);
         
-        listaOjos.push(pupilaGroup); // Guardamos el grupo que se mueve
-        return eyeGroup;
+        listaPupilas.push(pupilaGroup); 
+        return ojoBase;
     }
     cabezaMesh.add(crearOjo(-0.12), crearOjo(0.12));
 
@@ -251,12 +251,12 @@ function buildPlayerModel() {
     brazoD.position.x = 0.25;
     cuerpoVisual.add(brazoI, brazoD);
 
-    // Piernas Grises (PIVOTE ARREGLADO)
+    // Piernas Grises (PIVOTE CORREGIDO PARA EVITAR BUG)
     const legGeo = new THREE.CapsuleGeometry(0.08, 0.25, 8, 12);
-    legGeo.translate(0, -0.12, 0); // Mueve el centro de la malla hacia arriba para que rote desde la cadera
+    legGeo.translate(0, -0.12, 0); // Rotación desde la cadera
     
     piernaI = new THREE.Mesh(legGeo, grayPantsMat);
-    piernaI.position.set(-0.1, 0.25, 0); // Ajuste de posición inicial Y
+    piernaI.position.set(-0.1, 0.25, 0); 
     piernaD = piernaI.clone();
     piernaD.position.x = 0.1;
     cuerpoVisual.add(piernaI, piernaD);
@@ -268,7 +268,7 @@ scene.add(player);
 let vy = 0, onGround = true, isHeadMode = false;
 const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
-let yaw = 0, pitch = 0, step = 0, rollStep = 0, blinkTimer = 0;
+let yaw = 0, pitch = 0, lastYaw = 0, step = 0, rollStep = 0, blinkTimer = 0;
 
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
@@ -279,9 +279,10 @@ window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 document.body.onclick = () => document.body.requestPointerLock();
 document.addEventListener("mousemove", e => { 
     if(document.pointerLockElement) {
+        lastYaw = yaw;
         yaw -= e.movementX * 0.003;
         pitch -= e.movementY * 0.003;
-        pitch = Math.max(-0.5, Math.min(0.5, pitch)); // Límite para no rotar ojos de más
+        pitch = Math.max(-0.5, Math.min(0.5, pitch));
     }
 });
 
@@ -345,10 +346,11 @@ function animate() {
         brazoD.rotation.x = THREE.MathUtils.lerp(brazoD.rotation.x, 0, 0.1);
     }
 
-    // SEGUIMIENTO DE OJOS AL MOUSE
-    listaOjos.forEach(pupila => {
-        pupila.position.x = THREE.MathUtils.lerp(pupila.position.x, -pitch * 0.05, 0.1); // Movimiento leve horizontal
-        pupila.position.y = THREE.MathUtils.lerp(pupila.position.y, -pitch * 0.08, 0.1); // Movimiento vertical
+    // --- MOVIMIENTO DE PUPILAS BLANCAS Y NEGRAS ---
+    const lookX = Math.sin(yaw - lastYaw) * 10; // Sensibilidad horizontal
+    listaPupilas.forEach(pupila => {
+        pupila.position.x = THREE.MathUtils.lerp(pupila.position.x, lookX * 0.02, 0.1);
+        pupila.position.y = THREE.MathUtils.lerp(pupila.position.y, -pitch * 0.08, 0.1);
     });
 
     if (isHeadMode) {
@@ -361,7 +363,7 @@ function animate() {
 
     blinkTimer--;
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
-    listaOjos.forEach(ojo => { ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; });
+    listaPupilas.forEach(ojo => { ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; });
 
     let camDist = keys.r ? -2.5 : (isHeadMode ? 2.2 : 3.0);
     const camOffset = new THREE.Vector3(0, isHeadMode ? 0.6 : 1.4, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
