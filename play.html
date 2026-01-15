@@ -31,6 +31,7 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
+// DETECTAR SKIN SELECCIONADA
 const currentSkin = localStorage.getItem("funbox_current_skin") || "juan";
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
@@ -198,10 +199,12 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca;
 
 function buildPlayerModel() {
+    // NUEVO: COLORES DINÁMICOS SEGÚN SKIN
+    const isJuan = currentSkin === "juan";
     const colors = {
         skin: 0xffdbac,
-        main: 0x5d4037, 
-        dark: 0x1a1a1a, 
+        main: isJuan ? 0x5d4037 : 0x00d2ff, // Juan Marrón | Carla Cian
+        dark: isJuan ? 0x1a1a1a : 0x222222, 
         shoes: 0x222222 
     };
 
@@ -227,40 +230,47 @@ function buildPlayerModel() {
     boca.position.set(0, -0.12, 0.222); 
     cabezaMesh.add(boca);
 
+    // NUEVO: CABELLO DIFERENTE
     const hairGroup = new THREE.Group();
-    const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), mats.dark);
+    const hairColor = isJuan ? 0x1a1a1a : 0x4e342e; // Juan Negro | Carla Castaño
+    const hairMat = new THREE.MeshStandardMaterial({color: hairColor});
+
+    const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
     topHair.position.y = 0.2;
     hairGroup.add(topHair);
 
-    const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
-    for(let i = 0; i < 5; i++) {
-        const bang = new THREE.Mesh(bangsGeo, mats.dark);
-        bang.position.set(-0.18 + (i * 0.09), 0.18, 0.22);
-        bang.rotation.x = 0.4;
-        hairGroup.add(bang);
+    if (isJuan) {
+        // Flequillo de Juan
+        const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
+        for(let i = 0; i < 5; i++) {
+            const bang = new THREE.Mesh(bangsGeo, hairMat);
+            bang.position.set(-0.18 + (i * 0.09), 0.18, 0.22);
+            bang.rotation.x = 0.4;
+            hairGroup.add(bang);
+        }
+    } else {
+        // Coleta o pelo largo para Carla
+        const longHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.4, 0.1), hairMat);
+        longHair.position.set(0, 0, -0.22);
+        hairGroup.add(longHair);
     }
     
-    const sideHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.15), mats.dark);
+    const sideHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.15), hairMat);
     sideHair.position.set(0, 0.08, -0.18);
     hairGroup.add(sideHair);
     cabezaMesh.add(hairGroup);
 
     function createEye(x) {
         const eyeGroup = new THREE.Group();
-        
-        // El círculo negro (Pupila)
         const orb = new THREE.Mesh(
             new THREE.CircleGeometry(0.08, 16), 
             new THREE.MeshBasicMaterial({color: 0x000000})
         );
-        
-        // El brillo blanco (Shine) - Posicionado un poco arriba a la derecha
         const shine = new THREE.Mesh(
             new THREE.CircleGeometry(0.03, 8), 
             new THREE.MeshBasicMaterial({color: 0xffffff})
         );
-        shine.position.set(0.03, 0.03, 0.01); // El 0.01 evita el parpadeo visual
-        
+        shine.position.set(0.03, 0.03, 0.01); 
         eyeGroup.add(orb, shine);
         eyeGroup.position.set(x, -0.04, 0.221);
         listaOjos.push(eyeGroup);
@@ -368,19 +378,18 @@ function animate() {
     let animationSpeed = isRunning ? 0.4 : 0.2;
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
 
-    // ANIMACIONES DE BOCA REFINADAS
     if (!onGround && !isFallingDeep) {
-        boca.scale.set(1.8, 2.0, 1); // Salto
+        boca.scale.set(1.8, 2.0, 1); 
     } else if (moving) {
         if (isRunning) {
             let vibrate = Math.sin(Date.now() * 0.03) * 0.2;
-            boca.scale.set(2.2 + vibrate, 0.5, 1); // Correr
+            boca.scale.set(2.2 + vibrate, 0.5, 1);
         } else {
-            boca.scale.set(1.2, 0.7, 1); // Caminar
+            boca.scale.set(1.2, 0.7, 1);
         }
     } else {
         let breathe = Math.sin(Date.now() * 0.002) * 0.1 + 0.3;
-        boca.scale.set(1, breathe, 1); // Quieto
+        boca.scale.set(1, breathe, 1);
     }
 
     if(moving) {
