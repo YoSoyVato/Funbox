@@ -202,8 +202,8 @@ function buildPlayerModel() {
     const isJuan = currentSkin === "juan";
     const colors = {
         skin: 0xffdbac,
-        main: isJuan ? 0x5d4037 : 0xff66cc, // Juan: Marrón | Carla: Rosa/Lila
-        dark: isJuan ? 0x1a1a1a : 0x222222, // Juan: Negro | Carla: Negro Carbón
+        main: isJuan ? 0x5d4037 : 0xff66cc,
+        dark: isJuan ? 0x1a1a1a : 0x222222,
         shoes: 0x111111 
     };
 
@@ -228,15 +228,16 @@ function buildPlayerModel() {
     boca.position.set(0, -0.12, 0.222); 
     cabezaMesh.add(boca);
 
+    // --- MEJORA DE PELO ---
     const hairGroup = new THREE.Group();
-    const hairColor = isJuan ? 0x1a1a1a : 0x3d2b1f; 
-    const hairMat = new THREE.MeshStandardMaterial({color: hairColor});
-
-    const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
-    topHair.position.y = 0.2;
-    hairGroup.add(topHair);
+    const hairColor = isJuan ? 0x1a1a1a : 0x2b1d12; 
+    const hairMat = new THREE.MeshStandardMaterial({color: hairColor, roughness: 0.8});
 
     if (isJuan) {
+        // Pelo de Juan (Igual)
+        const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
+        topHair.position.y = 0.2;
+        hairGroup.add(topHair);
         const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
         for(let i = 0; i < 5; i++) {
             const bang = new THREE.Mesh(bangsGeo, hairMat);
@@ -245,16 +246,36 @@ function buildPlayerModel() {
             hairGroup.add(bang);
         }
     } else {
-        const sideHairL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.48), hairMat);
-        sideHairL.position.set(-0.2, -0.05, 0);
-        const sideHairR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.48), hairMat);
-        sideHairR.position.set(0.2, -0.05, 0);
-        hairGroup.add(sideHairL, sideHairR);
+        // PELO MEJORADO PARA CARLA
+        // Base superior con volumen
+        const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.18, 0.48), hairMat);
+        topHair.position.set(0, 0.18, 0);
+        hairGroup.add(topHair);
+
+        // Capa trasera larga
+        const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.55, 0.15), hairMat);
+        backHair.position.set(0, -0.05, -0.18);
+        hairGroup.add(backHair);
+
+        // Mechones laterales (Lados de la cara)
+        const sideL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.5, 0.42), hairMat);
+        sideL.position.set(-0.2, -0.02, 0.03);
+        const sideR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.5, 0.42), hairMat);
+        sideR.position.set(0.2, -0.02, 0.03);
+        hairGroup.add(sideL, sideR);
+
+        // Flequillo lateral (estilo "manga")
+        const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.08), hairMat);
+        fringe.position.set(0.04, 0.18, 0.21);
+        fringe.rotation.z = -0.15;
+        hairGroup.add(fringe);
+
+        // Coleta o "Moño" trasero para volumen extra
+        const ponyTail = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), hairMat);
+        ponyTail.position.set(0, 0.1, -0.28);
+        ponyTail.rotation.x = 0.2;
+        hairGroup.add(ponyTail);
     }
-    
-    const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.3, 0.15), hairMat);
-    backHair.position.set(0, 0.05, -0.18);
-    hairGroup.add(backHair);
     cabezaMesh.add(hairGroup);
 
     function createEye(x) {
