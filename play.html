@@ -188,21 +188,21 @@ function isColliding(pos) {
     return false;
 }
 
-// --- PERSONAJE MEJORADO ---
+// --- PERSONAJE ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
 
 const listaOjos = [];
-let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
+let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca;
 
 function buildPlayerModel() {
     const colors = {
         skin: 0xffdbac,
-        main: 0x5d4037, // MARRÓN
-        dark: 0x1a1a1a, // Color del pelo
-        shoes: 0x222222 // Color de los pies
+        main: 0x5d4037, 
+        dark: 0x1a1a1a, 
+        shoes: 0x222222 
     };
 
     const mats = {
@@ -212,7 +212,6 @@ function buildPlayerModel() {
         shoes: new THREE.MeshStandardMaterial({color: colors.shoes, roughness: 0.5})
     };
 
-    // CABEZA
     cabezaGroup = new THREE.Group();
     cabezaGroup.position.y = 0.82;
     cuerpoVisual.add(cabezaGroup);
@@ -221,14 +220,13 @@ function buildPlayerModel() {
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // --- BOCA (AÑADIDA) ---
-    const bocaGeo = new THREE.PlaneGeometry(0.12, 0.03);
-    const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.7, side: THREE.DoubleSide});
-    const boca = new THREE.Mesh(bocaGeo, bocaMat);
-    boca.position.set(0, -0.12, 0.221); // Posición perfecta en la cara
+    // BOCA MEJORADA
+    const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
+    const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
+    boca = new THREE.Mesh(bocaGeo, bocaMat);
+    boca.position.set(0, -0.12, 0.221); 
     cabezaMesh.add(boca);
 
-    // --- PELO MASCULINO CORTO ---
     const hairGroup = new THREE.Group();
     const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), mats.dark);
     topHair.position.y = 0.2;
@@ -247,33 +245,22 @@ function buildPlayerModel() {
     hairGroup.add(sideHair);
     cabezaMesh.add(hairGroup);
 
-    // --- OJOS CORREGIDOS (AHORA PLANOS) ---
     function createEye(x) {
         const eye = new THREE.Group();
-        // Usamos CircleGeometry para que sean planos y no se "salgan" de la cara
         const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
-        
-        // Brillo 1 (Plano)
         const b1 = new THREE.Mesh(new THREE.CircleGeometry(0.025, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
         b1.position.set(0.025, 0.025, 0.005);
-        
-        // Brillo 2 (Plano)
-        const b2 = new THREE.Mesh(new THREE.CircleGeometry(0.015, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        b2.position.set(-0.02, -0.02, 0.005);
-        
-        eye.add(orb, b1, b2);
-        eye.position.set(x, -0.04, 0.221); // 0.221 para que esté justo encima de la superficie de la cabeza
+        eye.add(orb, b1);
+        eye.position.set(x, -0.04, 0.221);
         listaOjos.push(eye);
         return eye;
     }
     cabezaMesh.add(createEye(-0.13), createEye(0.13));
 
-    // TORSO
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.24), mats.main);
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
 
-    // BRAZOS
     const armGeo = new THREE.CapsuleGeometry(0.07, 0.2, 8, 10);
     function createArm(x) {
         const g = new THREE.Group();
@@ -288,10 +275,8 @@ function buildPlayerModel() {
     brazoD = createArm(0.28);
     cuerpoVisual.add(brazoI, brazoD);
 
-    // PIERNAS
     const legGeo = new THREE.CapsuleGeometry(0.085, 0.22, 8, 10);
     legGeo.translate(0, -0.11, 0); 
-
     function createLeg(x) {
         const g = new THREE.Group();
         const leg = new THREE.Mesh(legGeo, mats.dark);
@@ -308,7 +293,7 @@ function buildPlayerModel() {
 buildPlayerModel();
 scene.add(player);
 
-// --- LÓGICA DE ANIMACIÓN Y CÁMARA ---
+// --- LÓGICA ---
 let vy = 0, onGround = true, isHeadMode = false;
 const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
@@ -332,13 +317,36 @@ document.addEventListener("mousemove", e => {
 function animate() {
     requestAnimationFrame(animate);
     const currentSurfaceY = getSurfaceY(player.position);
+    
+    // FISICA
     player.position.y += vy;
     if (player.position.y > currentSurfaceY) { vy += gravity; onGround = false; }
     else { 
-        if (currentSurfaceY > -50) { player.position.y = currentSurfaceY; vy = Math.max(0, vy); onGround = true; }
-        else { onGround = false; vy += gravity; }
+        if (currentSurfaceY > -50) { 
+            player.position.y = currentSurfaceY; 
+            vy = Math.max(0, vy); 
+            onGround = true; 
+        } else { 
+            onGround = false; vy += gravity; 
+        }
     }
-    if (player.position.y < -15) { player.position.copy(spawnPoint); player.position.y = 5; vy = 0; }
+
+    // ANIMACIÓN AL CAER AL VACÍO
+    let isFallingDeep = player.position.y < -2;
+    if (isFallingDeep) {
+        player.rotation.x += 0.2; // Gira al caer
+        player.rotation.z += 0.1;
+        boca.scale.set(1.5, 3, 1); // Boca gigante de susto
+    } else {
+        player.rotation.x = THREE.MathUtils.lerp(player.rotation.x, 0, 0.1);
+        player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, 0, 0.1);
+    }
+
+    if (player.position.y < -15) { 
+        player.position.copy(spawnPoint); 
+        player.position.y = 5; vy = 0; 
+        player.rotation.set(0,0,0);
+    }
 
     let moving = false, dir = new THREE.Vector3();
     if(keys.w){ dir.z -= 1; moving = true; }
@@ -346,20 +354,40 @@ function animate() {
     if(keys.a){ dir.x -= 1; moving = true; }
     if(keys.d){ dir.x += 1; moving = true; }
 
-    let moveSpeed = isHeadMode ? 0.12 : (keys.shift ? 0.18 : 0.09);
-    let animationSpeed = keys.shift ? 0.4 : 0.2;
+    let isRunning = keys.shift && moving;
+    let moveSpeed = isHeadMode ? 0.12 : (isRunning ? 0.18 : 0.09);
+    let animationSpeed = isRunning ? 0.4 : 0.2;
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
+
+    // ANIMACIONES DE BOCA POR ESTADO
+    if (!onGround) {
+        // En el aire (Salto normal)
+        boca.scale.set(1.2, 1.2, 1); // Boca en forma de O
+    } else if (moving) {
+        if (isRunning) {
+            boca.scale.set(1.5, 0.5, 1); // Boca ancha por el esfuerzo
+        } else {
+            boca.scale.set(1, 0.8, 1);   // Boca normal caminando
+        }
+    } else {
+        // Quieto
+        let breathe = Math.sin(Date.now() * 0.002) * 0.1 + 0.8;
+        boca.scale.set(breathe, 0.2, 1); // Boca finita respirando
+    }
 
     if(moving) {
         const moveDir = dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
         const nextPos = player.position.clone().add(moveDir.multiplyScalar(moveSpeed));
         if (!isColliding(nextPos)) { player.position.x = nextPos.x; player.position.z = nextPos.z; }
+        
         if (!isHeadMode && onGround) {
             step += animationSpeed;
             piernaI.rotation.x = Math.sin(step) * 0.6;
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.6;
             brazoI.rotation.x = Math.sin(step + Math.PI) * 0.6;
             brazoD.rotation.x = Math.sin(step) * 0.6;
+            // Balanceo de cuerpo
+            cuerpoVisual.position.y = Math.abs(Math.sin(step)) * 0.05;
         } else if (isHeadMode) {
             rollStep += 0.15;
             cabezaMesh.rotation.x = -rollStep; 
@@ -367,6 +395,16 @@ function animate() {
     } else {
         cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
         [piernaI, piernaD, brazoI, brazoD].forEach(p => p.rotation.x = THREE.MathUtils.lerp(p.rotation.x, 0, 0.1));
+        cuerpoVisual.position.y = THREE.MathUtils.lerp(cuerpoVisual.position.y, 0, 0.1);
+    }
+
+    // EFECTO SQUASH & STRETCH AL SALTAR
+    if (!onGround && !isFallingDeep) {
+        cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, 1.1, 0.1);
+        cuerpoVisual.scale.x = THREE.MathUtils.lerp(cuerpoVisual.scale.x, 0.9, 0.1);
+    } else {
+        cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, 1, 0.2);
+        cuerpoVisual.scale.x = THREE.MathUtils.lerp(cuerpoVisual.scale.x, 1, 0.2);
     }
 
     if (isHeadMode) {
