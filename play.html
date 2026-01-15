@@ -224,7 +224,7 @@ function buildPlayerModel() {
     const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
     const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
     boca = new THREE.Mesh(bocaGeo, bocaMat);
-    boca.position.set(0, -0.12, 0.221); 
+    boca.position.set(0, -0.12, 0.222); 
     cabezaMesh.add(boca);
 
     const hairGroup = new THREE.Group();
@@ -246,17 +246,25 @@ function buildPlayerModel() {
     cabezaMesh.add(hairGroup);
 
     function createEye(x) {
-        const eye = new THREE.Group();
-        const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        const eyeGroup = new THREE.Group();
         
-        // BRILLO CUTE RESTAURADO
-        const shine = new THREE.Mesh(new THREE.CircleGeometry(0.025, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        shine.position.set(0.025, 0.025, 0.01);
+        // El círculo negro (Pupila)
+        const orb = new THREE.Mesh(
+            new THREE.CircleGeometry(0.08, 16), 
+            new THREE.MeshBasicMaterial({color: 0x000000})
+        );
         
-        eye.add(orb, shine);
-        eye.position.set(x, -0.04, 0.221);
-        listaOjos.push(eye);
-        return eye;
+        // El brillo blanco (Shine) - Posicionado un poco arriba a la derecha
+        const shine = new THREE.Mesh(
+            new THREE.CircleGeometry(0.03, 8), 
+            new THREE.MeshBasicMaterial({color: 0xffffff})
+        );
+        shine.position.set(0.03, 0.03, 0.01); // El 0.01 evita el parpadeo visual
+        
+        eyeGroup.add(orb, shine);
+        eyeGroup.position.set(x, -0.04, 0.221);
+        listaOjos.push(eyeGroup);
+        return eyeGroup;
     }
     cabezaMesh.add(createEye(-0.13), createEye(0.13));
 
@@ -321,7 +329,6 @@ function animate() {
     requestAnimationFrame(animate);
     const currentSurfaceY = getSurfaceY(player.position);
     
-    // FISICA
     player.position.y += vy;
     if (player.position.y > currentSurfaceY) { vy += gravity; onGround = false; }
     else { 
@@ -334,12 +341,10 @@ function animate() {
         }
     }
 
-    // ANIMACIÓN AL CAER AL VACÍO
     let isFallingDeep = player.position.y < -2;
     if (isFallingDeep) {
         player.rotation.x += 0.2; 
         player.rotation.z += 0.1;
-        // BOCA GRITO AL CAER
         boca.scale.set(1.5, 4, 1);
     } else {
         player.rotation.x = THREE.MathUtils.lerp(player.rotation.x, 0, 0.1);
@@ -363,23 +368,19 @@ function animate() {
     let animationSpeed = isRunning ? 0.4 : 0.2;
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
 
-    // --- ANIMACIONES DE BOCA REFINADAS ---
+    // ANIMACIONES DE BOCA REFINADAS
     if (!onGround && !isFallingDeep) {
-        // SALTANDO: Boca en forma de "O" de asombro
-        boca.scale.set(1.8, 2.0, 1);
+        boca.scale.set(1.8, 2.0, 1); // Salto
     } else if (moving) {
         if (isRunning) {
-            // CORRIENDO: Boca ancha y vibrante por el esfuerzo
             let vibrate = Math.sin(Date.now() * 0.03) * 0.2;
-            boca.scale.set(2.2 + vibrate, 0.5, 1);
+            boca.scale.set(2.2 + vibrate, 0.5, 1); // Correr
         } else {
-            // CAMINANDO: Boca normal
-            boca.scale.set(1.2, 0.7, 1);
+            boca.scale.set(1.2, 0.7, 1); // Caminar
         }
     } else {
-        // QUIETO: Respiración suave
         let breathe = Math.sin(Date.now() * 0.002) * 0.1 + 0.3;
-        boca.scale.set(1, breathe, 1);
+        boca.scale.set(1, breathe, 1); // Quieto
     }
 
     if(moving) {
@@ -404,7 +405,6 @@ function animate() {
         cuerpoVisual.position.y = THREE.MathUtils.lerp(cuerpoVisual.position.y, 0, 0.1);
     }
 
-    // EFECTO SQUASH & STRETCH
     if (!onGround && !isFallingDeep) {
         cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, 1.15, 0.1);
         cuerpoVisual.scale.x = THREE.MathUtils.lerp(cuerpoVisual.scale.x, 0.85, 0.1);
@@ -421,7 +421,6 @@ function animate() {
         cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.82, 0.15);
     }
 
-    // PARPADEO Y ESCALA DE OJOS
     blinkTimer--;
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
     listaOjos.forEach(ojo => { 
