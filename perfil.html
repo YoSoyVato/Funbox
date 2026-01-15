@@ -7,7 +7,6 @@
         :root { --p-blue: #00d2ff; --p-green: #00ff88; }
         body { background: #050505; color: white; font-family: 'Arial', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* IZQUIERDA: ÁREA DEL PERSONAJE */
         .preview-zone { 
             position: relative; 
             flex: 1; 
@@ -19,35 +18,47 @@
 
         #avatar-canvas { 
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%; 
-            height: 100%; 
+            top: 0; left: 0;
+            width: 100%; height: 100%; 
             cursor: grab; 
         }
         
-        /* TEXTO CELESTE FLOTANTE (ESTILO TU FOTO) */
         .skin-title { 
             position: absolute;
-            bottom: 20%; /* Ajustado para que flote sobre la base del personaje */
+            bottom: 15%; 
             font-size: 70px; 
             font-weight: 900; 
             color: var(--p-blue); 
             text-transform: uppercase; 
             text-shadow: 0 0 25px rgba(0, 210, 255, 0.7);
             letter-spacing: 4px;
-            pointer-events: none; /* Para que no moleste al girar el personaje */
+            pointer-events: none;
             z-index: 5;
         }
 
-        /* DERECHA: MI ARMARIO */
         .inventory-zone { width: 350px; background: #111; border-left: 2px solid #222; padding: 20px; display: flex; flex-direction: column; z-index: 10; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .card { background: #1a1a1a; border: 2px solid #333; border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
+        
+        /* Contenedor del grid corregido para que siempre sea visible */
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-top: 20px;
+        }
+
+        .card { 
+            background: #1a1a1a; 
+            border: 2px solid #333; 
+            border-radius: 15px; 
+            padding: 20px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: 0.3s; 
+        }
         .card:hover { border-color: var(--p-blue); transform: scale(1.05); }
         .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.1); }
-        .card span { font-size: 45px; display: block; }
-        .card p { margin: 5px 0 0; font-size: 12px; font-weight: bold; color: #888; }
+        .card span { font-size: 45px; display: block; margin-bottom: 5px; }
+        .card p { margin: 0; font-size: 12px; font-weight: bold; color: #888; }
 
         .btn-play { 
             margin-top: auto; 
@@ -73,8 +84,9 @@
 </div>
 
 <div class="inventory-zone">
-    <h2 style="margin-top: 0;">📦 MI ARMARIO</h2>
-    <div class="grid" id="inventory-grid"></div>
+    <h2 style="margin: 0;">📦 MI ARMARIO</h2>
+    <div class="grid" id="inventory-grid">
+        </div>
     <button class="btn-play" onclick="tryStartGame()">ENTRAR AL MAPA</button>
 </div>
 
@@ -93,7 +105,9 @@
         localStorage.setItem("funbox_current_skin", id);
         
         const found = avatars.find(a => a.id === id);
-        document.getElementById("skin-name-display").innerText = found.name;
+        if(found) {
+            document.getElementById("skin-name-display").innerText = found.name;
+        }
         
         renderUI();
         update3DModel();
@@ -101,11 +115,13 @@
 
     function renderUI() {
         const grid = document.getElementById("inventory-grid");
-        grid.innerHTML = "";
+        grid.innerHTML = ""; // Limpiar antes de renderizar
+        
         avatars.forEach(av => {
             const card = document.createElement("div");
             card.className = `card ${currentSkin === av.id ? 'selected' : ''}`;
             card.onclick = () => selectAvatar(av.id);
+            // IMPORTANTE: Aquí se inserta el Emoji 👨 y el nombre
             card.innerHTML = `<span>${av.emoji}</span><p>${av.name}</p>`;
             grid.appendChild(card);
         });
@@ -119,6 +135,7 @@
         }
     }
 
+    // --- LÓGICA 3D ---
     let scene, camera, renderer, modelGroup;
 
     function init3D() {
@@ -137,11 +154,12 @@
         modelGroup = new THREE.Group();
         scene.add(modelGroup);
         
-        // Si ya hay uno guardado, actualizar el nombre al cargar
         if (currentSkin) {
             const found = avatars.find(a => a.id === currentSkin);
-            document.getElementById("skin-name-display").innerText = found.name;
-            update3DModel();
+            if(found) {
+                document.getElementById("skin-name-display").innerText = found.name;
+                update3DModel();
+            }
         }
         
         animate();
@@ -153,11 +171,9 @@
         
         let avData = avatars.find(a => a.id === currentSkin);
         
-        // Cuerpo mejorado
         const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.7), new THREE.MeshStandardMaterial({ color: avData.color }));
         body.position.y = 0.4;
         
-        // Cabeza
         const headCol = (currentSkin === "robot") ? 0x888888 : (currentSkin === "ninja" ? 0x111111 : 0xc4a484);
         const head = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.65), new THREE.MeshStandardMaterial({ color: headCol }));
         head.position.y = 1.1;
@@ -171,16 +187,9 @@
         renderer.render(scene, camera);
     }
 
-    // Ajustar tamaño si la ventana cambia
-    window.addEventListener('resize', () => {
-        const container = document.getElementById("avatar-canvas");
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-    });
-
-    init3D();
-    renderUI();
+    // Inicialización
+    renderUI(); // Renderizar el armario primero
+    init3D();   // Luego el 3D
 </script>
 </body>
 </html>
