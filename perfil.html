@@ -20,7 +20,8 @@
         .avatar-display {
             font-size: 150px; 
             margin-bottom: 20px;
-            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+            filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.3));
+            transition: transform 0.3s ease;
         }
         
         .skin-title { 
@@ -52,7 +53,7 @@
             transition: 0.3s; 
         }
         .card:hover { border-color: var(--p-blue); transform: scale(1.05); }
-        .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.1); }
+        .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
         .card span { font-size: 45px; display: block; margin-bottom: 5px; }
         .card p { margin: 0; font-size: 14px; font-weight: bold; color: #bbb; }
 
@@ -68,8 +69,10 @@
             font-size: 20px; 
             text-transform: uppercase;
             transition: 0.3s;
+            box-shadow: 0 4px 0 #00a85a;
         }
-        .btn-play:hover { background: #00ffaa; transform: scale(1.02); }
+        .btn-play:hover { background: #00ffaa; transform: translateY(-2px); box-shadow: 0 6px 0 #00a85a; }
+        .btn-play:active { transform: translateY(2px); box-shadow: 0 0px 0 #00a85a; }
     </style>
 </head>
 <body>
@@ -80,31 +83,45 @@
 </div>
 
 <div class="inventory-zone">
-    <h2 style="margin: 0; font-size: 24px;">📦 MI ARMARIO</h2>
-    <div class="grid" id="inventory-grid">
-        </div>
+    <h2 style="margin: 0; font-size: 24px; letter-spacing: 1px;">📦 MI ARMARIO</h2>
+    <div class="grid" id="inventory-grid"></div>
     <button class="btn-play" onclick="tryStartGame()">ENTRAR AL MAPA</button>
 </div>
 
 <script>
-    // Lista actualizada: Solo Juan y la Mujer (Avatar por defecto)
+    // Lista de avatares
     const avatars = [
         { id: "juan", emoji: "👨", name: "JUAN" },
         { id: "mujer", emoji: "👩", name: "CARLA" }
     ];
 
-    let currentSkin = localStorage.getItem("funbox_current_skin") || null;
+    // Intentar cargar la skin previa, si no existe, usar 'juan' por defecto
+    let currentSkin = localStorage.getItem("funbox_current_skin");
+    if (!currentSkin) {
+        currentSkin = "juan";
+        localStorage.setItem("funbox_current_skin", "juan");
+    }
 
     function selectAvatar(id) {
         currentSkin = id;
         localStorage.setItem("funbox_current_skin", id);
-        
+        updatePreview(id);
+        renderUI();
+    }
+
+    function updatePreview(id) {
         const found = avatars.find(a => a.id === id);
         if(found) {
-            document.getElementById("skin-name-display").innerText = found.name;
-            document.getElementById("avatar-emoji").innerText = found.emoji;
+            const nameEl = document.getElementById("skin-name-display");
+            const emojiEl = document.getElementById("avatar-emoji");
+            
+            nameEl.innerText = found.name;
+            emojiEl.innerText = found.emoji;
+            
+            // Efecto de pequeña animación al cambiar
+            emojiEl.style.transform = "scale(1.2)";
+            setTimeout(() => emojiEl.style.transform = "scale(1)", 100);
         }
-        renderUI();
     }
 
     function renderUI() {
@@ -121,23 +138,12 @@
     }
 
     function tryStartGame() {
-        if (!currentSkin) {
-            alert("⚠️ Selecciona un personaje antes de jugar");
-        } else {
-            // Cambia 'mapa.html' por el nombre real de tu archivo de mapa
-            window.location.href = 'mapa.html'; 
-        }
+        // Redirigir a play.html (Asegúrate de que tu otro archivo se llame así exactamente)
+        window.location.href = 'play.html'; 
     }
 
-    // Cargar datos al iniciar
-    if (currentSkin) {
-        const initial = avatars.find(a => a.id === currentSkin);
-        if(initial) {
-            document.getElementById("skin-name-display").innerText = initial.name;
-            document.getElementById("avatar-emoji").innerText = initial.emoji;
-        }
-    }
-    
+    // Inicialización al cargar la página
+    updatePreview(currentSkin);
     renderUI();
 </script>
 </body>
