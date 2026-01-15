@@ -188,7 +188,7 @@ function isColliding(pos) {
     return false;
 }
 
-// --- PERSONAJE PERFECCIONADO (VERSION FINAL) ---
+// --- PERSONAJE CON PELO ESTILIZADO ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
@@ -200,15 +200,15 @@ let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 function buildPlayerModel() {
     const colors = {
         skin: 0xffdbac,
-        main: 0x00d2ff, // Color Cian Neón (Skins modernas)
-        dark: 0x1a1a1a,
+        main: 0x00d2ff, 
+        dark: 0x1a1a1a, // Color del pelo
         white: 0xffffff
     };
 
     const mats = {
         skin: new THREE.MeshStandardMaterial({color: colors.skin, roughness: 0.4}),
         main: new THREE.MeshStandardMaterial({color: colors.main, roughness: 0.5}),
-        dark: new THREE.MeshStandardMaterial({color: colors.dark, roughness: 0.6}),
+        dark: new THREE.MeshStandardMaterial({color: colors.dark, roughness: 0.7}),
         white: new THREE.MeshStandardMaterial({color: colors.white, roughness: 0.3})
     };
 
@@ -221,27 +221,40 @@ function buildPlayerModel() {
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // Gorro Estilizado (Más ajustado)
-    const hat = new THREE.Group();
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.18, 24), mats.dark);
-    base.position.y = 0.2;
-    const top = new THREE.Mesh(new THREE.SphereGeometry(0.25, 24, 12, 0, Math.PI*2, 0, Math.PI/2), mats.dark);
-    top.position.y = 0.25;
-    hat.add(base, top);
-    cabezaMesh.add(hat);
+    // --- NUEVO SISTEMA DE PELO ---
+    const hairGroup = new THREE.Group();
+    
+    // Base superior del pelo
+    const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.48), mats.dark);
+    topHair.position.y = 0.15;
+    hairGroup.add(topHair);
 
-    // Ojos Pro (Con Brillos Dobles)
+    // Mechones laterales y flequillo
+    const bangsGeo = new THREE.BoxGeometry(0.1, 0.25, 0.1);
+    for(let i = 0; i < 5; i++) {
+        const bang = new THREE.Mesh(bangsGeo, mats.dark);
+        bang.position.set(-0.18 + (i * 0.09), 0.1, 0.22);
+        bang.rotation.x = 0.2;
+        bang.rotation.z = (Math.random() - 0.5) * 0.2;
+        hairGroup.add(bang);
+    }
+    
+    // Pelo trasero (más largo)
+    const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.35, 0.15), mats.dark);
+    backHair.position.set(0, -0.05, -0.18);
+    hairGroup.add(backHair);
+
+    cabezaMesh.add(hairGroup);
+
+    // Ojos Pro con Brillos
     function createEye(x) {
         const eye = new THREE.Group();
         const orb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
         orb.scale.z = 0.2;
-        
         const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
         b1.position.set(0.025, 0.025, 0.05);
-        
         const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
         b2.position.set(-0.02, -0.02, 0.05);
-        
         eye.add(orb, b1, b2);
         eye.position.set(x, -0.04, 0.22);
         listaOjos.push(eye);
@@ -254,7 +267,7 @@ function buildPlayerModel() {
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
 
-    // BRAZOS (Corregidos)
+    // BRAZOS
     const armGeo = new THREE.CapsuleGeometry(0.07, 0.2, 8, 10);
     function createArm(x) {
         const g = new THREE.Group();
@@ -269,9 +282,9 @@ function buildPlayerModel() {
     brazoD = createArm(0.28);
     cuerpoVisual.add(brazoI, brazoD);
 
-    // PIERNAS (Fix Bug de Colisión/Posición)
+    // PIERNAS
     const legGeo = new THREE.CapsuleGeometry(0.085, 0.22, 8, 10);
-    legGeo.translate(0, -0.11, 0); // Ajusta el centro para rotar bien
+    legGeo.translate(0, -0.11, 0); 
 
     function createLeg(x) {
         const g = new THREE.Group();
