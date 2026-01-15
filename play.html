@@ -188,7 +188,7 @@ function isColliding(pos) {
     return false;
 }
 
-// --- CONFIGURACIÓN PERFECTA DEL PERSONAJE ---
+// --- PERSONAJE PERFECCIONADO (VERSION FINAL) ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
@@ -198,99 +198,90 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
-    // Paleta de Colores Roblox Style
     const colors = {
         skin: 0xffdbac,
-        shirt: 0x333333,
-        pants: 0x222222,
-        hair: 0x111111,
-        hat: 0x0a0a0a,
-        shoes: 0xffffff
+        main: 0x00d2ff, // Color Cian Neón (Skins modernas)
+        dark: 0x1a1a1a,
+        white: 0xffffff
     };
 
     const mats = {
-        skin: new THREE.MeshStandardMaterial({color: colors.skin, roughness: 0.5}),
-        shirt: new THREE.MeshStandardMaterial({color: colors.shirt, roughness: 0.7}),
-        pants: new THREE.MeshStandardMaterial({color: colors.pants, roughness: 0.7}),
-        hair: new THREE.MeshStandardMaterial({color: colors.hair, roughness: 0.9}),
-        hat: new THREE.MeshStandardMaterial({color: colors.hat, roughness: 0.5}),
-        white: new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.5})
+        skin: new THREE.MeshStandardMaterial({color: colors.skin, roughness: 0.4}),
+        main: new THREE.MeshStandardMaterial({color: colors.main, roughness: 0.5}),
+        dark: new THREE.MeshStandardMaterial({color: colors.dark, roughness: 0.6}),
+        white: new THREE.MeshStandardMaterial({color: colors.white, roughness: 0.3})
     };
 
-    // CABEZA Y ACCESORIOS
+    // CABEZA
     cabezaGroup = new THREE.Group();
-    cabezaGroup.position.y = 0.8;
+    cabezaGroup.position.y = 0.82;
     cuerpoVisual.add(cabezaGroup);
 
-    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.42), mats.skin);
+    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.44, 0.44), mats.skin);
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // Pelo con más volumen
-    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.2, 0.45), mats.hair);
-    hair.position.y = 0.15;
-    cabezaMesh.add(hair);
+    // Gorro Estilizado (Más ajustado)
+    const hat = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.18, 24), mats.dark);
+    base.position.y = 0.2;
+    const top = new THREE.Mesh(new THREE.SphereGeometry(0.25, 24, 12, 0, Math.PI*2, 0, Math.PI/2), mats.dark);
+    top.position.y = 0.25;
+    hat.add(base, top);
+    cabezaMesh.add(hat);
 
-    // Gorro Estilizado (Beanie)
-    const beanieBase = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.15, 20), mats.hat);
-    beanieBase.position.y = 0.2;
-    const beanieTop = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 10, 0, Math.PI*2, 0, Math.PI/2), mats.hat);
-    beanieTop.position.y = 0.25;
-    cabezaMesh.add(beanieBase, beanieTop);
-
-    // Ojos "Kawaii/Roblox" con Brillo
+    // Ojos Pro (Con Brillos Dobles)
     function createEye(x) {
-        const eyeGroup = new THREE.Group();
-        const main = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 12), new THREE.MeshBasicMaterial({color: 0x000000}));
-        main.scale.z = 0.2;
-        const shine = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        shine.position.set(0.02, 0.02, 0.04);
-        eyeGroup.add(main, shine);
-        eyeGroup.position.set(x, -0.05, 0.21);
-        listaOjos.push(eyeGroup);
-        return eyeGroup;
+        const eye = new THREE.Group();
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        orb.scale.z = 0.2;
+        
+        const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        b1.position.set(0.025, 0.025, 0.05);
+        
+        const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        b2.position.set(-0.02, -0.02, 0.05);
+        
+        eye.add(orb, b1, b2);
+        eye.position.set(x, -0.04, 0.22);
+        listaOjos.push(eye);
+        return eye;
     }
     cabezaMesh.add(createEye(-0.13), createEye(0.13));
 
-    // TORSO CON VOLUMEN
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.22), mats.shirt);
+    // TORSO
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.24), mats.main);
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
 
-    // Dobladillo de la camisa
-    const trim = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.24), mats.shirt);
-    trim.position.y = 0.22;
-    cuerpoVisual.add(trim);
-
-    // BRAZOS (Con mangas)
-    const armGeo = new THREE.CapsuleGeometry(0.07, 0.25, 8, 10);
-    brazoI = new THREE.Group();
-    const sleeve = new THREE.Mesh(armGeo, mats.shirt);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), mats.skin);
-    hand.position.y = -0.15;
-    brazoI.add(sleeve, hand);
-    brazoI.position.set(-0.28, 0.55, 0);
-    
-    brazoD = brazoI.clone();
-    brazoD.position.x = 0.28;
+    // BRAZOS (Corregidos)
+    const armGeo = new THREE.CapsuleGeometry(0.07, 0.2, 8, 10);
+    function createArm(x) {
+        const g = new THREE.Group();
+        const arm = new THREE.Mesh(armGeo, mats.main);
+        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 12), mats.skin);
+        hand.position.y = -0.15;
+        g.add(arm, hand);
+        g.position.set(x, 0.55, 0);
+        return g;
+    }
+    brazoI = createArm(-0.28);
+    brazoD = createArm(0.28);
     cuerpoVisual.add(brazoI, brazoD);
 
-    // PIERNAS Y ZAPATILLAS
-    const legGeo = new THREE.CapsuleGeometry(0.08, 0.3, 8, 10);
-    
-    function createLeg(x) {
-        const legGroup = new THREE.Group();
-        const leg = new THREE.Mesh(legGeo, mats.pants);
-        
-        // Zapatilla
-        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.25), mats.white);
-        shoe.position.set(0, -0.22, 0.04);
-        
-        legGroup.add(leg, shoe);
-        legGroup.position.set(x, 0.3, 0);
-        return legGroup;
-    }
+    // PIERNAS (Fix Bug de Colisión/Posición)
+    const legGeo = new THREE.CapsuleGeometry(0.085, 0.22, 8, 10);
+    legGeo.translate(0, -0.11, 0); // Ajusta el centro para rotar bien
 
+    function createLeg(x) {
+        const g = new THREE.Group();
+        const leg = new THREE.Mesh(legGeo, mats.dark);
+        const boot = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.12, 0.26), mats.white);
+        boot.position.set(0, -0.25, 0.04);
+        g.add(leg, boot);
+        g.position.set(x, 0.35, 0);
+        return g;
+    }
     piernaI = createLeg(-0.12);
     piernaD = createLeg(0.12);
     cuerpoVisual.add(piernaI, piernaD);
@@ -364,7 +355,7 @@ function animate() {
         cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.3, 0.15);
     } else {
         cuerpoVisual.children.forEach(c => c.scale.set(1,1,1));
-        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.8, 0.15);
+        cabezaGroup.position.y = THREE.MathUtils.lerp(cabezaGroup.position.y, 0.82, 0.15);
     }
 
     blinkTimer--;
