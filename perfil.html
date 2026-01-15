@@ -7,38 +7,34 @@
         :root { --p-blue: #00d2ff; --p-green: #00ff88; }
         body { background: #050505; color: white; font-family: 'Arial', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
+        /* IZQUIERDA: ÁREA VISUAL */
         .preview-zone { 
-            position: relative; 
             flex: 1; 
             display: flex; 
+            flex-direction: column;
             align-items: center; 
             justify-content: center; 
             background: radial-gradient(circle, #111 0%, #000 100%); 
         }
 
-        #avatar-canvas { 
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%; 
-            cursor: grab; 
+        .avatar-display {
+            font-size: 150px; /* Tamaño del emoji 👤 */
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
         }
         
         .skin-title { 
-            position: absolute;
-            bottom: 15%; 
-            font-size: 70px; 
+            font-size: 80px; 
             font-weight: 900; 
             color: var(--p-blue); 
             text-transform: uppercase; 
-            text-shadow: 0 0 25px rgba(0, 210, 255, 0.7);
-            letter-spacing: 4px;
-            pointer-events: none;
-            z-index: 5;
+            text-shadow: 0 0 30px rgba(0, 210, 255, 0.8);
+            letter-spacing: 5px;
         }
 
-        .inventory-zone { width: 350px; background: #111; border-left: 2px solid #222; padding: 20px; display: flex; flex-direction: column; z-index: 10; }
+        /* DERECHA: MI ARMARIO */
+        .inventory-zone { width: 350px; background: #111; border-left: 2px solid #222; padding: 25px; display: flex; flex-direction: column; }
         
-        /* Contenedor del grid corregido para que siempre sea visible */
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
@@ -58,7 +54,7 @@
         .card:hover { border-color: var(--p-blue); transform: scale(1.05); }
         .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.1); }
         .card span { font-size: 45px; display: block; margin-bottom: 5px; }
-        .card p { margin: 0; font-size: 12px; font-weight: bold; color: #888; }
+        .card p { margin: 0; font-size: 14px; font-weight: bold; color: #bbb; }
 
         .btn-play { 
             margin-top: auto; 
@@ -66,38 +62,38 @@
             color: black; 
             border: none; 
             padding: 20px; 
-            border-radius: 10px; 
-            font-weight: bold; 
+            border-radius: 12px; 
+            font-weight: 900; 
             cursor: pointer; 
-            font-size: 18px; 
+            font-size: 20px; 
+            text-transform: uppercase;
             transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
         }
-        .btn-play:hover { background: #00cc6e; transform: translateY(-2px); }
+        .btn-play:hover { background: #00ffaa; transform: scale(1.02); }
     </style>
 </head>
 <body>
 
 <div class="preview-zone">
-    <div id="avatar-canvas"></div>
+    <div id="avatar-emoji" class="avatar-display">👤</div>
     <div id="skin-name-display" class="skin-title">SELECCIONA</div>
 </div>
 
 <div class="inventory-zone">
-    <h2 style="margin: 0;">📦 MI ARMARIO</h2>
+    <h2 style="margin: 0; font-size: 24px;">📦 MI ARMARIO</h2>
     <div class="grid" id="inventory-grid">
         </div>
     <button class="btn-play" onclick="tryStartGame()">ENTRAR AL MAPA</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
     const avatars = [
-        { id: "juan", emoji: "👨", name: "JUAN", color: 0x005a9e },
-        { id: "ninja", emoji: "🥷", name: "NINJA", color: 0x222222 },
-        { id: "robot", emoji: "🤖", name: "ROBOT", color: 0x888888 }
+        { id: "juan", emoji: "👤", name: "JUAN" },
+        { id: "ninja", emoji: "🥷", name: "NINJA" },
+        { id: "robot", emoji: "🤖", name: "ROBOT" }
     ];
 
+    // Cargar selección previa si existe
     let currentSkin = localStorage.getItem("funbox_current_skin") || null;
 
     function selectAvatar(id) {
@@ -107,21 +103,20 @@
         const found = avatars.find(a => a.id === id);
         if(found) {
             document.getElementById("skin-name-display").innerText = found.name;
+            document.getElementById("avatar-emoji").innerText = found.emoji;
         }
         
         renderUI();
-        update3DModel();
     }
 
     function renderUI() {
         const grid = document.getElementById("inventory-grid");
-        grid.innerHTML = ""; // Limpiar antes de renderizar
+        grid.innerHTML = ""; 
         
         avatars.forEach(av => {
             const card = document.createElement("div");
             card.className = `card ${currentSkin === av.id ? 'selected' : ''}`;
             card.onclick = () => selectAvatar(av.id);
-            // IMPORTANTE: Aquí se inserta el Emoji 👨 y el nombre
             card.innerHTML = `<span>${av.emoji}</span><p>${av.name}</p>`;
             grid.appendChild(card);
         });
@@ -131,65 +126,21 @@
         if (!currentSkin) {
             alert("⚠️ Selecciona un personaje antes de jugar");
         } else {
-            location.href = 'play.html';
+            // Aquí pones la página de tu mapa
+            window.location.href = 'mapa.html'; 
         }
     }
 
-    // --- LÓGICA 3D ---
-    let scene, camera, renderer, modelGroup;
-
-    function init3D() {
-        const container = document.getElementById("avatar-canvas");
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.set(0, 0.8, 3.5);
-
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
-
-        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 10);
-        scene.add(light);
-
-        modelGroup = new THREE.Group();
-        scene.add(modelGroup);
-        
-        if (currentSkin) {
-            const found = avatars.find(a => a.id === currentSkin);
-            if(found) {
-                document.getElementById("skin-name-display").innerText = found.name;
-                update3DModel();
-            }
+    // Inicialización al cargar la página
+    if (currentSkin) {
+        const initial = avatars.find(a => a.id === currentSkin);
+        if(initial) {
+            document.getElementById("skin-name-display").innerText = initial.name;
+            document.getElementById("avatar-emoji").innerText = initial.emoji;
         }
-        
-        animate();
     }
-
-    function update3DModel() {
-        if (!currentSkin) return;
-        while(modelGroup.children.length > 0) modelGroup.remove(modelGroup.children[0]);
-        
-        let avData = avatars.find(a => a.id === currentSkin);
-        
-        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.7), new THREE.MeshStandardMaterial({ color: avData.color }));
-        body.position.y = 0.4;
-        
-        const headCol = (currentSkin === "robot") ? 0x888888 : (currentSkin === "ninja" ? 0x111111 : 0xc4a484);
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.65), new THREE.MeshStandardMaterial({ color: headCol }));
-        head.position.y = 1.1;
-
-        modelGroup.add(body, head);
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-        if(modelGroup) modelGroup.rotation.y += 0.01;
-        renderer.render(scene, camera);
-    }
-
-    // Inicialización
-    renderUI(); // Renderizar el armario primero
-    init3D();   // Luego el 3D
+    
+    renderUI();
 </script>
 </body>
 </html>
