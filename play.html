@@ -200,94 +200,115 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca;
 
 function buildPlayerModel() {
-    // Paleta de colores según la tienda
     const skinPalette = {
-        "juan":   { main: 0x5d4037, hair: 0x1a1a1a, skin: 0xffdbac, isGirl: false },
-        "carla":  { main: 0xff66cc, hair: 0x2b1d12, skin: 0xffdbac, isGirl: true },
-        "robot":  { main: 0x777777, hair: 0x00d2ff, skin: 0x999999, isGirl: false },
-        "ninja":  { main: 0x111111, hair: 0x333333, skin: 0xffdbac, isGirl: false },
-        "alien":  { main: 0x33aa33, hair: 0x00ff00, skin: 0x55ff55, isGirl: false },
-        "cat":    { main: 0xffa500, hair: 0xffcc00, skin: 0xffdbac, isGirl: true }
+        "juan":   { main: 0x5d4037, hair: 0x1a1a1a, skin: 0xffdbac, isGirl: false, isRobot: false },
+        "carla":  { main: 0xff66cc, hair: 0x2b1d12, skin: 0xffdbac, isGirl: true, isRobot: false },
+        "robot":  { main: 0x444444, hair: 0x00d2ff, skin: 0x222222, isGirl: false, isRobot: true },
+        "ninja":  { main: 0x111111, hair: 0x333333, skin: 0xffdbac, isGirl: false, isRobot: false },
+        "alien":  { main: 0x33aa33, hair: 0x00ff00, skin: 0x55ff55, isGirl: false, isRobot: false },
+        "cat":    { main: 0xffa500, hair: 0xffcc00, skin: 0xffdbac, isGirl: true, isRobot: false }
     };
 
     const choice = skinPalette[currentSkin] || skinPalette["juan"];
-    const isJuan = !choice.isGirl; // Mantenemos tu lógica original para barbas o pelo corto
-
-    const colors = {
-        skin: choice.skin,
-        main: choice.main,
-        dark: isJuan ? 0x1a1a1a : 0x222222,
-        shoes: 0x111111 
-    };
-
+    
+    // Materiales mejorados (El robot brilla como metal)
     const mats = {
-        skin: new THREE.MeshStandardMaterial({color: colors.skin, roughness: 0.4}),
-        main: new THREE.MeshStandardMaterial({color: colors.main, roughness: 0.5}),
-        dark: new THREE.MeshStandardMaterial({color: colors.dark, roughness: 0.7}),
-        shoes: new THREE.MeshStandardMaterial({color: colors.shoes, roughness: 0.5})
+        skin: new THREE.MeshStandardMaterial({color: choice.skin, roughness: choice.isRobot ? 0.2 : 0.4, metalness: choice.isRobot ? 0.7 : 0}),
+        main: new THREE.MeshStandardMaterial({color: choice.main, roughness: choice.isRobot ? 0.1 : 0.5, metalness: choice.isRobot ? 0.9 : 0}),
+        dark: new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.7}),
+        shoes: new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.5})
     };
 
     cabezaGroup = new THREE.Group();
     cabezaGroup.position.y = 0.82;
     cuerpoVisual.add(cabezaGroup);
 
-    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.44, 0.44), mats.skin);
+    // CABEZA (Forma de monitor para el Robot)
+    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.44), mats.main);
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
-    const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
-    boca = new THREE.Mesh(bocaGeo, bocaMat);
-    boca.position.set(0, -0.12, 0.222); 
-    cabezaMesh.add(boca);
+    if (choice.isRobot) {
+        // PANTALLA NEGRA FRONTEL
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.38), new THREE.MeshBasicMaterial({color: 0x000000}));
+        screen.position.set(0, 0, 0.222);
+        cabezaMesh.add(screen);
 
-    const hairGroup = new THREE.Group();
-    const hairMat = new THREE.MeshStandardMaterial({color: choice.hair, roughness: 0.8});
+        // ANTENA SUPERIOR
+        const antBase = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18), mats.main);
+        antBase.position.y = 0.3;
+        const antLuz = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshBasicMaterial({color: 0x00d2ff}));
+        antLuz.position.y = 0.1;
+        antBase.add(antLuz);
+        cabezaMesh.add(antBase);
 
-    if (isJuan) {
-        const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
-        topHair.position.y = 0.2;
-        hairGroup.add(topHair);
-        const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
-        for(let i = 0; i < 5; i++) {
-            const bang = new THREE.Mesh(bangsGeo, hairMat);
-            bang.position.set(-0.18 + (i * 0.09), 0.18, 0.22);
-            bang.rotation.x = 0.4;
-            hairGroup.add(bang);
+        // OJOS LED (Blanco brillante)
+        function createLedEye(x) {
+            const eye = new THREE.Mesh(new THREE.CircleGeometry(0.065, 32), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            eye.position.set(x, 0.05, 0.225);
+            listaOjos.push(eye);
+            return eye;
         }
+        cabezaMesh.add(createLedEye(-0.12), createLedEye(0.12));
+
+        // BOCA LED (Cian brillante)
+        const bocaLed = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.035), new THREE.MeshBasicMaterial({color: 0x00d2ff}));
+        bocaLed.position.set(0, -0.12, 0.225);
+        cabezaMesh.add(bocaLed);
+        boca = bocaLed;
+
     } else {
-        const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.48), hairMat);
-        topHair.position.set(0, 0.18, 0);
-        hairGroup.add(topHair);
+        // DISEÑO HUMANO ORIGINAL (NO BORRADO)
+        const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
+        const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
+        boca = new THREE.Mesh(bocaGeo, bocaMat);
+        boca.position.set(0, -0.12, 0.222); 
+        cabezaMesh.add(boca);
 
-        const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.5, 0.25), hairMat);
-        backHair.position.set(0, -0.05, -0.12);
-        hairGroup.add(backHair);
+        const hairGroup = new THREE.Group();
+        const hairMat = new THREE.MeshStandardMaterial({color: choice.hair, roughness: 0.8});
+        if (!choice.isGirl) {
+            const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
+            topHair.position.y = 0.2;
+            hairGroup.add(topHair);
+            const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
+            for(let i = 0; i < 5; i++) {
+                const bang = new THREE.Mesh(bangsGeo, hairMat);
+                bang.position.set(-0.18 + (i * 0.09), 0.18, 0.22);
+                bang.rotation.x = 0.4;
+                hairGroup.add(bang);
+            }
+        } else {
+            const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.48), hairMat);
+            topHair.position.set(0, 0.18, 0);
+            hairGroup.add(topHair);
+            const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.5, 0.25), hairMat);
+            backHair.position.set(0, -0.05, -0.12);
+            hairGroup.add(backHair);
+            const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.15, 0.05), hairMat);
+            fringe.position.set(0, 0.18, 0.22);
+            fringe.rotation.z = -0.05;
+            hairGroup.add(fringe);
+            const bun = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), hairMat);
+            bun.position.set(0, 0.15, -0.28);
+            hairGroup.add(bun);
+        }
+        cabezaMesh.add(hairGroup);
 
-        const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.15, 0.05), hairMat);
-        fringe.position.set(0, 0.18, 0.22);
-        fringe.rotation.z = -0.05;
-        hairGroup.add(fringe);
-
-        const bun = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), hairMat);
-        bun.position.set(0, 0.15, -0.28);
-        hairGroup.add(bun);
+        function createEye(x) {
+            const eyeGroup = new THREE.Group();
+            const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), new THREE.MeshBasicMaterial({color: 0x000000}));
+            const shine1 = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            shine1.position.set(0.025, 0.025, 0.01); 
+            const shine2 = new THREE.Mesh(new THREE.CircleGeometry(0.012, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            shine2.position.set(-0.02, -0.03, 0.01); 
+            eyeGroup.add(orb, shine1, shine2);
+            eyeGroup.position.set(x, -0.04, 0.221);
+            listaOjos.push(eyeGroup);
+            return eyeGroup;
+        }
+        cabezaMesh.add(createEye(-0.13), createEye(0.13));
     }
-    cabezaMesh.add(hairGroup);
-
-    function createEye(x) {
-        const eyeGroup = new THREE.Group();
-        const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), new THREE.MeshBasicMaterial({color: 0x000000}));
-        const shine1 = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        shine1.position.set(0.025, 0.025, 0.01); 
-        const shine2 = new THREE.Mesh(new THREE.CircleGeometry(0.012, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        shine2.position.set(-0.02, -0.03, 0.01); 
-        eyeGroup.add(orb, shine1, shine2);
-        eyeGroup.position.set(x, -0.04, 0.221);
-        listaOjos.push(eyeGroup);
-        return eyeGroup;
-    }
-    cabezaMesh.add(createEye(-0.13), createEye(0.13));
 
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.24), mats.main);
     torso.position.y = 0.45;
