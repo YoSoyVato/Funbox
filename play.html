@@ -12,14 +12,23 @@
     padding:15px; border-radius:20px; z-index:10;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   }
+  /* NUEVO: Barra de energía del Jetpack */
+  #jetpack-ui {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    width: 250px; height: 12px; background: rgba(0,0,0,0.4);
+    border-radius: 10px; border: 2px solid white; display: none; overflow: hidden;
+  }
+  #jetpack-bar { width: 100%; height: 100%; background: #00d2ff; transition: width 0.1s; }
 </style>
 </head>
 <body>
 
 <div id="ui">
   📦🛠️ **Funbox Studio**<br>
-  WASD: Moverse | **Shift: CORRER** | **C: Agacharse** | **R: Cámara Frontal**
+  WASD: Moverse | **Shift: CORRER** | **Espacio x2: JETPACK (10s)** | **R: Cámara Frontal**
 </div>
+
+<div id="jetpack-ui"><div id="jetpack-bar"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
@@ -31,9 +40,8 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// --- CORRECCIÓN DE DETECCIÓN DE SKIN ---
 const savedPlayerData = JSON.parse(localStorage.getItem("funbox_player"));
-const currentSkin = (savedPlayerData && savedPlayerData.current) ? savedPlayerData.current : (localStorage.getItem("funbox_current_skin") || "juan");
+const currentSkin = (savedPlayerData && savedPlayerData.current) ? savedPlayerData.current : (localStorage.getItem("funbox_current_skin") || "robot");
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
 const scene = new THREE.Scene();
@@ -197,7 +205,7 @@ const cuerpoVisual = new THREE.Group();
 player.add(cuerpoVisual);
 
 const listaOjos = [];
-let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca;
+let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca, jetpackPropulsores = [];
 
 function buildPlayerModel() {
     const skinPalette = {
@@ -228,12 +236,10 @@ function buildPlayerModel() {
     cabezaGroup.add(cabezaMesh);
 
     if (choice.isRobot) {
-        // PANTALLA
         const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.38), new THREE.MeshBasicMaterial({color: 0x000000}));
         screen.position.set(0, 0, 0.222);
         cabezaMesh.add(screen);
 
-        // TORNILLOS LATERALES (OREJAS)
         const boltGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.08, 16);
         boltGeo.rotateZ(Math.PI/2);
         const boltL = new THREE.Mesh(boltGeo, mats.main);
@@ -242,7 +248,6 @@ function buildPlayerModel() {
         boltR.position.set(0.25, 0, 0);
         cabezaMesh.add(boltL, boltR);
 
-        // ANTENAS INCLINADAS
         function createAntenna(x, rot) {
             const g = new THREE.Group();
             const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18), mats.main);
@@ -256,7 +261,6 @@ function buildPlayerModel() {
         }
         cabezaMesh.add(createAntenna(-0.12, 0.3), createAntenna(0.12, -0.3));
 
-        // OJOS LED
         function createLedEye(x) {
             const eye = new THREE.Mesh(new THREE.CircleGeometry(0.065, 32), new THREE.MeshBasicMaterial({color: 0xffffff}));
             eye.position.set(x, 0.05, 0.225);
@@ -265,14 +269,12 @@ function buildPlayerModel() {
         }
         cabezaMesh.add(createLedEye(-0.12), createLedEye(0.12));
 
-        // BOCA LED
         const bocaLed = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.035), mats.glow);
         bocaLed.position.set(0, -0.12, 0.225);
         cabezaMesh.add(bocaLed);
         boca = bocaLed;
 
     } else {
-        // DISEÑO HUMANO
         const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
         const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
         boca = new THREE.Mesh(bocaGeo, bocaMat);
@@ -328,42 +330,28 @@ function buildPlayerModel() {
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
 
-    // --- JETPACK PULIDO Y NÚCLEO (Solo para el Robot) ---
-    if (choice.isRobot) {
-        const jetpackGroup = new THREE.Group();
-        jetpackGroup.position.set(0, 0.45, -0.15);
-        
-        // Base central
-        const jpBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.1), mats.main);
-        jetpackGroup.add(jpBase);
+    // JETPACK (Ahora siempre visible para todos, con luz si es robot)
+    const jetpackGroup = new THREE.Group();
+    jetpackGroup.position.set(0, 0.45, -0.15);
+    const jpBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.1), mats.main);
+    jetpackGroup.add(jpBase);
+    const tankGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.35, 12);
+    const tankL = new THREE.Mesh(tankGeo, mats.main); tankL.position.x = -0.15;
+    const tankR = new THREE.Mesh(tankGeo, mats.main); tankR.position.x = 0.15;
+    jetpackGroup.add(tankL, tankR);
 
-        // Tanques laterales cilíndricos
-        const tankGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.35, 12);
-        const tankL = new THREE.Mesh(tankGeo, mats.main);
-        tankL.position.x = -0.15;
-        const tankR = new THREE.Mesh(tankGeo, mats.main);
-        tankR.position.x = 0.15;
-        jetpackGroup.add(tankL, tankR);
+    // NUEVO: Efectos de fuego/luz para el Jetpack
+    const fireGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    const fireMat = new THREE.MeshBasicMaterial({color: 0x00d2ff, transparent: true, opacity: 0});
+    [-0.15, 0.15].forEach(x => {
+        const fire = new THREE.Mesh(fireGeo, fireMat.clone());
+        fire.position.set(x, -0.22, 0);
+        jetpackGroup.add(fire);
+        jetpackPropulsores.push(fire);
+    });
+    cuerpoVisual.add(jetpackGroup);
 
-        // Turbinas/Propulsores con luz de energía
-        const nozzleGeo = new THREE.CylinderGeometry(0.06, 0.04, 0.08, 12);
-        const nozzleMat = new THREE.MeshStandardMaterial({color: 0x333333, metalness: 0.8});
-        
-        const nozzleL = new THREE.Mesh(nozzleGeo, nozzleMat);
-        nozzleL.position.set(-0.15, -0.2, 0);
-        const nozzleR = new THREE.Mesh(nozzleGeo, nozzleMat);
-        nozzleR.position.set(0.15, -0.2, 0);
-        
-        // El brillo de la turbina (luz LED interna)
-        const thrusterGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.02, 12), mats.glow);
-        thrusterGlow.position.y = -0.04;
-        nozzleL.add(thrusterGlow.clone());
-        nozzleR.add(thrusterGlow.clone());
-        
-        jetpackGroup.add(nozzleL, nozzleR);
-        cuerpoVisual.add(jetpackGroup);
-        
-        // NÚCLEO DE ENERGÍA EN EL PECHO
+    if(choice.isRobot){
         const core = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), mats.glow);
         core.position.set(0, 0.48, 0.121);
         cuerpoVisual.add(core);
@@ -407,12 +395,36 @@ const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
 let yaw = 0, pitch = 0, step = 0, rollStep = 0, blinkTimer = 0;
 
+// NUEVO: Variables para Jetpack
+let lastSpaceTime = 0;
+let jetpackActive = false;
+let jetpackFuel = 100; // 100% de combustible
+const jetpackDuration = 10000; // 10 segundos
+
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
-    if(e.code === "Space" && onGround) vy = jumpForce;
+    
+    // DOBLE TAP ESPACIO PARA JETPACK
+    if(e.code === "Space") {
+        let now = Date.now();
+        if(now - lastSpaceTime < 250 && !onGround && jetpackFuel > 0) {
+            jetpackActive = true;
+            document.getElementById("jetpack-ui").style.display = "block";
+        }
+        if(onGround) {
+            vy = jumpForce;
+            onGround = false;
+        }
+        lastSpaceTime = now;
+    }
+    
     if(e.key.toLowerCase() === "c" && onGround) isHeadMode = !isHeadMode;
 });
-window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+window.addEventListener("keyup", e => {
+    keys[e.key.toLowerCase()] = false;
+    if(e.code === "Space") jetpackActive = false;
+});
+
 document.body.onclick = () => document.body.requestPointerLock();
 document.addEventListener("mousemove", e => { 
     if(document.pointerLockElement) {
@@ -426,17 +438,36 @@ function animate() {
     requestAnimationFrame(animate);
     const currentSurfaceY = getSurfaceY(player.position);
     
-    player.position.y += vy;
-    if (player.position.y > currentSurfaceY) { vy += gravity; onGround = false; }
-    else { 
-        if (currentSurfaceY > -50) { 
-            player.position.y = currentSurfaceY; 
-            vy = Math.max(0, vy); 
-            onGround = true; 
-        } else { 
-            onGround = false; vy += gravity; 
-        }
+    // Lógica de Movimiento Vertical (Salto y Jetpack)
+    if(jetpackActive && jetpackFuel > 0) {
+        vy = 0.12; // Velocidad de ascenso suave
+        jetpackFuel -= 0.16; // Consume fuel (aprox 10s)
+        
+        // Efecto visual propulsores
+        jetpackPropulsores.forEach(p => {
+            p.material.opacity = 0.8;
+            p.scale.setScalar(1 + Math.sin(Date.now()*0.02)*0.4);
+        });
+    } else {
+        vy += gravity;
+        jetpackActive = false;
+        jetpackPropulsores.forEach(p => p.material.opacity = THREE.MathUtils.lerp(p.material.opacity, 0, 0.1));
     }
+    
+    player.position.y += vy;
+    
+    if (player.position.y <= currentSurfaceY) { 
+        player.position.y = currentSurfaceY; 
+        vy = Math.max(0, vy); 
+        onGround = true; 
+        jetpackFuel = Math.min(100, jetpackFuel + 0.5); // Recarga fuel en tierra
+        if(jetpackFuel >= 100) document.getElementById("jetpack-ui").style.display = "none";
+    } else {
+        onGround = false;
+    }
+
+    // Actualizar UI Jetpack
+    document.getElementById("jetpack-bar").style.width = jetpackFuel + "%";
 
     let isFallingDeep = player.position.y < -2;
     if (isFallingDeep) {
@@ -452,6 +483,7 @@ function animate() {
         player.position.copy(spawnPoint); 
         player.position.y = 5; vy = 0; 
         player.rotation.set(0,0,0);
+        jetpackFuel = 100;
     }
 
     let moving = false, dir = new THREE.Vector3();
@@ -461,8 +493,8 @@ function animate() {
     if(keys.d){ dir.x += 1; moving = true; }
 
     let isRunning = keys.shift && moving;
-    let moveSpeed = isHeadMode ? 0.12 : (isRunning ? 0.18 : 0.09);
-    let animationSpeed = isRunning ? 0.4 : 0.2;
+    let moveSpeed = isHeadMode ? 0.12 : (isRunning ? 0.22 : 0.09);
+    let animationSpeed = isRunning ? 0.5 : 0.25;
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
 
     if(boca) {
@@ -488,11 +520,12 @@ function animate() {
         
         if (!isHeadMode && onGround) {
             step += animationSpeed;
-            piernaI.rotation.x = Math.sin(step) * 0.6;
-            piernaD.rotation.x = Math.sin(step + Math.PI) * 0.6;
-            brazoI.rotation.x = Math.sin(step + Math.PI) * 0.6;
-            brazoD.rotation.x = Math.sin(step) * 0.6;
-            cuerpoVisual.position.y = Math.abs(Math.sin(step)) * 0.05;
+            // Caminata Robótica
+            piernaI.rotation.x = Math.sin(step) * 0.8;
+            piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
+            brazoI.rotation.x = Math.sin(step + Math.PI) * 0.4;
+            brazoD.rotation.x = Math.sin(step) * 0.4;
+            cuerpoVisual.position.y = Math.abs(Math.sin(step)) * 0.04;
         } else if (isHeadMode) {
             rollStep += 0.15;
             cabezaMesh.rotation.x = -rollStep; 
@@ -503,12 +536,15 @@ function animate() {
         cuerpoVisual.position.y = THREE.MathUtils.lerp(cuerpoVisual.position.y, 0, 0.1);
     }
 
-    if (!onGround && !isFallingDeep) {
-        cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, 1.15, 0.1);
-        cuerpoVisual.scale.x = THREE.MathUtils.lerp(cuerpoVisual.scale.x, 0.85, 0.1);
+    // ANIMACIÓN DE SALTO/VUELO (Encoger piernas)
+    if (!onGround) {
+        piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0.5, 0.1);
+        piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0.5, 0.1);
+        brazoI.rotation.z = THREE.MathUtils.lerp(brazoI.rotation.z, -0.2, 0.1);
+        brazoD.rotation.z = THREE.MathUtils.lerp(brazoD.rotation.z, 0.2, 0.1);
     } else {
-        cuerpoVisual.scale.y = THREE.MathUtils.lerp(cuerpoVisual.scale.y, 1, 0.2);
-        cuerpoVisual.scale.x = THREE.MathUtils.lerp(cuerpoVisual.scale.x, 1, 0.2);
+        brazoI.rotation.z = THREE.MathUtils.lerp(brazoI.rotation.z, 0, 0.1);
+        brazoD.rotation.z = THREE.MathUtils.lerp(brazoD.rotation.z, 0, 0.1);
     }
 
     if (isHeadMode) {
