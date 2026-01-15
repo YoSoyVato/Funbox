@@ -211,7 +211,6 @@ function buildPlayerModel() {
 
     const choice = skinPalette[currentSkin] || skinPalette["juan"];
     
-    // Materiales mejorados (El robot brilla como metal)
     const mats = {
         skin: new THREE.MeshStandardMaterial({color: choice.skin, roughness: choice.isRobot ? 0.2 : 0.4, metalness: choice.isRobot ? 0.7 : 0}),
         main: new THREE.MeshStandardMaterial({color: choice.main, roughness: choice.isRobot ? 0.1 : 0.5, metalness: choice.isRobot ? 0.9 : 0}),
@@ -223,26 +222,31 @@ function buildPlayerModel() {
     cabezaGroup.position.y = 0.82;
     cuerpoVisual.add(cabezaGroup);
 
-    // CABEZA (Forma de monitor para el Robot)
     cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.44), mats.main);
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
     if (choice.isRobot) {
-        // PANTALLA NEGRA FRONTEL
         const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.38), new THREE.MeshBasicMaterial({color: 0x000000}));
         screen.position.set(0, 0, 0.222);
         cabezaMesh.add(screen);
 
-        // ANTENA SUPERIOR
-        const antBase = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18), mats.main);
-        antBase.position.y = 0.3;
-        const antLuz = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshBasicMaterial({color: 0x00d2ff}));
-        antLuz.position.y = 0.1;
-        antBase.add(antLuz);
-        cabezaMesh.add(antBase);
+        // --- DOS ANTENAS ---
+        function createAntenna(xPos, rotationZ) {
+            const antGroup = new THREE.Group();
+            const antBase = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18), mats.main);
+            antBase.position.y = 0.09;
+            const antLuz = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshBasicMaterial({color: 0x00d2ff}));
+            antLuz.position.y = 0.1;
+            antBase.add(antLuz);
+            antGroup.add(antBase);
+            antGroup.position.set(xPos, 0.24, 0);
+            antGroup.rotation.z = rotationZ;
+            return antGroup;
+        }
+        cabezaMesh.add(createAntenna(-0.12, 0.3)); // Izquierda inclinada
+        cabezaMesh.add(createAntenna(0.12, -0.3));  // Derecha inclinada
 
-        // OJOS LED (Blanco brillante)
         function createLedEye(x) {
             const eye = new THREE.Mesh(new THREE.CircleGeometry(0.065, 32), new THREE.MeshBasicMaterial({color: 0xffffff}));
             eye.position.set(x, 0.05, 0.225);
@@ -251,14 +255,12 @@ function buildPlayerModel() {
         }
         cabezaMesh.add(createLedEye(-0.12), createLedEye(0.12));
 
-        // BOCA LED (Cian brillante)
         const bocaLed = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.035), new THREE.MeshBasicMaterial({color: 0x00d2ff}));
         bocaLed.position.set(0, -0.12, 0.225);
         cabezaMesh.add(bocaLed);
         boca = bocaLed;
 
     } else {
-        // DISEÑO HUMANO ORIGINAL (NO BORRADO)
         const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
         const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
         boca = new THREE.Mesh(bocaGeo, bocaMat);
@@ -387,7 +389,7 @@ function animate() {
     if (isFallingDeep) {
         player.rotation.x += 0.2; 
         player.rotation.z += 0.1;
-        boca.scale.set(1.5, 4, 1);
+        if(boca) boca.scale.set(1.5, 4, 1);
     } else {
         player.rotation.x = THREE.MathUtils.lerp(player.rotation.x, 0, 0.1);
         player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, 0, 0.1);
@@ -410,18 +412,20 @@ function animate() {
     let animationSpeed = isRunning ? 0.4 : 0.2;
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
 
-    if (!onGround && !isFallingDeep) {
-        boca.scale.set(1.8, 2.0, 1); 
-    } else if (moving) {
-        if (isRunning) {
-            let vibrate = Math.sin(Date.now() * 0.03) * 0.2;
-            boca.scale.set(2.2 + vibrate, 0.5, 1);
+    if(boca) {
+        if (!onGround && !isFallingDeep) {
+            boca.scale.set(1.8, 2.0, 1); 
+        } else if (moving) {
+            if (isRunning) {
+                let vibrate = Math.sin(Date.now() * 0.03) * 0.2;
+                boca.scale.set(2.2 + vibrate, 0.5, 1);
+            } else {
+                boca.scale.set(1.2, 0.7, 1);
+            }
         } else {
-            boca.scale.set(1.2, 0.7, 1);
+            let breathe = Math.sin(Date.now() * 0.002) * 0.1 + 0.3;
+            boca.scale.set(1, breathe, 1);
         }
-    } else {
-        let breathe = Math.sin(Date.now() * 0.002) * 0.1 + 0.3;
-        boca.scale.set(1, breathe, 1);
     }
 
     if(moving) {
