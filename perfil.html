@@ -21,7 +21,7 @@
             font-size: 150px; 
             margin-bottom: 20px;
             filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.3));
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
         .skin-title { 
@@ -85,17 +85,18 @@
 <div class="inventory-zone">
     <h2 style="margin: 0; font-size: 24px; letter-spacing: 1px;">📦 MI ARMARIO</h2>
     <div class="grid" id="inventory-grid"></div>
-    <button class="btn-play" onclick="tryStartGame()">ENTRAR AL MAPA</button>
+    <button class="btn-play" onclick="tryStartGame()">ENTRAR AL STUDIO</button>
 </div>
 
 <script>
-    // Lista de avatares
+    // Lista de avatares disponibles
     const avatars = [
         { id: "juan", emoji: "👨", name: "JUAN" },
         { id: "mujer", emoji: "👩", name: "CARLA" }
     ];
 
-    // Intentar cargar la skin previa, si no existe, usar 'juan' por defecto
+    // Lógica de Persistencia y Selección por Defecto
+    // Si no hay skin guardada, forzamos a 'juan' para que nunca empiece vacío
     let currentSkin = localStorage.getItem("funbox_current_skin");
     if (!currentSkin) {
         currentSkin = "juan";
@@ -118,9 +119,9 @@
             nameEl.innerText = found.name;
             emojiEl.innerText = found.emoji;
             
-            // Efecto de pequeña animación al cambiar
+            // Animación de pop-up al seleccionar
             emojiEl.style.transform = "scale(1.2)";
-            setTimeout(() => emojiEl.style.transform = "scale(1)", 100);
+            setTimeout(() => emojiEl.style.transform = "scale(1)", 150);
         }
     }
 
@@ -138,11 +139,11 @@
     }
 
     function tryStartGame() {
-        // Redirigir a play.html (Asegúrate de que tu otro archivo se llame así exactamente)
+        // Redirección definitiva a play.html para que cargue el avatar en el Studio
         window.location.href = 'play.html'; 
     }
 
-    // Inicialización al cargar la página
+    // Ejecución inicial
     updatePreview(currentSkin);
     renderUI();
 </script>
