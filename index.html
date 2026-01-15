@@ -81,7 +81,7 @@
             font-size: 60px;
         }
 
-        /* --- ESTILOS JUEGOS --- */
+        /* --- ESTILOS JUEGOS DINÁMICOS --- */
         .games-list {
             display: flex;
             flex-direction: column;
@@ -90,6 +90,12 @@
             overflow-y: auto;
             margin-bottom: 10px;
             padding-right: 5px;
+        }
+        .no-games-msg {
+            color: #555;
+            font-size: 13px;
+            font-style: italic;
+            padding: 20px 0;
         }
         .game-item {
             background: #0f0f0f;
@@ -140,15 +146,8 @@
 
     <div id="view-games" class="form-container hidden">
         <h2 style="font-size: 18px; margin: 0 0 15px 0; letter-spacing: 2px;">JUEGOS PUBLICADOS</h2>
-        <div class="games-list">
-            <div class="game-item">
-                <span class="game-name">🏝️ Survival Island</span>
-                <button class="btn-play-small" onclick="alert('Conectando...')">JUGAR</button>
-            </div>
-            <div class="game-item">
-                <span class="game-name">🏎️ Funbox Racing</span>
-                <button class="btn-play-small" onclick="alert('Conectando...')">JUGAR</button>
-            </div>
+        <div id="list-container" class="games-list">
+            <p class="no-games-msg">No hay juegos publicados.<br>Sé el primero en crear uno en el Studio.</p>
         </div>
         <button class="btn-main btn-secondary" onclick="volverAlMenu()">VOLVER</button>
     </div>
@@ -180,6 +179,9 @@
         document.getElementById("view-menu").classList.add("hidden");
         document.getElementById("view-games").classList.remove("hidden");
         document.getElementById("launcher-status").innerText = "MODO JUEGO";
+        
+        // Aquí podrías agregar una función para leer juegos guardados en LocalStorage
+        // cargarJuegosPublicados(); 
     }
 
     function volverAlMenu() {
