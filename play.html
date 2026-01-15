@@ -32,7 +32,7 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
 };
 
 // DETECTAR AVATAR SELECCIONADO
-const currentSkin = localStorage.getItem("funbox_current_skin") || "👨";
+const currentSkin = localStorage.getItem("funbox_current_skin") || "juan";
 
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
@@ -200,15 +200,11 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
-    // Definir materiales basados en la skin seleccionada
-    let skinCol = 0xc4a484, shirtCol = 0x005a9e, pantsCol = 0x004070, hairCol = 0x3d2b1f;
-
-    // Ajuste por Skin
-    if (currentSkin === "🥷") {
-        skinCol = 0x111111; shirtCol = 0x222222; pantsCol = 0x111111; hairCol = 0x111111;
-    } else if (currentSkin === "🤖") {
-        skinCol = 0x888888; shirtCol = 0x555555; pantsCol = 0x444444; hairCol = 0x888888;
-    }
+    // Definir materiales basados en tu pedido
+    let skinCol = 0xc4a484;    // Color Piel
+    let shirtCol = 0x5d4037;   // MARRÓN (Camisa)
+    let pantsCol = 0x808080;   // GRIS (Pantalones)
+    let hairCol = 0x3d2b1f;    // Pelo Oscuro
 
     const skinMat = new THREE.MeshStandardMaterial({color: skinCol, roughness: 0.4});
     const shirtMat = new THREE.MeshStandardMaterial({color: shirtCol, roughness: 0.7});
@@ -224,58 +220,37 @@ function buildPlayerModel() {
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // Pelo / Extras de Cabeza
-    if (currentSkin === "👨") {
-        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.15, 0.44), hairMat);
-        hair.position.y = 0.18;
-        cabezaMesh.add(hair);
-        // Auriculares
-        const pMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
-        const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 32), pMat);
-        pL.rotation.z = Math.PI/2; pL.position.x = -0.23;
-        const pR = pL.clone(); pR.position.x = 0.23;
-        cabezaMesh.add(pL, pR);
-    } else if (currentSkin === "🥷") {
-        const mask = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.05), new THREE.MeshStandardMaterial({color: 0xc4a484}));
-        mask.position.set(0, -0.02, 0.18);
-        cabezaMesh.add(mask);
-    } else if (currentSkin === "🤖") {
-        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.05), new THREE.MeshBasicMaterial({color: 0x00ffff}));
-        visor.position.set(0, 0.05, 0.18);
-        cabezaMesh.add(visor);
-        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.15), skinMat);
-        ant.position.set(0.1, 0.25, 0); cabezaMesh.add(ant);
-    }
+    // --- NUEVO PELO DE JUAN ---
+    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.2, 0.44), hairMat);
+    hair.position.y = 0.15;
+    cabezaMesh.add(hair);
+    // Flequillo delantero
+    const hairFront = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.1, 0.1), hairMat);
+    hairFront.position.set(0, 0.1, 0.2);
+    cabezaMesh.add(hairFront);
 
-    // Ojos (No se crean para el robot, él tiene visor)
-    if (currentSkin !== "🤖") {
-        function crearOjo(x) {
-            const ojoGroup = new THREE.Group();
-            const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
-            pupila.scale.y = 1.2; 
-            const brillo1 = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-            brillo1.position.set(0.03, 0.03, 0.05); 
-            const brillo2 = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-            brillo2.position.set(-0.02, -0.03, 0.05); 
-            ojoGroup.add(pupila, brillo1, brillo2);
-            ojoGroup.position.set(x, 0.02, 0.2);
-            listaOjos.push(ojoGroup); 
-            return ojoGroup;
-        }
-        cabezaMesh.add(crearOjo(-0.12), crearOjo(0.12));
+    // Ojos
+    function crearOjo(x) {
+        const ojoGroup = new THREE.Group();
+        const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        pupila.scale.y = 1.2; 
+        const brillo1 = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        brillo1.position.set(0.03, 0.03, 0.05); 
+        const brillo2 = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        brillo2.position.set(-0.02, -0.03, 0.05); 
+        ojoGroup.add(pupila, brillo1, brillo2);
+        ojoGroup.position.set(x, 0.02, 0.2);
+        listaOjos.push(ojoGroup); 
+        return ojoGroup;
     }
+    cabezaMesh.add(crearOjo(-0.12), crearOjo(0.12));
 
-    // Torso y Cinturón Ninja
+    // Torso (CAMISA MARRÓN)
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), shirtMat);
     torso.position.y = 0.35;
     cuerpoVisual.add(torso);
-    if(currentSkin === "🥷") {
-        const belt = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03), new THREE.MeshStandardMaterial({color: 0xff0000}));
-        belt.rotation.x = Math.PI/2; belt.position.y = 0.25;
-        cuerpoVisual.add(belt);
-    }
 
-    // Brazos
+    // Brazos (CAMISA MARRÓN)
     const armGeo = new THREE.CapsuleGeometry(0.06, 0.2, 8, 12);
     brazoI = new THREE.Mesh(armGeo, shirtMat);
     brazoI.position.set(-0.25, 0.45, 0);
@@ -283,7 +258,7 @@ function buildPlayerModel() {
     brazoD.position.x = 0.25;
     cuerpoVisual.add(brazoI, brazoD);
 
-    // Piernas
+    // Piernas (PANTALONES GRIS)
     const legGeo = new THREE.CapsuleGeometry(0.08, 0.25, 8, 12);
     legGeo.translate(0, -0.12, 0); 
     piernaI = new THREE.Mesh(legGeo, pantsMat);
