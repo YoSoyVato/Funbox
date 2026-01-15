@@ -200,9 +200,9 @@ let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 function buildPlayerModel() {
     const colors = {
         skin: 0xffdbac,
-        main: 0x00d2ff, 
+        main: 0x5d4037, // CAMBIADO A MARRÓN
         dark: 0x1a1a1a, // Color del pelo
-        shoes: 0x222222 // Color de los pies (ya no blancos)
+        shoes: 0x222222 // Color de los pies
     };
 
     const mats = {
@@ -261,12 +261,12 @@ function buildPlayerModel() {
     }
     cabezaMesh.add(createEye(-0.13), createEye(0.13));
 
-    // TORSO
+    // TORSO (MARRÓN)
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.24), mats.main);
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
 
-    // BRAZOS
+    // BRAZOS (MARRÓN)
     const armGeo = new THREE.CapsuleGeometry(0.07, 0.2, 8, 10);
     function createArm(x) {
         const g = new THREE.Group();
@@ -281,7 +281,7 @@ function buildPlayerModel() {
     brazoD = createArm(0.28);
     cuerpoVisual.add(brazoI, brazoD);
 
-    // PIERNAS CON PIES OSCUROS
+    // PIERNAS
     const legGeo = new THREE.CapsuleGeometry(0.085, 0.22, 8, 10);
     legGeo.translate(0, -0.11, 0); 
 
