@@ -52,7 +52,7 @@
 
         .btn-main:hover { background: #4db8ff; color: #fff; transform: translateY(-3px); }
         .btn-secondary { background: #1a1a1a; color: #888; border: 1px solid #333; margin-top: 5px; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .logout-link { font-size: 12px; color: #444; cursor: pointer; margin-top: 25px; text-decoration: underline; display: block; }
         .logout-link:hover { color: #f44336; }
 
@@ -80,6 +80,39 @@
             justify-content: center;
             font-size: 60px;
         }
+
+        /* --- ESTILOS JUEGOS --- */
+        .games-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding-right: 5px;
+        }
+        .game-item {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+        }
+        .game-item:hover { border-color: #4db8ff; }
+        .game-name { font-size: 14px; font-weight: bold; color: #fff; }
+        .btn-play-small {
+            background: #4db8ff;
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -101,8 +134,23 @@
         </div>
 
         <button class="btn-main" onclick="location.href='editor.html'">🏗️ Funbox Studio</button>
-        <button class="btn-main btn-secondary" onclick="alert('Cargando servidor...')">🎮 Juegos</button>
+        <button class="btn-main btn-secondary" onclick="abrirJuegos()">🎮 Juegos</button>
         <span class="logout-link" onclick="cerrarSesion()">Cerrar sesión de la cuenta</span>
+    </div>
+
+    <div id="view-games" class="form-container hidden">
+        <h2 style="font-size: 18px; margin: 0 0 15px 0; letter-spacing: 2px;">JUEGOS PUBLICADOS</h2>
+        <div class="games-list">
+            <div class="game-item">
+                <span class="game-name">🏝️ Survival Island</span>
+                <button class="btn-play-small" onclick="alert('Conectando...')">JUGAR</button>
+            </div>
+            <div class="game-item">
+                <span class="game-name">🏎️ Funbox Racing</span>
+                <button class="btn-play-small" onclick="alert('Conectando...')">JUGAR</button>
+            </div>
+        </div>
+        <button class="btn-main btn-secondary" onclick="volverAlMenu()">VOLVER</button>
     </div>
 </div>
 
@@ -123,8 +171,20 @@
 
     function showMenu(name) {
         document.getElementById("view-register").classList.add("hidden");
+        document.getElementById("view-games").classList.add("hidden");
         document.getElementById("view-menu").classList.remove("hidden");
         document.getElementById("launcher-status").innerText = `BIENVENIDO, ${name}`;
+    }
+
+    function abrirJuegos() {
+        document.getElementById("view-menu").classList.add("hidden");
+        document.getElementById("view-games").classList.remove("hidden");
+        document.getElementById("launcher-status").innerText = "MODO JUEGO";
+    }
+
+    function volverAlMenu() {
+        const s = JSON.parse(sessionStorage.getItem("funbox_session"));
+        showMenu(s.user);
     }
 
     function cerrarSesion() {
