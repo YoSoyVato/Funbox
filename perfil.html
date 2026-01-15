@@ -18,7 +18,6 @@
             position: relative;
         }
 
-        /* SISTEMA DE DINERO */
         .wallet {
             position: absolute;
             top: 20px;
@@ -72,13 +71,12 @@
             overflow-y: auto;
         }
         
-        .section-title { font-size: 14px; color: #555; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .section-title { font-size: 14px; color: #555; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; margin-top: 20px; }
 
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 12px; 
-            margin-bottom: 30px;
         }
 
         .card { 
@@ -89,12 +87,11 @@
             text-align: center; 
             cursor: pointer; 
             transition: 0.3s; 
-            position: relative;
         }
         .card:hover { border-color: var(--p-blue); }
-        .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.05); }
-        .card span { font-size: 40px; display: block; margin-bottom: 5px; }
-        .card p { margin: 0; font-size: 12px; font-weight: 900; color: #fff; }
+        .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.1); }
+        .card span { font-size: 40px; display: block; }
+        .card p { margin: 5px 0 0 0; font-size: 12px; font-weight: 900; color: #fff; }
         
         .price-tag {
             background: var(--p-gold);
@@ -103,7 +100,6 @@
             font-weight: 900;
             padding: 2px 8px;
             border-radius: 5px;
-            display: inline-block;
             margin-top: 5px;
         }
 
@@ -111,39 +107,36 @@
             background: transparent;
             color: #444;
             border: 1px solid #222;
-            padding: 10px;
+            padding: 15px;
             cursor: pointer;
-            margin-top: auto;
+            margin-top: 40px;
             border-radius: 5px;
+            font-weight: bold;
         }
         .btn-back:hover { color: white; border-color: white; }
-
     </style>
 </head>
 <body>
 
 <div class="preview-zone">
-    <div class="wallet">
-        🪙 <span id="balance-display">0</span>
-    </div>
-
+    <div class="wallet">🪙 <span id="balance-display">0</span></div>
     <div id="avatar-emoji" class="avatar-display">👤</div>
     <div id="skin-name-display" class="skin-title">SELECCIONA</div>
     <div id="action-container"></div>
 </div>
 
 <div class="inventory-zone">
+    <h2 style="margin:0; font-size: 20px;">MI PERFIL</h2>
     <div class="section-title">📦 MI ARMARIO</div>
     <div class="grid" id="inventory-grid"></div>
 
-    <div class="section-title">🛒 TIENDA DE AVATARES</div>
+    <div class="section-title">🛒 TIENDA</div>
     <div class="grid" id="shop-grid"></div>
 
-    <button class="btn-back" onclick="location.href='index.html'">SALIR AL MENÚ</button>
+    <button class="btn-back" onclick="location.href='index.html'">VOLVER AL LAUNCHER</button>
 </div>
 
 <script>
-    // Configuración de Avatares
     const allAvatars = {
         "juan": { id: "juan", emoji: "👨", name: "JUAN", price: 0 },
         "carla": { id: "carla", emoji: "👩", name: "CARLA", price: 0 },
@@ -153,12 +146,18 @@
         "cat": { id: "cat", emoji: "🐱", name: "MIAU", price: 2000 }
     };
 
-    // Estado del Jugador (Cargar de LocalStorage)
-    let playerData = JSON.parse(localStorage.getItem("funbox_player")) || {
-        money: 1000,
-        owned: ["juan", "carla"],
-        current: "juan"
-    };
+    // --- CORRECCIÓN DE DATOS ---
+    let savedData = localStorage.getItem("funbox_player");
+    let playerData;
+
+    try {
+        playerData = JSON.parse(savedData);
+        // Si los datos no tienen el formato nuevo, forzamos el reinicio
+        if (!playerData || !playerData.owned) throw "Old data";
+    } catch(e) {
+        playerData = { money: 1000, owned: ["juan", "carla"], current: "juan" };
+        localStorage.setItem("funbox_player", JSON.stringify(playerData));
+    }
 
     function saveData() {
         localStorage.setItem("funbox_player", JSON.stringify(playerData));
@@ -166,7 +165,6 @@
 
     function renderUI() {
         document.getElementById("balance-display").innerText = playerData.money;
-        
         const invGrid = document.getElementById("inventory-grid");
         const shopGrid = document.getElementById("shop-grid");
         invGrid.innerHTML = "";
@@ -187,8 +185,7 @@
                 shopGrid.appendChild(card);
             }
         });
-
-        updatePreview();
+        updatePreview(playerData.current);
     }
 
     function selectAvatar(id) {
@@ -197,13 +194,22 @@
         renderUI();
     }
 
-    function previewShopItem(id) {
+    function updatePreview(id) {
         const av = allAvatars[id];
         document.getElementById("skin-name-display").innerText = av.name;
         document.getElementById("avatar-emoji").innerText = av.emoji;
         
         const container = document.getElementById("action-container");
-        container.innerHTML = `<button class="btn-action" style="background:var(--p-gold)" onclick="buyAvatar('${id}')">COMPRAR POR 🪙 ${av.price}</button>`;
+        if (playerData.owned.includes(id)) {
+            container.innerHTML = `<button class="btn-action" style="background:var(--p-green); cursor:default">EQUIPADO</button>`;
+        }
+    }
+
+    function previewShopItem(id) {
+        const av = allAvatars[id];
+        document.getElementById("skin-name-display").innerText = av.name;
+        document.getElementById("avatar-emoji").innerText = av.emoji;
+        document.getElementById("action-container").innerHTML = `<button class="btn-action" style="background:var(--p-gold)" onclick="buyAvatar('${id}')">COMPRAR POR 🪙 ${av.price}</button>`;
     }
 
     function buyAvatar(id) {
@@ -211,27 +217,12 @@
         if (playerData.money >= av.price) {
             playerData.money -= av.price;
             playerData.owned.push(id);
-            playerData.current = id;
-            saveData();
-            renderUI();
-            alert("¡Nuevo avatar desbloqueado!");
+            selectAvatar(id);
         } else {
-            alert("No tienes suficientes Funcoins 🪙");
+            alert("Necesitas más Funcoins");
         }
     }
 
-    function updatePreview() {
-        const av = allAvatars[playerData.current];
-        document.getElementById("skin-name-display").innerText = av.name;
-        document.getElementById("avatar-emoji").innerText = av.emoji;
-        document.getElementById("action-container").innerHTML = `<button class="btn-action" style="background:var(--p-green); cursor:default">EQUIPADO</button>`;
-        
-        const emojiEl = document.getElementById("avatar-emoji");
-        emojiEl.style.transform = "scale(1.1)";
-        setTimeout(() => emojiEl.style.transform = "scale(1)", 150);
-    }
-
-    // Inicialización
     renderUI();
 </script>
 </body>
