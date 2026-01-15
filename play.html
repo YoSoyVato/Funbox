@@ -197,19 +197,24 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
-    // Materiales solicitados
     const skinMat = new THREE.MeshStandardMaterial({color: 0xffdbac, roughness: 0.4});
-    const brownShirtMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.7}); // Marrón para el torso
-    const grayPantsMat = new THREE.MeshStandardMaterial({color: 0x808080, roughness: 0.6}); // Gris para pantalones
+    const brownShirtMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.7});
+    const grayPantsMat = new THREE.MeshStandardMaterial({color: 0x808080, roughness: 0.6});
+    const hairMat = new THREE.MeshStandardMaterial({color: 0x000000, roughness: 0.9}); // Pelo Negro
 
     cabezaGroup = new THREE.Group();
     cabezaGroup.position.y = 0.78;
     cuerpoVisual.add(cabezaGroup);
 
-    // Cabeza un poco más pequeña (0.4 en lugar de 0.5)
+    // Cabeza
     cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skinMat);
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
+
+    // 1. PELO NEGRO AGREGADO
+    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.15, 0.42), hairMat);
+    hair.position.y = 0.18;
+    cabezaMesh.add(hair);
 
     // Ojos
     function crearOjo(x) {
@@ -225,12 +230,12 @@ function buildPlayerModel() {
     }
     cabezaMesh.add(crearOjo(-0.1), crearOjo(0.1));
 
-    // Torso Marrón (Camisa)
+    // Torso Marrón
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), brownShirtMat);
     torso.position.y = 0.35;
     cuerpoVisual.add(torso);
 
-    // Brazos Marrones (Manga de camisa)
+    // Brazos Marrones
     const armGeo = new THREE.CapsuleGeometry(0.06, 0.2, 8, 12);
     brazoI = new THREE.Mesh(armGeo, brownShirtMat);
     brazoI.position.set(-0.25, 0.45, 0);
@@ -238,13 +243,13 @@ function buildPlayerModel() {
     brazoD.position.x = 0.25;
     cuerpoVisual.add(brazoI, brazoD);
 
-    // Piernas Grises (Pantalones)
+    // 2. PIERNAS ARREGLADAS (Añadidas a cuerpoVisual para evitar bugs de posición)
     const legGeo = new THREE.CapsuleGeometry(0.08, 0.25, 8, 12);
     piernaI = new THREE.Mesh(legGeo, grayPantsMat);
     piernaI.position.set(-0.1, 0.15, 0);
     piernaD = piernaI.clone();
     piernaD.position.x = 0.1;
-    player.add(piernaI, piernaD);
+    cuerpoVisual.add(piernaI, piernaD);
 }
 buildPlayerModel();
 scene.add(player);
