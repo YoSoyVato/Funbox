@@ -31,8 +31,6 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
-// --- DETECTAR SKIN SELECCIONADA ---
-const currentSkin = localStorage.getItem("funbox_current_skin") || "👨";
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
 const scene = new THREE.Scene();
@@ -72,10 +70,9 @@ const floor = new THREE.Mesh(
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
-floor.position.y = 0; 
 scene.add(floor);
 
-// --- ASSETS (Muebles) ---
+// --- ASSETS ---
 function createAssetMesh(type) {
     const group = new THREE.Group();
     const woodMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.7});
@@ -132,12 +129,10 @@ function createAssetMesh(type) {
 // --- CARGA DE BLOQUES Y FÍSICA ---
 const physicalBlocks = [];
 physicalBlocks.push(floor);
-
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const spawnGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2); 
 const boxMat = new THREE.MeshStandardMaterial({color: 0x2196f3});
 const spawnMat = new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.4});
-
 let spawnPoint = new THREE.Vector3(0, 0, 0);
 
 mapData.forEach(b => {
@@ -192,7 +187,7 @@ function isColliding(pos) {
     return false;
 }
 
-// --- PERSONAJE (AJUSTE CHIBI PARA VER PIERNAS) ---
+// --- PERSONAJE (MODELO MEJORADO) ---
 const player = new THREE.Group();
 player.position.copy(spawnPoint); 
 const cuerpoVisual = new THREE.Group();
@@ -208,10 +203,9 @@ function buildPlayerModel() {
     const colAuriculares = 0x007ceb;
 
     cabezaGroup = new THREE.Group();
-    cabezaGroup.position.y = 0.7; // Bajado para look chibi
+    cabezaGroup.position.y = 0.7;
     cuerpoVisual.add(cabezaGroup);
 
-    // Cabeza proporcionalmente más grande
     cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({color: colPiel}));
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
@@ -219,16 +213,27 @@ function buildPlayerModel() {
     const pelo = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.62), new THREE.MeshStandardMaterial({color: colPelo}));
     pelo.position.y = 0.25; cabezaMesh.add(pelo);
 
-    // Ojos Cute con brillo
+    // OJOS SEGÚN IMAGEN: Párpado blanco grande y pupila negra al frente
     function crearOjo(x) {
-        const ojo = new THREE.Group();
-        const pupila = new THREE.Mesh(new THREE.CircleGeometry(0.12, 32), new THREE.MeshBasicMaterial({color:0}));
-        const brillo1 = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), new THREE.MeshBasicMaterial({color:0xffffff}));
-        brillo1.position.set(0.04, 0.04, 0.01);
-        ojo.add(pupila, brillo1);
-        ojo.position.set(x, -0.05, 0.31);
-        listaOjos.push(ojo);
-        return ojo;
+        const ojoContenedor = new THREE.Group();
+        
+        // Párpado Blanco (Ovalado y grande)
+        const fondoBlanco = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.12, 0.05, 8, 16), 
+            new THREE.MeshBasicMaterial({color: 0xffffff})
+        );
+        
+        // Pupila Negra
+        const pupila = new THREE.Mesh(
+            new THREE.CircleGeometry(0.07, 32), 
+            new THREE.MeshBasicMaterial({color: 0x000000})
+        );
+        pupila.position.z = 0.012; // Justo delante del blanco
+
+        ojoContenedor.add(fondoBlanco, pupila);
+        ojoContenedor.position.set(x, -0.05, 0.31);
+        listaOjos.push(ojoContenedor);
+        return ojoContenedor;
     }
     cabezaMesh.add(crearOjo(-0.16), crearOjo(0.16));
 
@@ -238,11 +243,9 @@ function buildPlayerModel() {
     const aR = aL.clone(); aR.position.x = 0.34;
     cabezaMesh.add(aL, aR);
 
-    // CUERPO MÁS CORTO (Para que se vean las piernas)
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.25, 4, 16), new THREE.MeshStandardMaterial({color: colCuerpo}));
     torso.position.y = 0.35; cuerpoVisual.add(torso);
 
-    // Brazos proporcionales
     const crearBrazo = (x) => {
         const b = new THREE.Group();
         const extremidad = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.25), new THREE.MeshStandardMaterial({color: colCuerpo}));
@@ -255,7 +258,6 @@ function buildPlayerModel() {
     brazoI = crearBrazo(-0.3); brazoD = crearBrazo(0.3);
     cuerpoVisual.add(brazoI, brazoD);
 
-    // PIERNAS VISIBLES
     const crearPierna = (x) => {
         const p = new THREE.Group();
         const extremidad = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3), new THREE.MeshStandardMaterial({color: 0x004070}));
