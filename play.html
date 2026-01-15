@@ -215,7 +215,8 @@ function buildPlayerModel() {
         skin: new THREE.MeshStandardMaterial({color: choice.skin, roughness: choice.isRobot ? 0.2 : 0.4, metalness: choice.isRobot ? 0.7 : 0}),
         main: new THREE.MeshStandardMaterial({color: choice.main, roughness: choice.isRobot ? 0.1 : 0.5, metalness: choice.isRobot ? 0.9 : 0}),
         dark: new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.7}),
-        shoes: new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.5})
+        shoes: new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.5}),
+        glow: new THREE.MeshBasicMaterial({color: 0x00d2ff})
     };
 
     cabezaGroup = new THREE.Group();
@@ -227,26 +228,35 @@ function buildPlayerModel() {
     cabezaGroup.add(cabezaMesh);
 
     if (choice.isRobot) {
+        // PANTALLA
         const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.38), new THREE.MeshBasicMaterial({color: 0x000000}));
         screen.position.set(0, 0, 0.222);
         cabezaMesh.add(screen);
 
-        // --- DOS ANTENAS ---
-        function createAntenna(xPos, rotationZ) {
-            const antGroup = new THREE.Group();
-            const antBase = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18), mats.main);
-            antBase.position.y = 0.09;
-            const antLuz = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshBasicMaterial({color: 0x00d2ff}));
-            antLuz.position.y = 0.1;
-            antBase.add(antLuz);
-            antGroup.add(antBase);
-            antGroup.position.set(xPos, 0.24, 0);
-            antGroup.rotation.z = rotationZ;
-            return antGroup;
-        }
-        cabezaMesh.add(createAntenna(-0.12, 0.3)); // Izquierda inclinada
-        cabezaMesh.add(createAntenna(0.12, -0.3));  // Derecha inclinada
+        // TORNILLOS LATERALES (OREJAS)
+        const boltGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.08, 16);
+        boltGeo.rotateZ(Math.PI/2);
+        const boltL = new THREE.Mesh(boltGeo, mats.main);
+        boltL.position.set(-0.25, 0, 0);
+        const boltR = new THREE.Mesh(boltGeo, mats.main);
+        boltR.position.set(0.25, 0, 0);
+        cabezaMesh.add(boltL, boltR);
 
+        // ANTENAS INCLINADAS
+        function createAntenna(x, rot) {
+            const g = new THREE.Group();
+            const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18), mats.main);
+            rod.position.y = 0.09;
+            const tip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), mats.glow);
+            tip.position.y = 0.18;
+            g.add(rod, tip);
+            g.position.set(x, 0.24, 0);
+            g.rotation.z = rot;
+            return g;
+        }
+        cabezaMesh.add(createAntenna(-0.12, 0.3), createAntenna(0.12, -0.3));
+
+        // OJOS LED
         function createLedEye(x) {
             const eye = new THREE.Mesh(new THREE.CircleGeometry(0.065, 32), new THREE.MeshBasicMaterial({color: 0xffffff}));
             eye.position.set(x, 0.05, 0.225);
@@ -255,12 +265,14 @@ function buildPlayerModel() {
         }
         cabezaMesh.add(createLedEye(-0.12), createLedEye(0.12));
 
-        const bocaLed = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.035), new THREE.MeshBasicMaterial({color: 0x00d2ff}));
+        // BOCA LED
+        const bocaLed = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.035), mats.glow);
         bocaLed.position.set(0, -0.12, 0.225);
         cabezaMesh.add(bocaLed);
         boca = bocaLed;
 
     } else {
+        // DISEÑO HUMANO
         const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
         const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
         boca = new THREE.Mesh(bocaGeo, bocaMat);
@@ -315,6 +327,17 @@ function buildPlayerModel() {
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.24), mats.main);
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
+
+    // JETPACK Y NÚCLEO (Solo para el Robot)
+    if (choice.isRobot) {
+        const jetpack = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.38, 0.15), mats.main);
+        jetpack.position.set(0, 0.45, -0.18);
+        cuerpoVisual.add(jetpack);
+        
+        const core = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), mats.glow);
+        core.position.set(0, 0.48, 0.121);
+        cuerpoVisual.add(core);
+    }
 
     const armGeo = new THREE.CapsuleGeometry(0.07, 0.2, 8, 10);
     function createArm(x) {
