@@ -200,7 +200,7 @@ let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 function buildPlayerModel() {
     const colors = {
         skin: 0xffdbac,
-        main: 0x5d4037, // CAMBIADO A MARRÓN
+        main: 0x5d4037, // MARRÓN
         dark: 0x1a1a1a, // Color del pelo
         shoes: 0x222222 // Color de los pies
     };
@@ -221,15 +221,19 @@ function buildPlayerModel() {
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
+    // --- BOCA (AÑADIDA) ---
+    const bocaGeo = new THREE.PlaneGeometry(0.12, 0.03);
+    const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.7, side: THREE.DoubleSide});
+    const boca = new THREE.Mesh(bocaGeo, bocaMat);
+    boca.position.set(0, -0.12, 0.221); // Posición perfecta en la cara
+    cabezaMesh.add(boca);
+
     // --- PELO MASCULINO CORTO ---
     const hairGroup = new THREE.Group();
-    
-    // Base superior compacta
     const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), mats.dark);
     topHair.position.y = 0.2;
     hairGroup.add(topHair);
 
-    // Flequillo corto (no tapa los ojos)
     const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
     for(let i = 0; i < 5; i++) {
         const bang = new THREE.Mesh(bangsGeo, mats.dark);
@@ -238,35 +242,38 @@ function buildPlayerModel() {
         hairGroup.add(bang);
     }
     
-    // Laterales y parte trasera cortos
     const sideHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.15), mats.dark);
     sideHair.position.set(0, 0.08, -0.18);
     hairGroup.add(sideHair);
-
     cabezaMesh.add(hairGroup);
 
-    // Ojos Pro con Brillos
+    // --- OJOS CORREGIDOS (AHORA PLANOS) ---
     function createEye(x) {
         const eye = new THREE.Group();
-        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
-        orb.scale.z = 0.2;
-        const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        b1.position.set(0.025, 0.025, 0.05);
-        const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        b2.position.set(-0.02, -0.02, 0.05);
+        // Usamos CircleGeometry para que sean planos y no se "salgan" de la cara
+        const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        
+        // Brillo 1 (Plano)
+        const b1 = new THREE.Mesh(new THREE.CircleGeometry(0.025, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        b1.position.set(0.025, 0.025, 0.005);
+        
+        // Brillo 2 (Plano)
+        const b2 = new THREE.Mesh(new THREE.CircleGeometry(0.015, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        b2.position.set(-0.02, -0.02, 0.005);
+        
         eye.add(orb, b1, b2);
-        eye.position.set(x, -0.04, 0.22);
+        eye.position.set(x, -0.04, 0.221); // 0.221 para que esté justo encima de la superficie de la cabeza
         listaOjos.push(eye);
         return eye;
     }
     cabezaMesh.add(createEye(-0.13), createEye(0.13));
 
-    // TORSO (MARRÓN)
+    // TORSO
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.24), mats.main);
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
 
-    // BRAZOS (MARRÓN)
+    // BRAZOS
     const armGeo = new THREE.CapsuleGeometry(0.07, 0.2, 8, 10);
     function createArm(x) {
         const g = new THREE.Group();
