@@ -328,12 +328,42 @@ function buildPlayerModel() {
     torso.position.y = 0.45;
     cuerpoVisual.add(torso);
 
-    // JETPACK Y NÚCLEO (Solo para el Robot)
+    // --- JETPACK PULIDO Y NÚCLEO (Solo para el Robot) ---
     if (choice.isRobot) {
-        const jetpack = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.38, 0.15), mats.main);
-        jetpack.position.set(0, 0.45, -0.18);
-        cuerpoVisual.add(jetpack);
+        const jetpackGroup = new THREE.Group();
+        jetpackGroup.position.set(0, 0.45, -0.15);
         
+        // Base central
+        const jpBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.1), mats.main);
+        jetpackGroup.add(jpBase);
+
+        // Tanques laterales cilíndricos
+        const tankGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.35, 12);
+        const tankL = new THREE.Mesh(tankGeo, mats.main);
+        tankL.position.x = -0.15;
+        const tankR = new THREE.Mesh(tankGeo, mats.main);
+        tankR.position.x = 0.15;
+        jetpackGroup.add(tankL, tankR);
+
+        // Turbinas/Propulsores con luz de energía
+        const nozzleGeo = new THREE.CylinderGeometry(0.06, 0.04, 0.08, 12);
+        const nozzleMat = new THREE.MeshStandardMaterial({color: 0x333333, metalness: 0.8});
+        
+        const nozzleL = new THREE.Mesh(nozzleGeo, nozzleMat);
+        nozzleL.position.set(-0.15, -0.2, 0);
+        const nozzleR = new THREE.Mesh(nozzleGeo, nozzleMat);
+        nozzleR.position.set(0.15, -0.2, 0);
+        
+        // El brillo de la turbina (luz LED interna)
+        const thrusterGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.02, 12), mats.glow);
+        thrusterGlow.position.y = -0.04;
+        nozzleL.add(thrusterGlow.clone());
+        nozzleR.add(thrusterGlow.clone());
+        
+        jetpackGroup.add(nozzleL, nozzleR);
+        cuerpoVisual.add(jetpackGroup);
+        
+        // NÚCLEO DE ENERGÍA EN EL PECHO
         const core = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), mats.glow);
         core.position.set(0, 0.48, 0.121);
         cuerpoVisual.add(core);
