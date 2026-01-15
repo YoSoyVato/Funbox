@@ -31,6 +31,9 @@ const config = JSON.parse(localStorage.getItem("funbox_config")) || {
     ambientIntensity: 0.9 
 };
 
+// DETECTAR AVATAR SELECCIONADO
+const currentSkin = localStorage.getItem("funbox_current_skin") || "👨";
+
 const mapData = JSON.parse(localStorage.getItem("funbox_map")) || [];
 
 const scene = new THREE.Scene();
@@ -197,10 +200,21 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup;
 
 function buildPlayerModel() {
-    const skinMat = new THREE.MeshStandardMaterial({color: 0xffdbac, roughness: 0.4});
-    const brownShirtMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.7});
-    const grayPantsMat = new THREE.MeshStandardMaterial({color: 0x808080, roughness: 0.6});
-    const hairMat = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.9});
+    // Definir materiales basados en si es el clásico u otro
+    let skinCol = 0xffdbac, shirtCol = 0x5d4037, pantsCol = 0x808080, hairCol = 0x111111;
+
+    // Sincronización con "Hombrecito" (Clásico)
+    if(currentSkin === "👨") {
+        skinCol = 0xc4a484; 
+        shirtCol = 0x005a9e; 
+        pantsCol = 0x004070; 
+        hairCol = 0x3d2b1f;
+    }
+
+    const skinMat = new THREE.MeshStandardMaterial({color: skinCol, roughness: 0.4});
+    const shirtMat = new THREE.MeshStandardMaterial({color: shirtCol, roughness: 0.7});
+    const pantsMat = new THREE.MeshStandardMaterial({color: pantsCol, roughness: 0.6});
+    const hairMat = new THREE.MeshStandardMaterial({color: hairCol, roughness: 0.9});
 
     cabezaGroup = new THREE.Group();
     cabezaGroup.position.y = 0.78;
@@ -211,53 +225,53 @@ function buildPlayerModel() {
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // Pelo Negro
+    // Pelo
     const hair = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.15, 0.44), hairMat);
     hair.position.y = 0.18;
     cabezaMesh.add(hair);
 
+    // Añadir Auriculares si es el clásico
+    if(currentSkin === "👨") {
+        const pMat = new THREE.MeshStandardMaterial({ color: 0x007ceb });
+        const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 32), pMat);
+        pL.rotation.z = Math.PI/2; pL.position.x = -0.23;
+        const pR = pL.clone(); pR.position.x = 0.23;
+        cabezaMesh.add(pL, pR);
+    }
+
     // OJOS CUTE CON BRILLOS (FIJOS)
     function crearOjo(x) {
         const ojoGroup = new THREE.Group();
-
-        // Pupila negra
         const pupila = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
         pupila.scale.y = 1.2; 
-        
-        // Brillo grande
         const brillo1 = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
         brillo1.position.set(0.03, 0.03, 0.05); 
-
-        // Brillo pequeño adicional (más cute)
         const brillo2 = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
         brillo2.position.set(-0.02, -0.03, 0.05); 
-        
         ojoGroup.add(pupila, brillo1, brillo2);
         ojoGroup.position.set(x, 0.02, 0.2);
-        
         listaOjos.push(ojoGroup); 
         return ojoGroup;
     }
     cabezaMesh.add(crearOjo(-0.12), crearOjo(0.12));
 
-    // Torso Marrón
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), brownShirtMat);
+    // Torso
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.35, 8, 16), shirtMat);
     torso.position.y = 0.35;
     cuerpoVisual.add(torso);
 
-    // Brazos Marrones
+    // Brazos
     const armGeo = new THREE.CapsuleGeometry(0.06, 0.2, 8, 12);
-    brazoI = new THREE.Mesh(armGeo, brownShirtMat);
+    brazoI = new THREE.Mesh(armGeo, shirtMat);
     brazoI.position.set(-0.25, 0.45, 0);
     brazoD = brazoI.clone();
     brazoD.position.x = 0.25;
     cuerpoVisual.add(brazoI, brazoD);
 
-    // Piernas Grises
+    // Piernas
     const legGeo = new THREE.CapsuleGeometry(0.08, 0.25, 8, 12);
     legGeo.translate(0, -0.12, 0); 
-    
-    piernaI = new THREE.Mesh(legGeo, grayPantsMat);
+    piernaI = new THREE.Mesh(legGeo, pantsMat);
     piernaI.position.set(-0.1, 0.25, 0); 
     piernaD = piernaI.clone();
     piernaD.position.x = 0.1;
