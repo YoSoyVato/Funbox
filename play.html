@@ -199,13 +199,12 @@ const listaOjos = [];
 let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca;
 
 function buildPlayerModel() {
-    // NUEVO: COLORES DINÁMICOS SEGÚN SKIN
     const isJuan = currentSkin === "juan";
     const colors = {
         skin: 0xffdbac,
-        main: isJuan ? 0x5d4037 : 0x00d2ff, // Juan Marrón | Carla Cian
-        dark: isJuan ? 0x1a1a1a : 0x222222, 
-        shoes: 0x222222 
+        main: isJuan ? 0x5d4037 : 0xff66cc, // Juan: Marrón | Carla: Rosa/Lila
+        dark: isJuan ? 0x1a1a1a : 0x222222, // Juan: Negro | Carla: Negro Carbón
+        shoes: 0x111111 
     };
 
     const mats = {
@@ -223,16 +222,14 @@ function buildPlayerModel() {
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
-    // BOCA
     const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
     const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
     boca = new THREE.Mesh(bocaGeo, bocaMat);
     boca.position.set(0, -0.12, 0.222); 
     cabezaMesh.add(boca);
 
-    // NUEVO: CABELLO DIFERENTE
     const hairGroup = new THREE.Group();
-    const hairColor = isJuan ? 0x1a1a1a : 0x4e342e; // Juan Negro | Carla Castaño
+    const hairColor = isJuan ? 0x1a1a1a : 0x3d2b1f; 
     const hairMat = new THREE.MeshStandardMaterial({color: hairColor});
 
     const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
@@ -240,7 +237,6 @@ function buildPlayerModel() {
     hairGroup.add(topHair);
 
     if (isJuan) {
-        // Flequillo de Juan
         const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
         for(let i = 0; i < 5; i++) {
             const bang = new THREE.Mesh(bangsGeo, hairMat);
@@ -249,27 +245,22 @@ function buildPlayerModel() {
             hairGroup.add(bang);
         }
     } else {
-        // Coleta o pelo largo para Carla
-        const longHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.4, 0.1), hairMat);
-        longHair.position.set(0, 0, -0.22);
-        hairGroup.add(longHair);
+        const sideHairL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.48), hairMat);
+        sideHairL.position.set(-0.2, -0.05, 0);
+        const sideHairR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.48), hairMat);
+        sideHairR.position.set(0.2, -0.05, 0);
+        hairGroup.add(sideHairL, sideHairR);
     }
     
-    const sideHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.15), hairMat);
-    sideHair.position.set(0, 0.08, -0.18);
-    hairGroup.add(sideHair);
+    const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.3, 0.15), hairMat);
+    backHair.position.set(0, 0.05, -0.18);
+    hairGroup.add(backHair);
     cabezaMesh.add(hairGroup);
 
     function createEye(x) {
         const eyeGroup = new THREE.Group();
-        const orb = new THREE.Mesh(
-            new THREE.CircleGeometry(0.08, 16), 
-            new THREE.MeshBasicMaterial({color: 0x000000})
-        );
-        const shine = new THREE.Mesh(
-            new THREE.CircleGeometry(0.03, 8), 
-            new THREE.MeshBasicMaterial({color: 0xffffff})
-        );
+        const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+        const shine = new THREE.Mesh(new THREE.CircleGeometry(0.03, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
         shine.position.set(0.03, 0.03, 0.01); 
         eyeGroup.add(orb, shine);
         eyeGroup.position.set(x, -0.04, 0.221);
