@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Funbox - Selector de Avatar</title>
+    <title>Funbox - Perfil y Tienda</title>
     <style>
-        :root { --p-blue: #00d2ff; --p-green: #00ff88; }
-        body { background: #050505; color: white; font-family: 'Arial', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --p-blue: #00d2ff; --p-green: #00ff88; --p-gold: #ffcc00; }
+        body { background: #050505; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
         /* IZQUIERDA: ÁREA VISUAL */
         .preview-zone { 
@@ -15,7 +15,24 @@
             align-items: center; 
             justify-content: center; 
             background: radial-gradient(circle, #111 0%, #000 100%); 
+            position: relative;
         }
+
+        /* SISTEMA DE DINERO */
+        .wallet {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid var(--p-gold);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+        }
+        .wallet span { color: var(--p-gold); font-weight: 900; font-size: 20px; }
 
         .avatar-display {
             font-size: 150px; 
@@ -33,95 +50,188 @@
             letter-spacing: 5px;
         }
 
-        /* DERECHA: MI ARMARIO */
-        .inventory-zone { width: 350px; background: #111; border-left: 2px solid #222; padding: 25px; display: flex; flex-direction: column; }
+        .btn-action {
+            margin-top: 20px;
+            padding: 15px 40px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+
+        /* DERECHA: INVENTARIO Y TIENDA */
+        .inventory-zone { 
+            width: 380px; 
+            background: #0f0f0f; 
+            border-left: 2px solid #222; 
+            padding: 25px; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto;
+        }
         
+        .section-title { font-size: 14px; color: #555; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            margin-top: 20px;
+            gap: 12px; 
+            margin-bottom: 30px;
         }
 
         .card { 
-            background: #1a1a1a; 
-            border: 2px solid #333; 
+            background: #161616; 
+            border: 2px solid #222; 
             border-radius: 15px; 
-            padding: 20px; 
+            padding: 15px; 
             text-align: center; 
             cursor: pointer; 
             transition: 0.3s; 
+            position: relative;
         }
-        .card:hover { border-color: var(--p-blue); transform: scale(1.05); }
-        .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
-        .card span { font-size: 45px; display: block; margin-bottom: 5px; }
-        .card p { margin: 0; font-size: 14px; font-weight: bold; color: #bbb; }
+        .card:hover { border-color: var(--p-blue); }
+        .card.selected { border-color: var(--p-green); background: rgba(0, 255, 136, 0.05); }
+        .card span { font-size: 40px; display: block; margin-bottom: 5px; }
+        .card p { margin: 0; font-size: 12px; font-weight: 900; color: #fff; }
+        
+        .price-tag {
+            background: var(--p-gold);
+            color: black;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .btn-back {
+            background: transparent;
+            color: #444;
+            border: 1px solid #222;
+            padding: 10px;
+            cursor: pointer;
+            margin-top: auto;
+            border-radius: 5px;
+        }
+        .btn-back:hover { color: white; border-color: white; }
 
     </style>
 </head>
 <body>
 
 <div class="preview-zone">
+    <div class="wallet">
+        🪙 <span id="balance-display">0</span>
+    </div>
+
     <div id="avatar-emoji" class="avatar-display">👤</div>
     <div id="skin-name-display" class="skin-title">SELECCIONA</div>
+    <div id="action-container"></div>
 </div>
 
 <div class="inventory-zone">
-    <h2 style="margin: 0; font-size: 24px; letter-spacing: 1px;">📦 MI ARMARIO</h2>
+    <div class="section-title">📦 MI ARMARIO</div>
     <div class="grid" id="inventory-grid"></div>
-    </div>
+
+    <div class="section-title">🛒 TIENDA DE AVATARES</div>
+    <div class="grid" id="shop-grid"></div>
+
+    <button class="btn-back" onclick="location.href='index.html'">SALIR AL MENÚ</button>
+</div>
 
 <script>
-    // Lista de avatares disponibles
-    const avatars = [
-        { id: "juan", emoji: "👨", name: "JUAN" },
-        { id: "mujer", emoji: "👩", name: "CARLA" }
-    ];
+    // Configuración de Avatares
+    const allAvatars = {
+        "juan": { id: "juan", emoji: "👨", name: "JUAN", price: 0 },
+        "carla": { id: "carla", emoji: "👩", name: "CARLA", price: 0 },
+        "robot": { id: "robot", emoji: "🤖", name: "CYBORG", price: 500 },
+        "ninja": { id: "ninja", emoji: "🥷", name: "SHINOBI", price: 800 },
+        "alien": { id: "alien", emoji: "👽", name: "VISITOR", price: 1200 },
+        "cat": { id: "cat", emoji: "🐱", name: "MIAU", price: 2000 }
+    };
 
-    // Lógica de Persistencia y Selección por Defecto
-    let currentSkin = localStorage.getItem("funbox_current_skin");
-    if (!currentSkin) {
-        currentSkin = "juan";
-        localStorage.setItem("funbox_current_skin", "juan");
-    }
+    // Estado del Jugador (Cargar de LocalStorage)
+    let playerData = JSON.parse(localStorage.getItem("funbox_player")) || {
+        money: 1000,
+        owned: ["juan", "carla"],
+        current: "juan"
+    };
 
-    function selectAvatar(id) {
-        currentSkin = id;
-        localStorage.setItem("funbox_current_skin", id);
-        updatePreview(id);
-        renderUI();
-    }
-
-    function updatePreview(id) {
-        const found = avatars.find(a => a.id === id);
-        if(found) {
-            const nameEl = document.getElementById("skin-name-display");
-            const emojiEl = document.getElementById("avatar-emoji");
-            
-            nameEl.innerText = found.name;
-            emojiEl.innerText = found.emoji;
-            
-            // Animación de pop-up al seleccionar
-            emojiEl.style.transform = "scale(1.2)";
-            setTimeout(() => emojiEl.style.transform = "scale(1)", 150);
-        }
+    function saveData() {
+        localStorage.setItem("funbox_player", JSON.stringify(playerData));
     }
 
     function renderUI() {
-        const grid = document.getElementById("inventory-grid");
-        grid.innerHTML = ""; 
+        document.getElementById("balance-display").innerText = playerData.money;
         
-        avatars.forEach(av => {
+        const invGrid = document.getElementById("inventory-grid");
+        const shopGrid = document.getElementById("shop-grid");
+        invGrid.innerHTML = "";
+        shopGrid.innerHTML = "";
+
+        Object.values(allAvatars).forEach(av => {
+            const isOwned = playerData.owned.includes(av.id);
             const card = document.createElement("div");
-            card.className = `card ${currentSkin === av.id ? 'selected' : ''}`;
-            card.onclick = () => selectAvatar(av.id);
-            card.innerHTML = `<span>${av.emoji}</span><p>${av.name}</p>`;
-            grid.appendChild(card);
+            card.className = `card ${playerData.current === av.id ? 'selected' : ''}`;
+            
+            if (isOwned) {
+                card.onclick = () => selectAvatar(av.id);
+                card.innerHTML = `<span>${av.emoji}</span><p>${av.name}</p>`;
+                invGrid.appendChild(card);
+            } else {
+                card.onclick = () => previewShopItem(av.id);
+                card.innerHTML = `<span>${av.emoji}</span><p>${av.name}</p><div class="price-tag">🪙 ${av.price}</div>`;
+                shopGrid.appendChild(card);
+            }
         });
+
+        updatePreview();
     }
 
-    // Ejecución inicial
-    updatePreview(currentSkin);
+    function selectAvatar(id) {
+        playerData.current = id;
+        saveData();
+        renderUI();
+    }
+
+    function previewShopItem(id) {
+        const av = allAvatars[id];
+        document.getElementById("skin-name-display").innerText = av.name;
+        document.getElementById("avatar-emoji").innerText = av.emoji;
+        
+        const container = document.getElementById("action-container");
+        container.innerHTML = `<button class="btn-action" style="background:var(--p-gold)" onclick="buyAvatar('${id}')">COMPRAR POR 🪙 ${av.price}</button>`;
+    }
+
+    function buyAvatar(id) {
+        const av = allAvatars[id];
+        if (playerData.money >= av.price) {
+            playerData.money -= av.price;
+            playerData.owned.push(id);
+            playerData.current = id;
+            saveData();
+            renderUI();
+            alert("¡Nuevo avatar desbloqueado!");
+        } else {
+            alert("No tienes suficientes Funcoins 🪙");
+        }
+    }
+
+    function updatePreview() {
+        const av = allAvatars[playerData.current];
+        document.getElementById("skin-name-display").innerText = av.name;
+        document.getElementById("avatar-emoji").innerText = av.emoji;
+        document.getElementById("action-container").innerHTML = `<button class="btn-action" style="background:var(--p-green); cursor:default">EQUIPADO</button>`;
+        
+        const emojiEl = document.getElementById("avatar-emoji");
+        emojiEl.style.transform = "scale(1.1)";
+        setTimeout(() => emojiEl.style.transform = "scale(1)", 150);
+    }
+
+    // Inicialización
     renderUI();
 </script>
 </body>
