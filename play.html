@@ -12,7 +12,6 @@
     padding:15px; border-radius:20px; z-index:10;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   }
-  /* NUEVO: Barra de energía del Jetpack */
   #jetpack-ui {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
     width: 250px; height: 12px; background: rgba(0,0,0,0.4);
@@ -209,9 +208,9 @@ let piernaI, piernaD, brazoI, brazoD, cabezaMesh, cabezaGroup, boca, jetpackProp
 
 function buildPlayerModel() {
     const skinPalette = {
-        "juan":   { main: 0x5d4037, hair: 0x1a1a1a, skin: 0xffdbac, isGirl: false, isRobot: false },
+        "juan":   { main: 0x221a1a, hair: 0x000000, skin: 0xffdbac, isGirl: false, isRobot: false },
         "carla":  { main: 0xff66cc, hair: 0x2b1d12, skin: 0xffdbac, isGirl: true, isRobot: false },
-        "robot":  { main: 0x444444, hair: 0x00d2ff, skin: 0x222222, isGirl: false, isRobot: true },
+        "robot":  { main: 0x333333, hair: 0x00d2ff, skin: 0x222222, isGirl: false, isRobot: true },
         "ninja":  { main: 0x111111, hair: 0x333333, skin: 0xffdbac, isGirl: false, isRobot: false },
         "alien":  { main: 0x33aa33, hair: 0x00ff00, skin: 0x55ff55, isGirl: false, isRobot: false },
         "cat":    { main: 0xffa500, hair: 0xffcc00, skin: 0xffdbac, isGirl: true, isRobot: false }
@@ -220,10 +219,10 @@ function buildPlayerModel() {
     const choice = skinPalette[currentSkin] || skinPalette["juan"];
     
     const mats = {
-        skin: new THREE.MeshStandardMaterial({color: choice.skin, roughness: choice.isRobot ? 0.2 : 0.4, metalness: choice.isRobot ? 0.7 : 0}),
-        main: new THREE.MeshStandardMaterial({color: choice.main, roughness: choice.isRobot ? 0.1 : 0.5, metalness: choice.isRobot ? 0.9 : 0}),
-        dark: new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.7}),
-        shoes: new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.5}),
+        skin: new THREE.MeshStandardMaterial({color: choice.skin, roughness: 0.8}),
+        main: new THREE.MeshStandardMaterial({color: choice.main, roughness: 0.7}),
+        dark: new THREE.MeshStandardMaterial({color: 0x0a0a0a, roughness: 0.7}),
+        shoes: new THREE.MeshStandardMaterial({color: 0x000000, roughness: 0.5}),
         glow: new THREE.MeshBasicMaterial({color: 0x00d2ff})
     };
 
@@ -231,108 +230,58 @@ function buildPlayerModel() {
     cabezaGroup.position.y = 0.82;
     cuerpoVisual.add(cabezaGroup);
 
-    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.44), mats.main);
+    cabezaMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.46, 0.45), mats.main);
     cabezaMesh.castShadow = true;
     cabezaGroup.add(cabezaMesh);
 
     if (choice.isRobot) {
-        const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.38), new THREE.MeshBasicMaterial({color: 0x000000}));
-        screen.position.set(0, 0, 0.222);
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.38), new THREE.MeshBasicMaterial({color: 0x000000}));
+        screen.position.set(0, 0, 0.226);
         cabezaMesh.add(screen);
-
-        const boltGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.08, 16);
-        boltGeo.rotateZ(Math.PI/2);
-        const boltL = new THREE.Mesh(boltGeo, mats.main);
-        boltL.position.set(-0.25, 0, 0);
-        const boltR = new THREE.Mesh(boltGeo, mats.main);
-        boltR.position.set(0.25, 0, 0);
-        cabezaMesh.add(boltL, boltR);
-
         function createAntenna(x, rot) {
             const g = new THREE.Group();
             const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18), mats.main);
             rod.position.y = 0.09;
-            const tip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), mats.glow);
+            const tip = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), mats.glow);
             tip.position.y = 0.18;
             g.add(rod, tip);
-            g.position.set(x, 0.24, 0);
-            g.rotation.z = rot;
+            g.position.set(x, 0.22, 0); g.rotation.z = rot;
             return g;
         }
         cabezaMesh.add(createAntenna(-0.12, 0.3), createAntenna(0.12, -0.3));
-
         function createLedEye(x) {
-            const eye = new THREE.Mesh(new THREE.CircleGeometry(0.065, 32), new THREE.MeshBasicMaterial({color: 0xffffff}));
-            eye.position.set(x, 0.05, 0.225);
-            listaOjos.push(eye);
-            return eye;
+            const eye = new THREE.Mesh(new THREE.CircleGeometry(0.07, 32), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            eye.position.set(x, 0.05, 0.23);
+            listaOjos.push(eye); return eye;
         }
         cabezaMesh.add(createLedEye(-0.12), createLedEye(0.12));
-
         const bocaLed = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.035), mats.glow);
-        bocaLed.position.set(0, -0.12, 0.225);
-        cabezaMesh.add(bocaLed);
-        boca = bocaLed;
-
+        bocaLed.position.set(0, -0.12, 0.23);
+        cabezaMesh.add(bocaLed); boca = bocaLed;
     } else {
-        const bocaGeo = new THREE.PlaneGeometry(0.12, 0.08);
-        const bocaMat = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.8, side: THREE.DoubleSide});
-        boca = new THREE.Mesh(bocaGeo, bocaMat);
-        boca.position.set(0, -0.12, 0.222); 
-        cabezaMesh.add(boca);
-
-        const hairGroup = new THREE.Group();
-        const hairMat = new THREE.MeshStandardMaterial({color: choice.hair, roughness: 0.8});
-        if (!choice.isGirl) {
-            const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.48), hairMat);
-            topHair.position.y = 0.2;
-            hairGroup.add(topHair);
-            const bangsGeo = new THREE.BoxGeometry(0.1, 0.12, 0.1);
-            for(let i = 0; i < 5; i++) {
-                const bang = new THREE.Mesh(bangsGeo, hairMat);
-                bang.position.set(-0.18 + (i * 0.09), 0.18, 0.22);
-                bang.rotation.x = 0.4;
-                hairGroup.add(bang);
-            }
-        } else {
-            const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.2, 0.48), hairMat);
-            topHair.position.set(0, 0.18, 0);
-            hairGroup.add(topHair);
-            const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.5, 0.25), hairMat);
-            backHair.position.set(0, -0.05, -0.12);
-            hairGroup.add(backHair);
-            const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.15, 0.05), hairMat);
-            fringe.position.set(0, 0.18, 0.22);
-            fringe.rotation.z = -0.05;
-            hairGroup.add(fringe);
-            const bun = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), hairMat);
-            bun.position.set(0, 0.15, -0.28);
-            hairGroup.add(bun);
+        // ARREGLO PARA JUAN: Ojos grandes con brillo y pelo
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.12, 0.47), new THREE.MeshStandardMaterial({color: choice.hair}));
+        hair.position.y = 0.2; cabezaMesh.add(hair);
+        function createJuanEye(x) {
+            const g = new THREE.Group();
+            const orb = new THREE.Mesh(new THREE.CircleGeometry(0.09, 32), new THREE.MeshBasicMaterial({color: 0x000000}));
+            const s1 = new THREE.Mesh(new THREE.CircleGeometry(0.035, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            s1.position.set(0.03, 0.03, 0.01);
+            const s2 = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            s2.position.set(-0.03, -0.03, 0.01);
+            g.add(orb, s1, s2); g.position.set(x, 0, 0.226);
+            listaOjos.push(g); return g;
         }
-        cabezaMesh.add(hairGroup);
-
-        function createEye(x) {
-            const eyeGroup = new THREE.Group();
-            const orb = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), new THREE.MeshBasicMaterial({color: 0x000000}));
-            const shine1 = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-            shine1.position.set(0.025, 0.025, 0.01); 
-            const shine2 = new THREE.Mesh(new THREE.CircleGeometry(0.012, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
-            shine2.position.set(-0.02, -0.03, 0.01); 
-            eyeGroup.add(orb, shine1, shine2);
-            eyeGroup.position.set(x, -0.04, 0.221);
-            listaOjos.push(eyeGroup);
-            return eyeGroup;
-        }
-        cabezaMesh.add(createEye(-0.13), createEye(0.13));
+        cabezaMesh.add(createJuanEye(-0.14), createJuanEye(0.14));
+        boca = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.05), new THREE.MeshBasicMaterial({color: 0x000000, transparent:true, opacity:0.8}));
+        boca.position.set(0, -0.12, 0.226); cabezaMesh.add(boca);
     }
 
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.24), mats.main);
-    torso.position.y = 0.45;
-    cuerpoVisual.add(torso);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.55, 0.28), mats.main);
+    torso.position.y = 0.45; cuerpoVisual.add(torso);
 
-    // JETPACK (Ahora siempre visible para todos, con luz si es robot)
     const jetpackGroup = new THREE.Group();
-    jetpackGroup.position.set(0, 0.45, -0.15);
+    jetpackGroup.position.set(0, 0.45, -0.16);
     const jpBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.1), mats.main);
     jetpackGroup.add(jpBase);
     const tankGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.35, 12);
@@ -340,51 +289,31 @@ function buildPlayerModel() {
     const tankR = new THREE.Mesh(tankGeo, mats.main); tankR.position.x = 0.15;
     jetpackGroup.add(tankL, tankR);
 
-    // NUEVO: Efectos de fuego/luz para el Jetpack
-    const fireGeo = new THREE.SphereGeometry(0.06, 8, 8);
-    const fireMat = new THREE.MeshBasicMaterial({color: 0x00d2ff, transparent: true, opacity: 0});
+    jetpackPropulsores = [];
     [-0.15, 0.15].forEach(x => {
-        const fire = new THREE.Mesh(fireGeo, fireMat.clone());
-        fire.position.set(x, -0.22, 0);
-        jetpackGroup.add(fire);
-        jetpackPropulsores.push(fire);
+        const fire = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({color: 0x00d2ff, transparent: true, opacity: 0}));
+        fire.position.set(x, -0.22, 0); jetpackGroup.add(fire); jetpackPropulsores.push(fire);
     });
     cuerpoVisual.add(jetpackGroup);
 
-    if(choice.isRobot){
-        const core = new THREE.Mesh(new THREE.CircleGeometry(0.08, 32), mats.glow);
-        core.position.set(0, 0.48, 0.121);
-        cuerpoVisual.add(core);
-    }
-
-    const armGeo = new THREE.CapsuleGeometry(0.07, 0.2, 8, 10);
+    // BRAZOS CON MANOS DE PIEL PARA JUAN
     function createArm(x) {
         const g = new THREE.Group();
-        const arm = new THREE.Mesh(armGeo, mats.main);
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 12), mats.skin);
-        hand.position.y = -0.15;
-        g.add(arm, hand);
-        g.position.set(x, 0.55, 0);
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.12), mats.main);
+        const hand = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.14), mats.skin);
+        hand.position.y = -0.22; g.add(arm, hand); g.position.set(x, 0.55, 0);
         return g;
     }
-    brazoI = createArm(-0.28);
-    brazoD = createArm(0.28);
-    cuerpoVisual.add(brazoI, brazoD);
+    brazoI = createArm(-0.3); brazoD = createArm(0.3); cuerpoVisual.add(brazoI, brazoD);
 
-    const legGeo = new THREE.CapsuleGeometry(0.085, 0.22, 8, 10);
-    legGeo.translate(0, -0.11, 0); 
     function createLeg(x) {
         const g = new THREE.Group();
-        const leg = new THREE.Mesh(legGeo, mats.dark);
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.35, 0.15), mats.dark);
         const boot = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.12, 0.26), mats.shoes);
-        boot.position.set(0, -0.25, 0.04);
-        g.add(leg, boot);
-        g.position.set(x, 0.35, 0);
+        boot.position.set(0, -0.22, 0.04); g.add(leg, boot); g.position.set(x, 0.25, 0);
         return g;
     }
-    piernaI = createLeg(-0.12);
-    piernaD = createLeg(0.12);
-    cuerpoVisual.add(piernaI, piernaD);
+    piernaI = createLeg(-0.12); piernaD = createLeg(0.12); cuerpoVisual.add(piernaI, piernaD);
 }
 buildPlayerModel();
 scene.add(player);
@@ -395,29 +324,22 @@ const gravity = -0.015, jumpForce = 0.3;
 const keys = {};
 let yaw = 0, pitch = 0, step = 0, rollStep = 0, blinkTimer = 0;
 
-// NUEVO: Variables para Jetpack
 let lastSpaceTime = 0;
 let jetpackActive = false;
-let jetpackFuel = 100; // 100% de combustible
-const jetpackDuration = 10000; // 10 segundos
+let jetpackFuel = 100; 
+const jetpackDuration = 10000; 
 
 window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
-    
-    // DOBLE TAP ESPACIO PARA JETPACK
     if(e.code === "Space") {
         let now = Date.now();
         if(now - lastSpaceTime < 250 && !onGround && jetpackFuel > 0) {
             jetpackActive = true;
             document.getElementById("jetpack-ui").style.display = "block";
         }
-        if(onGround) {
-            vy = jumpForce;
-            onGround = false;
-        }
+        if(onGround) { vy = jumpForce; onGround = false; }
         lastSpaceTime = now;
     }
-    
     if(e.key.toLowerCase() === "c" && onGround) isHeadMode = !isHeadMode;
 });
 window.addEventListener("keyup", e => {
@@ -438,12 +360,9 @@ function animate() {
     requestAnimationFrame(animate);
     const currentSurfaceY = getSurfaceY(player.position);
     
-    // Lógica de Movimiento Vertical (Salto y Jetpack)
     if(jetpackActive && jetpackFuel > 0) {
-        vy = 0.12; // Velocidad de ascenso suave
-        jetpackFuel -= 0.16; // Consume fuel (aprox 10s)
-        
-        // Efecto visual propulsores
+        vy = 0.12; 
+        jetpackFuel -= 0.16;
         jetpackPropulsores.forEach(p => {
             p.material.opacity = 0.8;
             p.scale.setScalar(1 + Math.sin(Date.now()*0.02)*0.4);
@@ -460,19 +379,17 @@ function animate() {
         player.position.y = currentSurfaceY; 
         vy = Math.max(0, vy); 
         onGround = true; 
-        jetpackFuel = Math.min(100, jetpackFuel + 0.5); // Recarga fuel en tierra
+        jetpackFuel = Math.min(100, jetpackFuel + 0.5); 
         if(jetpackFuel >= 100) document.getElementById("jetpack-ui").style.display = "none";
     } else {
         onGround = false;
     }
 
-    // Actualizar UI Jetpack
     document.getElementById("jetpack-bar").style.width = jetpackFuel + "%";
 
     let isFallingDeep = player.position.y < -2;
     if (isFallingDeep) {
-        player.rotation.x += 0.2; 
-        player.rotation.z += 0.1;
+        player.rotation.x += 0.2; player.rotation.z += 0.1;
         if(boca) boca.scale.set(1.5, 4, 1);
     } else {
         player.rotation.x = THREE.MathUtils.lerp(player.rotation.x, 0, 0.1);
@@ -482,8 +399,7 @@ function animate() {
     if (player.position.y < -15) { 
         player.position.copy(spawnPoint); 
         player.position.y = 5; vy = 0; 
-        player.rotation.set(0,0,0);
-        jetpackFuel = 100;
+        player.rotation.set(0,0,0); jetpackFuel = 100;
     }
 
     let moving = false, dir = new THREE.Vector3();
@@ -498,15 +414,12 @@ function animate() {
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, yaw + Math.PI, 0.15);
 
     if(boca) {
-        if (!onGround && !isFallingDeep) {
-            boca.scale.set(1.8, 2.0, 1); 
+        if (!onGround && !isFallingDeep) { boca.scale.set(1.8, 2.0, 1); 
         } else if (moving) {
             if (isRunning) {
                 let vibrate = Math.sin(Date.now() * 0.03) * 0.2;
                 boca.scale.set(2.2 + vibrate, 0.5, 1);
-            } else {
-                boca.scale.set(1.2, 0.7, 1);
-            }
+            } else { boca.scale.set(1.2, 0.7, 1); }
         } else {
             let breathe = Math.sin(Date.now() * 0.002) * 0.1 + 0.3;
             boca.scale.set(1, breathe, 1);
@@ -520,15 +433,13 @@ function animate() {
         
         if (!isHeadMode && onGround) {
             step += animationSpeed;
-            // Caminata Robótica
             piernaI.rotation.x = Math.sin(step) * 0.8;
             piernaD.rotation.x = Math.sin(step + Math.PI) * 0.8;
             brazoI.rotation.x = Math.sin(step + Math.PI) * 0.4;
             brazoD.rotation.x = Math.sin(step) * 0.4;
             cuerpoVisual.position.y = Math.abs(Math.sin(step)) * 0.04;
         } else if (isHeadMode) {
-            rollStep += 0.15;
-            cabezaMesh.rotation.x = -rollStep; 
+            rollStep += 0.15; cabezaMesh.rotation.x = -rollStep; 
         }
     } else {
         cabezaMesh.rotation.x = THREE.MathUtils.lerp(cabezaMesh.rotation.x, 0, 0.1);
@@ -536,7 +447,6 @@ function animate() {
         cuerpoVisual.position.y = THREE.MathUtils.lerp(cuerpoVisual.position.y, 0, 0.1);
     }
 
-    // ANIMACIÓN DE SALTO/VUELO (Encoger piernas)
     if (!onGround) {
         piernaI.rotation.x = THREE.MathUtils.lerp(piernaI.rotation.x, 0.5, 0.1);
         piernaD.rotation.x = THREE.MathUtils.lerp(piernaD.rotation.x, 0.5, 0.1);
@@ -557,9 +467,7 @@ function animate() {
 
     blinkTimer--;
     if (blinkTimer < 0) blinkTimer = Math.random() * 300 + 100;
-    listaOjos.forEach(ojo => { 
-        ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; 
-    });
+    listaOjos.forEach(ojo => { ojo.scale.y = (blinkTimer < 10) ? 0.1 : 1; });
 
     let camDist = keys.r ? -2.5 : (isHeadMode ? 2.2 : 3.0);
     const camOffset = new THREE.Vector3(0, isHeadMode ? 0.6 : 1.4, camDist).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
